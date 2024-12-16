@@ -11,17 +11,12 @@ export async function POST(request: Request) {
       },
       properties: {
         Email: {
-          title: [
-            {
-              text: {
-                content: body?.email,
-              },
-            },
-          ],
+          type: "email",
+          email: body?.email,
         },
-        "Name": {
-          type: "rich_text",
-          rich_text: [
+        Name: {
+          type: "title",
+          title: [
             {
               type: "text",
               text: {

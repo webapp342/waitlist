@@ -19,6 +19,11 @@ The UI is built using a mix of shadcn/ui, Magic UI and Tailwind CSS.
 
 **Demo:** [https://nextjs-notion-waitlist.vercel.app](https://nextjs-notion-waitlist.vercel.app)
 
+**Sample Database** (Click to view):
+<a href="https://lakshaybhushan.notion.site/15e45b25609e80408f83ebb97b45882b?v=c949c24dff4a42b3baa31bfb3e8a3354" target="_blank" rel="noopener noreferrer">
+ <img src ="./public/sample-db.png">
+</a>
+
 ## Features
 
 - **Next.js 14**: The latest stable version of Next.js.
@@ -42,12 +47,10 @@ There are a few things you need to do before you can use this template:
 
 Assuming that you have a Notion account and a workspace, you can create a new database in your workspace and add the following columns:
 
-- **Id**: A unique identifier for each record.
 - **Name**: Title
 - **Email**: Email
-- **Timestamp**: Created Time
 
-Now you need to get the secret key for your workspace. You can get it from the [Notion Integrations page](https://www.notion.so/my-integrations). You will need this key to fetch data from your workspace.
+Now you need to get the `SECRET` key for your workspace. You can get it from the [Notion Integrations page](https://www.notion.so/my-integrations). You will need this key to fetch data from your workspace.
 
 Now you need to get the ID of the database you created. You can get it from the URL of the database. It will look something like this:
 
