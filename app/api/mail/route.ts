@@ -43,7 +43,7 @@ export async function POST(request: NextRequest, response: NextResponse) {
     to: [email],
     subject: "Thankyou for wailisting the Next.js + Notion CMS template!",
     reply_to: "lakshb.work@gmail.com",
-    html: render(WelcomeTemplate({ userFirstname: firstname })),
+    html:  await render(WelcomeTemplate({ userFirstname: firstname })),
   });
 
   // const { data, error } = { data: true, error: null }
