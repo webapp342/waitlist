@@ -19,14 +19,14 @@ The UI is built using a mix of shadcn/ui, Magic UI and Tailwind CSS.
 
 **Demo:** [https://nextjs-notion-waitlist.vercel.app](https://nextjs-notion-waitlist.vercel.app)
 
-**Sample Database** (Click to view):
+**Sample Database** ([Link](https://lakshaybhushan.notion.site/15e45b25609e80408f83ebb97b45882b?v=c949c24dff4a42b3baa31bfb3e8a3354))
 <a href="https://lakshaybhushan.notion.site/15e45b25609e80408f83ebb97b45882b?v=c949c24dff4a42b3baa31bfb3e8a3354" target="_blank" rel="noopener noreferrer">
  <img src ="./public/sample-db.png">
 </a>
 
 ## Features
 
-- **Next.js 14**: The latest stable version of Next.js.
+- **Next.js 14**: The most popular React framework.
 - **Notion as a CMS**: Use Notion to manage your waitlist users.
 - **Upstash Redis**: Use Upstash Redis to rate limit the number of signups in a given time period.
 - **Resend**: Use Resend to send emails to users who sign up.
@@ -108,7 +108,7 @@ Create a `.env.local` file in the root of the project and add the environment va
 
 You can use this template for personal or commercial projects. You can modify it as you like.
 
-However, if you use this template for commercial projects, please consider buying me a coffee or sponsoring me on GitHub. It will help me to keep creating more templates like this.
+However, if you use this template for commercial projects, please consider [buying me a coffee](https://www.buymeacoffee.com/lakshaybhushan) or sponsoring me on GitHub. It will help me to keep creating more templates like this.
 
 <a href="https://www.buymeacoffee.com/lakshaybhushan" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50" width="200"></a>
 
