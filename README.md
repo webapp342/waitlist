@@ -90,9 +90,29 @@ Install the dependencies, this project uses `bun` as a package manager:
 bun install
 ```
 
+### Supabase Setup
+
+1. Create a new project at [supabase.com](https://supabase.com)
+2. Go to the SQL editor in your Supabase dashboard
+3. Copy and paste the contents of `supabase-setup.sql` file
+4. Run the SQL to create the waitlist table and setup
+5. Get your project URL and anon key from Settings > API
+
+### Environment Variables
+
+Create a `.env.local` file in the root directory:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_WC_PROJECT_ID=your_walletconnect_project_id
+```
+
 Run the development server:
 
 ```bash
+npm run dev
+# or
 bun dev
 ```
 

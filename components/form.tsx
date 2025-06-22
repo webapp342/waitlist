@@ -72,6 +72,7 @@ export default function Form() {
           </div>
         )}
       </motion.div>
+      
       <motion.div
         variants={itemVariants}
         className="mt-4 flex w-full items-center justify-center gap-1 text-muted-foreground">

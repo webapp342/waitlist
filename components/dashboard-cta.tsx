@@ -10,6 +10,7 @@ import { FaWallet, FaArrowRightFromBracket, FaLink, FaTriangleExclamation } from
 import { toast } from "sonner";
 import { bsc } from 'wagmi/chains';
 import { useEffect, useState } from 'react';
+import { userService } from '@/lib/supabase';
 
 export default function DashboardCTA() {
   const { address, isConnected, chain } = useAccount();
@@ -72,6 +73,27 @@ export default function DashboardCTA() {
       }
     }
   }, [isConnected, actualChainId, hasShownInitialWarning]);
+
+  // Save user to database when wallet is connected
+  useEffect(() => {
+    const saveUserToDatabase = async () => {
+      if (isConnected && address && actualChainId) {
+        try {
+          const userData = {
+            wallet_address: address,
+            chain_id: actualChainId,
+            network_name: getNetworkName(actualChainId),
+          };
+
+          await userService.addUser(userData);
+        } catch (error) {
+          console.error('Error saving user to database:', error);
+        }
+      }
+    };
+
+    saveUserToDatabase();
+  }, [isConnected, address, actualChainId]);
 
   const getNetworkName = (chainId: number): string => {
     // Extended network names including all major networks
@@ -260,6 +282,8 @@ export default function DashboardCTA() {
           duration={0.8}
         />
       </motion.div>
+
+
 
       {/* Wallet Address Display - Using Same Button Design */}
       <motion.div variants={itemVariants} className="mt-6 flex w-full justify-center">
