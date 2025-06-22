@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Figtree } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
+import { Providers } from "@/components/providers";
 
 const FigtreeFont = Figtree({ subsets: ["latin"] });
 
@@ -36,9 +37,11 @@ export default function RootLayout({
       <meta name="twitter:image:width" content="1280" />
       <meta name="twitter:image:height" content="832" />
       <body className={FigtreeFont.className}>
-        {children}
-        <Toaster richColors position="top-center" />
-        <Analytics />
+        <Providers>
+          {children}
+          <Toaster richColors position="top-center" />
+          <Analytics />
+        </Providers>
       </body>
     </html>
   );
