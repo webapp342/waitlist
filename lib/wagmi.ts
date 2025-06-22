@@ -55,7 +55,7 @@ import {
 } from 'wagmi/chains'
 import { injected, walletConnect } from 'wagmi/connectors'
 
-const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || 'your-project-id'
+const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || '8854ffe902172613202b1442500a8f1e'
 
 // Define all chains - both mainnet and testnet
 const chains = [
