@@ -6,11 +6,11 @@ import AnimatedShinyText from "@/components/ui/shimmer-text";
 import { EnhancedButton } from "@/components/ui/enhanced-btn";
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
 import { useAccount, useDisconnect, useChainId, useSwitchChain, useChains } from 'wagmi';
-import { FaWallet, FaArrowRightFromBracket, FaLink, FaTriangleExclamation } from "react-icons/fa6";
+import { FaWallet, FaArrowRightFromBracket, FaLink, FaTriangleExclamation, FaCreditCard } from "react-icons/fa6";
 import { toast } from "sonner";
 import { bsc } from 'wagmi/chains';
 import { useEffect, useState } from 'react';
-import { userService } from '@/lib/supabase';
+import { userService, cardService, Card } from '@/lib/supabase';
 
 export default function DashboardCTA() {
   const { address, isConnected, chain } = useAccount();
@@ -20,6 +20,8 @@ export default function DashboardCTA() {
   const { switchChain, isPending: isSwitching } = useSwitchChain();
   const [showNetworkWarning, setShowNetworkWarning] = useState(false);
   const [hasShownInitialWarning, setHasShownInitialWarning] = useState(false);
+  const [userCards, setUserCards] = useState<Card[]>([]);
+  const [isLoadingCards, setIsLoadingCards] = useState(false);
 
   // Debug logging
   useEffect(() => {
@@ -77,15 +79,13 @@ export default function DashboardCTA() {
   // Save user to database when wallet is connected
   useEffect(() => {
     const saveUserToDatabase = async () => {
-      if (isConnected && address && actualChainId) {
+      if (isConnected && address) {
         try {
-          const userData = {
-            wallet_address: address,
-            chain_id: actualChainId,
-            network_name: getNetworkName(actualChainId),
-          };
-
-          await userService.addUser(userData);
+          await userService.addUser(address);
+          console.log('User saved successfully');
+          
+          // Load user cards after saving user
+          loadUserCards(address);
         } catch (error) {
           console.error('Error saving user to database:', error);
         }
@@ -93,7 +93,21 @@ export default function DashboardCTA() {
     };
 
     saveUserToDatabase();
-  }, [isConnected, address, actualChainId]);
+  }, [isConnected, address]);
+
+  // Load user cards
+  const loadUserCards = async (walletAddress: string) => {
+    setIsLoadingCards(true);
+    try {
+      const cards = await cardService.getUserCards(walletAddress);
+      setUserCards(cards);
+      console.log('User cards loaded:', cards);
+    } catch (error) {
+      console.error('Error loading user cards:', error);
+    } finally {
+      setIsLoadingCards(false);
+    }
+  };
 
   const getNetworkName = (chainId: number): string => {
     // Extended network names including all major networks
@@ -232,6 +246,29 @@ export default function DashboardCTA() {
     }
   };
 
+  const copyCardNumber = async (cardNumber: string) => {
+    await navigator.clipboard.writeText(cardNumber);
+    toast.success("💳 Card number copied to clipboard!");
+  };
+
+  const getCardIcon = (cardType: string) => {
+    const icons = {
+      bronze: "🥉",
+      silver: "🥈", 
+      gold: "🥇"
+    };
+    return icons[cardType as keyof typeof icons] || "💳";
+  };
+
+  const getCardColors = (cardType: string) => {
+    const colors = {
+      bronze: "bg-gradient-to-br from-orange-800 to-orange-600 border-orange-500",
+      silver: "bg-gradient-to-br from-gray-700 to-gray-500 border-gray-400",
+      gold: "bg-gradient-to-br from-yellow-700 to-yellow-500 border-yellow-400"
+    };
+    return colors[cardType as keyof typeof colors] || "bg-gray-800";
+  };
+
   return (
     <motion.div
       className="flex w-full max-w-2xl flex-col gap-2"
@@ -282,8 +319,6 @@ export default function DashboardCTA() {
           duration={0.8}
         />
       </motion.div>
-
-
 
       {/* Wallet Address Display - Using Same Button Design */}
       <motion.div variants={itemVariants} className="mt-6 flex w-full justify-center">
@@ -345,6 +380,82 @@ export default function DashboardCTA() {
           </button>
         </div>
       </motion.div>
+
+      {/* User Cards Display - NEW ADDITION */}
+      <motion.div variants={itemVariants} className="mt-8 w-full">
+        <div className="flex items-center justify-center mb-4">
+          <h3 className="text-xl font-semibold text-yellow-100 flex items-center gap-2">
+            <FaCreditCard /> Your Exclusive Cards
+          </h3>
+        </div>
+        
+        {isLoadingCards ? (
+          <div className="flex justify-center">
+            <div className="text-zinc-400">Loading your cards...</div>
+          </div>
+        ) : userCards.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
+            {userCards.map((card, index) => (
+              <motion.div
+                key={card.id}
+                variants={itemVariants}
+                className={`relative p-6 rounded-xl border-2 ${getCardColors(card.card_type)} text-black cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg`}
+                onClick={() => copyCardNumber(card.card_number)}
+              >
+                <div className="absolute top-4 right-4 text-2xl">
+                  {getCardIcon(card.card_type)}
+                </div>
+                
+                <div className="mb-4">
+                  <div className="text-sm font-medium opacity-80 uppercase tracking-wider">
+                    {card.card_type} Card
+                  </div>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="font-mono text-lg tracking-wider">
+                    {card.card_number.match(/.{1,4}/g)?.join(' ')}
+                  </div>
+                  
+                  <div className="flex justify-between items-end">
+                    <div>
+                      <div className="text-xs opacity-70">CVV</div>
+                      <div className="font-mono text-sm">{card.cvv}</div>
+                    </div>
+                    <div>
+                      <div className="text-xs opacity-70">EXPIRES</div>
+                      <div className="font-mono text-sm">
+                        {new Date(card.expiration_date).toLocaleDateString('en-US', { 
+                          month: '2-digit', 
+                          year: '2-digit' 
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="absolute bottom-2 left-6 text-xs opacity-50">
+                  Click to copy card number
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex justify-center">
+            <div className="text-zinc-400">No cards found. Cards should be generated automatically.</div>
+          </div>
+        )}
+      </motion.div>
+
+      {/* Cards Stats - NEW ADDITION */}
+      {userCards.length > 0 && (
+        <motion.div variants={itemVariants} className="mt-6 text-center">
+          <div className="text-sm text-zinc-400">
+            You have {userCards.length} exclusive card{userCards.length !== 1 ? 's' : ''} • 
+            Cards created on {userCards[0]?.created_at ? new Date(userCards[0].created_at).toLocaleDateString() : 'N/A'}
+          </div>
+        </motion.div>
+      )}
     </motion.div>
   );
 } 
