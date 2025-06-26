@@ -4,11 +4,6 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Temporary debug logging - remove this later
-console.log('🔍 Environment Debug:')
-console.log('NEXT_PUBLIC_SUPABASE_URL:', supabaseUrl)
-console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY:', supabaseAnonKey ? 'SET (length: ' + supabaseAnonKey.length + ')' : 'NOT SET')
-
 // Validate environment variables
 if (!supabaseUrl || supabaseUrl === 'your-supabase-url') {
   console.error('Missing NEXT_PUBLIC_SUPABASE_URL environment variable')

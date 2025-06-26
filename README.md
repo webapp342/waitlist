@@ -1,114 +1,84 @@
-<h1 align="center">Next.js + Notion — Wailtist Template</h1>
+# Next.js + Notion — Waitlist Template with BSC Testnet Integration
 
-<p align="center">
+A modern and beautiful waitlist template built with **Next.js**, featuring wallet connectivity specifically for **BSC Testnet (Chain ID: 97)**, user management with **Supabase**, and automatic card generation for registered users.
 
-<img src ="https://img.shields.io/badge/Next.js-000000.svg?style=for-the-badge&logo=nextdotjs&logoColor=white">
-<img src ="https://img.shields.io/badge/Upstash-00E9A3.svg?style=for-the-badge&logo=Upstash&logoColor=white">
-<img src ="https://img.shields.io/badge/Notion-000000.svg?style=for-the-badge&logo=Notion&logoColor=white">
-<img src ="https://img.shields.io/badge/Resend-000000.svg?style=for-the-badge&logo=Resend&logoColor=white">
-<img src ="https://img.shields.io/badge/shadcn/ui-000000.svg?style=for-the-badge&logo=shadcn/ui&logoColor=white">
-<img src ="https://img.shields.io/badge/Vercel-000000.svg?style=for-the-badge&logo=Vercel&logoColor=white">
+## ✨ **Features**
 
-</p>
+- 🌟 **Modern UI/UX** with smooth animations and particles
+- 🔗 **BSC Testnet Integration** with automatic network switching
+- 💳 **Automatic Card Generation** (Bronze, Silver, Gold cards for each user)
+- 🗄️ **Supabase Database** for user and card management
+- 🔄 **Real-time Network Validation** and switching prompts
+- 📱 **Responsive Design** optimized for all devices
+- ⚡ **Performance Optimized** with reduced particles and smooth animations
 
-![GithubBanner](./app/opengraph-image.png)
+## 🚀 **Tech Stack**
 
-This is a template repository for creating a waitlist using Next.js 14, Notion as a CMS, Upstash Redis for rate limiting and Resend for sending emails with a custom domain.
+- **Framework**: Next.js 15 with App Router
+- **Blockchain**: BSC Testnet (Chain ID: 97)
+- **Wallet Integration**: Wagmi v2 + WalletConnect
+- **Database**: Supabase with Row Level Security
+- **Styling**: Tailwind CSS + Framer Motion
+- **UI Components**: Radix UI + shadcn/ui
+- **TypeScript**: Full type safety
 
-The UI is built using a mix of shadcn/ui, Magic UI and Tailwind CSS.
+## 🎯 **Network Requirements**
 
-**Demo:** [https://nextjs-notion-waitlist.vercel.app](https://nextjs-notion-waitlist.vercel.app)
+This application **ONLY** works with **BSC Testnet**:
+- **Chain ID**: 97
+- **Network Name**: BSC Testnet
+- **Currency**: tBNB (Test BNB)
+- **RPC URL**: https://data-seed-prebsc-1-s1.binance.org:8545/
+- **Block Explorer**: https://testnet.bscscan.com/
 
-**Sample Database** ([Link](https://lakshaybhushan.notion.site/15e45b25609e80408f83ebb97b45882b?v=c949c24dff4a42b3baa31bfb3e8a3354))
-<a href="https://lakshaybhushan.notion.site/15e45b25609e80408f83ebb97b45882b?v=c949c24dff4a42b3baa31bfb3e8a3354" target="_blank" rel="noopener noreferrer">
- <img src ="./public/sample-db.png">
-</a>
+The app will automatically:
+- ✅ Detect your current network
+- ⚠️ Show warnings if you're on the wrong network
+- 🔄 Prompt automatic network switching
+- 🚫 Block features until you're on BSC Testnet
 
-## Features
+## 📋 **Prerequisites**
 
-- **Next.js 14**: The most popular React framework.
-- **Notion as a CMS**: Use Notion to manage your waitlist users.
-- **Upstash Redis**: Use Upstash Redis to rate limit the number of signups in a given time period.
-- **Resend**: Use Resend to send emails to users who sign up.
-- **Vercel**: Deploy the app to Vercel with a single click.
-- **shadcn/ui**: Use shadcn/ui for building the UI components.
+Before you begin, ensure you have:
+- Node.js 18+ installed
+- A wallet with BSC Testnet configured (MetaMask recommended)
+- Test BNB tokens for BSC Testnet (get from [BSC Testnet Faucet](https://testnet.binance.org/faucet-smart))
+- Supabase account and project
 
-## Why Notion?
+## 🛠️ **Installation**
 
-Notion is used everywhere nowadays. It's a great tool for managing content and it's free to use. But a lot of people don't know that they can use Notion as a CMS for their websites which stands for Content Management System. This template is a very basic implementation of using Notion as a CMS for a waitlist.
-
-However, You can extend it to use Notion for other types of content as well. Using Notion as a CMS is a great way to manage content without having to build a backend or a database. You can use Notion's API to fetch data from your Notion workspace and display it on your website.
-
-## How to get started?
-
-There are a few things you need to do before you can use this template:
-
-### Notion
-
-Assuming that you have a Notion account and a workspace, you can create a new database in your workspace and add the following columns:
-
-- **Name**: Title
-- **Email**: Email
-
-Now you need to get the `SECRET` key for your workspace. You can get it from the [Notion Integrations page](https://www.notion.so/my-integrations). You will need this key to fetch data from your workspace.
-
-Now you need to get the ID of the database you created. You can get it from the URL of the database. It will look something like this:
-
-`https://www.notion.so/{USERNAME}/{DATABASE_ID}?v={NUMBERS}&pvs={NUMBERS}`
-
-You need to copy the `DATABASE_ID` from the URL.
-
-### Upstash Redis
-
-It's fairly simple to get started with Upstash Redis. You can sign up for a free account and create a new Redis database. You will get a `REST URL` and a `TOKEN` that you can use to interact with the Redis database.
-
-### Resend
-
-You need to sign up for a Resend account if not already. Then you need to add your domain and verify the DNS records. Once you have done that, you can generate an API key from the Resend dashboard which you will need to send emails.
-
-## Building with this template
-
-There are two ways to use this template:
-
-1. **Deploy to Vercel**: Click the button below to deploy this template to Vercel with a single click.
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Flakshaybhushan%2Fnextjs-notion-waitlist-template&env=NOTION_SECRET,NOTION_DB,RESEND_API_KEY,UPSTASH_REDIS_REST_URL,UPSTASH_REDIS_REST_TOKEN)
-
-The above button will create a new Vercel project and clone this repository into your GitHub account. You will need to provide the following environment variables:
-
-- `NOTION_SECRET`: Your Notion secret key.
-- `NOTION_DB`: The ID of the Notion database you want to use.
-- `RESEND_API_KEY`: Your Resend API key.
-- `UPSTASH_REDIS_REST_URL`: Your Upstash Redis REST URL.
-- `UPSTASH_REDIS_REST_TOKEN`: Your Upstash Redis REST token.
-
-2. **Manual Setup**: Fork this repository and clone it to your local machine.
-
-Install the dependencies, this project uses `bun` as a package manager:
+### 1. Clone and Install
 
 ```bash
+git clone https://github.com/your-username/nextjs-notion-waitlist-template
+cd nextjs-notion-waitlist-template
+npm install
+# or
 bun install
 ```
 
-### Supabase Setup
+### 2. Supabase Setup
 
 1. Create a new project at [supabase.com](https://supabase.com)
 2. Go to the SQL editor in your Supabase dashboard
-3. Copy and paste the contents of `supabase-setup.sql` file
-4. Run the SQL to create the waitlist table and setup
+3. Copy and paste the contents of `database-migration.sql` file
+4. Run the SQL to create the users and cards tables with all triggers
 5. Get your project URL and anon key from Settings > API
 
-### Environment Variables
+### 3. Environment Variables
 
 Create a `.env.local` file in the root directory:
 
 ```env
+# Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# WalletConnect Project ID (optional - has default)
 NEXT_PUBLIC_WC_PROJECT_ID=your_walletconnect_project_id
 ```
 
-Run the development server:
+### 4. Start Development Server
 
 ```bash
 npm run dev
@@ -116,22 +86,129 @@ npm run dev
 bun dev
 ```
 
-To run the email server:
+Visit `http://localhost:3000` and connect your wallet with BSC Testnet!
 
-```bash
-bun email
+## 🗄️ **Database Schema**
+
+### Users Table
+```sql
+- id (BIGSERIAL PRIMARY KEY)
+- wallet_address (VARCHAR(42) UNIQUE)
+- created_at (TIMESTAMP)
 ```
 
-Create a `.env.local` file in the root of the project and add the environment variables mentioned above. You can also have a look at the `.env.example` file for reference.
+### Cards Table
+```sql
+- id (BIGSERIAL PRIMARY KEY)
+- user_id (BIGINT, Foreign Key)
+- card_number (VARCHAR(16), 16-digit number)
+- cvv (VARCHAR(3), 3-digit code)
+- expiration_date (DATE, calculated from user creation)
+- card_type (VARCHAR(10): 'bronze', 'silver', 'gold')
+- created_at (TIMESTAMP)
+```
 
-## License
+## 🎮 **How It Works**
 
-You can use this template for personal or commercial projects. You can modify it as you like.
+1. **Connect Wallet**: User connects their wallet (MetaMask, WalletConnect, etc.)
+2. **Network Check**: App checks if user is on BSC Testnet (Chain ID: 97)
+3. **Auto Switch**: If on wrong network, prompts automatic switching
+4. **User Creation**: Saves wallet address to Supabase database
+5. **Card Generation**: Database trigger creates 3 cards automatically:
+   - 🥉 **Bronze Card**: Expires in 2 years
+   - 🥈 **Silver Card**: Expires in 3 years  
+   - 🥇 **Gold Card**: Expires in 4 years
+6. **Dashboard Access**: User can view cards and interact with the platform
 
-However, if you use this template for commercial projects, please consider [buying me a coffee](https://www.buymeacoffee.com/lakshaybhushan) or sponsoring me on GitHub. It will help me to keep creating more templates like this.
+## 🔧 **Customization**
 
-<a href="https://www.buymeacoffee.com/lakshaybhushan" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="50" width="200"></a>
+### Change Target Network
+
+To change from BSC Testnet to another network:
+
+1. Update `lib/wagmi.ts`:
+```typescript
+export const TARGET_CHAIN_ID = 97; // Change this
+export const TARGET_CHAIN_CONFIG = {
+  chainId: '0x61', // Update hex value
+  chainName: 'Your Network',
+  // ... other config
+};
+```
+
+2. Update all references in `components/dashboard-cta.tsx`
+
+### Modify Card Generation
+
+Edit the database trigger in `database-migration.sql`:
+```sql
+-- Modify expiration dates, card types, or generation logic
+CREATE OR REPLACE FUNCTION create_user_cards(p_user_id BIGINT)
+-- ... customize as needed
+```
+
+## 📱 **Responsive Features**
+
+- **Desktop**: Full feature set with enhanced animations
+- **Mobile**: Optimized particle count and simplified interactions
+- **Touch**: Optimized for mobile wallet apps and touch interactions
+
+## 🚀 **Deployment**
+
+### Deploy to Vercel
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fyour-username%2Fnextjs-notion-waitlist-template&env=NEXT_PUBLIC_SUPABASE_URL,NEXT_PUBLIC_SUPABASE_ANON_KEY,NEXT_PUBLIC_WC_PROJECT_ID)
+
+### Manual Deployment
+
+1. Build the project:
+```bash
+npm run build
+```
+
+2. Set environment variables in your hosting platform
+3. Deploy the `.next` folder
+
+## 🔍 **Debugging**
+
+The app includes a debug component that shows:
+- Current chain ID
+- Network name
+- Connection status
+- BSC Testnet validation
+
+Enable it in development by keeping the `<DebugChain />` component.
+
+## 🛡️ **Security Features**
+
+- ✅ Row Level Security (RLS) enabled on all tables
+- ✅ Wallet address validation
+- ✅ Network validation before any operations
+- ✅ SQL injection protection via Supabase
+- ✅ Environment variable validation
+
+## 🤝 **Contributing**
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📝 **License**
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 **Support**
+
+If you encounter issues:
+
+1. **Network Issues**: Ensure you're on BSC Testnet (Chain ID: 97)
+2. **Database Issues**: Check your Supabase configuration and run the migration script
+3. **Wallet Issues**: Try refreshing the page and reconnecting your wallet
+
+For further support, please create an issue in the repository.
 
 ---
 
-If you have any questions or need help with this template, feel free to reach out to me on [Twitter](https://x.com/blakssh) or leave a comment on this repository.
+**Made with ❤️ for the BSC Testnet ecosystem**

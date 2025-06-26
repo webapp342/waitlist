@@ -6,11 +6,12 @@ import AnimatedShinyText from "@/components/ui/shimmer-text";
 import { EnhancedButton } from "@/components/ui/enhanced-btn";
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
 import { useAccount, useDisconnect, useChainId, useSwitchChain, useChains } from 'wagmi';
-import { FaWallet, FaArrowRightFromBracket, FaLink, FaTriangleExclamation, FaCreditCard } from "react-icons/fa6";
+import { FaWallet, FaArrowRightFromBracket, FaTriangleExclamation, FaCreditCard } from "react-icons/fa6";
 import { toast } from "sonner";
-import { bsc } from 'wagmi/chains';
+import { bscTestnet } from 'wagmi/chains';
 import { useEffect, useState } from 'react';
 import { userService, cardService, Card } from '@/lib/supabase';
+import { BSC_TESTNET_CHAIN_ID, BSC_TESTNET_CONFIG } from '@/lib/wagmi';
 
 export default function DashboardCTA() {
   const { address, isConnected, chain } = useAccount();
@@ -18,10 +19,13 @@ export default function DashboardCTA() {
   const chainId = useChainId();
   const chains = useChains();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
-  const [showNetworkWarning, setShowNetworkWarning] = useState(false);
-  const [hasShownInitialWarning, setHasShownInitialWarning] = useState(false);
   const [userCards, setUserCards] = useState<Card[]>([]);
   const [isLoadingCards, setIsLoadingCards] = useState(false);
+
+  // Clear any existing toasts on component mount
+  useEffect(() => {
+    toast.dismiss();
+  }, []);
 
   // Debug logging
   useEffect(() => {
@@ -34,52 +38,14 @@ export default function DashboardCTA() {
     });
   }, [chainId, chain, isConnected, chains]);
 
-  // Check if user is on the correct network (BSC)
-  // Force number conversion to handle any type issues
+  // Check if user is on the correct network (BSC TESTNET - Chain ID 97)
   const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
-  const isOnBSC = actualChainId === 56;
+  const isOnBSCTestnet = actualChainId === BSC_TESTNET_CHAIN_ID;
 
-  // Monitor network changes and show warnings
-  useEffect(() => {
-    if (isConnected && actualChainId !== undefined && actualChainId !== null) {
-      const currentChainId = Number(actualChainId);
-      console.log('Network Check - Current Chain ID:', currentChainId);
-      console.log('Network Check - Is on BSC:', currentChainId === 56);
-      
-      if (currentChainId !== 56) {
-        setShowNetworkWarning(true);
-        
-        // Only show toast if we haven't shown it yet for this connection
-        if (!hasShownInitialWarning) {
-          // Get network name for the alert
-          const networkName = getNetworkName(currentChainId);
-          
-          toast.warning(`⚠️ Wrong Network Detected! You're on ${networkName} (Chain ID: ${currentChainId}). Please switch to BSC Network (Chain ID: 56).`, {
-            duration: 10000,
-            position: 'top-center',
-          });
-          
-          setHasShownInitialWarning(true);
-        }
-      } else {
-        setShowNetworkWarning(false);
-        
-        // Only show success toast if we were previously on wrong network
-        if (hasShownInitialWarning) {
-          toast.success("✅ Connected to BSC Network!", {
-            duration: 2000,
-            position: 'top-center',
-          });
-          setHasShownInitialWarning(false);
-        }
-      }
-    }
-  }, [isConnected, actualChainId, hasShownInitialWarning]);
-
-  // Save user to database when wallet is connected
+  // Save user to database when wallet is connected to correct network
   useEffect(() => {
     const saveUserToDatabase = async () => {
-      if (isConnected && address) {
+      if (isConnected && address && isOnBSCTestnet) {
         try {
           await userService.addUser(address);
           console.log('User saved successfully');
@@ -93,7 +59,7 @@ export default function DashboardCTA() {
     };
 
     saveUserToDatabase();
-  }, [isConnected, address]);
+  }, [isConnected, address, isOnBSCTestnet]);
 
   // Load user cards
   const loadUserCards = async (walletAddress: string) => {
@@ -109,133 +75,45 @@ export default function DashboardCTA() {
     }
   };
 
-  const getNetworkName = (chainId: number): string => {
-    // Extended network names including all major networks
-    const networkNames: { [key: number]: string } = {
-      // Mainnets
-      1: "Ethereum Mainnet",
-      56: "BSC Smart Chain",
-      137: "Polygon",
-      42161: "Arbitrum One",
-      43114: "Avalanche",
-      59144: "Linea Mainnet",
-      10: "Optimism",
-      250: "Fantom",
-      25: "Cronos",
-      100: "Gnosis",
-      1284: "Moonbeam",
-      1285: "Moonriver",
-      42220: "Celo",
-      1666600000: "Harmony",
-      8453: "Base",
-      534352: "Scroll",
-      324: "zkSync Era",
-      5000: "Mantle",
-      81457: "Blast",
-      1088: "Metis",
-      1313161554: "Aurora",
-      8217: "Klaytn",
-      1101: "Polygon zkEVM",
-      42170: "Arbitrum Nova",
-      1116: "Core",
-      40: "Telos",
-      7700: "Canto",
-      5234: "Humanode",
-      7001: "ZetaChain",
-      169: "Manta Pacific",
-      34443: "Mode",
-      60808: "BOB",
-      2222: "Kava",
-      122: "Fuse",
-      66: "OKXChain",
-      82: "Meter",
-      888: "Wanchain",
-      288: "Boba",
-      57: "Syscoin",
-      2020: "Ronin",
-      2021: "Saigon Testnet",
-      148: "Shimmer EVM",
-      1329: "Sei",
-      // Testnets
-      17000: "Holesky",
-      11155111: "Sepolia",
-      97: "BSC Testnet",
-      5: "Goerli",
-      534351: "Scroll Sepolia",
-      59140: "Linea Goerli",
-      80001: "Polygon Mumbai",
-      421614: "Arbitrum Sepolia",
-      11155420: "Optimism Sepolia",
-      84532: "Base Sepolia",
-      43113: "Avalanche Fuji",
-      4002: "Fantom Testnet",
-      44787: "Celo Alfajores",
-      10200: "Gnosis Chiado",
-      5001: "Mantle Testnet",
-      168587773: "Blast Sepolia",
-      7000: "ZetaChain Athens",
-      280: "zkSync Era Testnet",
-      // Add more networks as needed
-    };
-    
-    return networkNames[chainId] || `Unknown Network`;
-  };
-
-  const getChainInfo = () => {
-    const currentChainId = actualChainId ? Number(actualChainId) : null;
-    
-    if (currentChainId === null || currentChainId === undefined) {
-      return "No Network Detected";
-    }
-    
-    // If on BSC, show success state
-    if (currentChainId === 56) {
-      return "✅ BSC Smart Chain (Chain ID: 56)";
-    }
-    
-    // Show current network with warning
-    const networkName = getNetworkName(currentChainId);
-    return `⚠️ ${networkName} (Chain ID: ${currentChainId})`;
-  };
-
   const handleNetworkSwitch = async () => {
     try {
-      toast.loading("🔄 Switching to BSC Network...", {
-        id: 'network-switch',
-        position: 'top-center',
-      });
-      
-      await switchChain({ chainId: bsc.id });
-      
-      toast.success("✅ Successfully switched to BSC Network!", {
-        id: 'network-switch',
-        position: 'top-center',
-      });
-      
-      setShowNetworkWarning(false);
+      // Try wagmi first
+      try {
+        await switchChain({ chainId: bscTestnet.id });
+        return;
+      } catch (wagmiError: any) {
+        console.log('Wagmi switch failed, trying manual method:', wagmiError);
+        
+        // Manual network addition/switch using window.ethereum
+        const ethereum = (window as any).ethereum;
+        if (ethereum) {
+          try {
+            // Try to switch first
+            await ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: BSC_TESTNET_CONFIG.chainId }],
+            });
+          } catch (switchError: any) {
+            // This error code indicates that the chain has not been added to MetaMask
+            if (switchError.code === 4902) {
+              try {
+                await ethereum.request({
+                  method: 'wallet_addEthereumChain',
+                  params: [BSC_TESTNET_CONFIG],
+                });
+              } catch (addError) {
+                throw addError;
+              }
+            } else {
+              throw switchError;
+            }
+          }
+        } else {
+          throw new Error('MetaMask not found');
+        }
+      }
     } catch (error: any) {
       console.error('Network switch failed:', error);
-      
-      // More specific error handling
-      if (error?.code === 4902) {
-        toast.error("❌ BSC Network not found in your wallet. Please add it manually.", {
-          id: 'network-switch',
-          duration: 5000,
-          position: 'top-center',
-        });
-      } else if (error?.code === 4001) {
-        toast.error("❌ Network switch rejected by user.", {
-          id: 'network-switch',
-          duration: 3000,
-          position: 'top-center',
-        });
-      } else {
-        toast.error("❌ Failed to switch network. Please switch manually in your wallet.", {
-          id: 'network-switch',
-          duration: 5000,
-          position: 'top-center',
-        });
-      }
     }
   };
 
@@ -275,24 +153,12 @@ export default function DashboardCTA() {
       variants={containerVariants}
       initial="hidden"
       animate="visible">
-      
-      {/* Network Warning Banner */}
-      {showNetworkWarning && (
-        <motion.div variants={itemVariants} className="mb-4">
-          <div className="flex items-center justify-center p-4 bg-red-500/20 border border-red-500/30 rounded-lg">
-            <FaTriangleExclamation className="mr-2 text-red-400" />
-            <span className="text-red-300 text-sm text-center">
-              Wrong Network! This app requires BSC Network. Please switch to continue.
-            </span>
-          </div>
-        </motion.div>
-      )}
 
       <motion.div variants={itemVariants}>
         <div className="flex items-center justify-center">
           <div className="flex w-fit items-center justify-center rounded-full bg-muted/80 text-center">
             <AnimatedShinyText className="px-4 py-1">
-              <span>{isOnBSC ? "Connected successfully!" : "Please switch network"}</span>
+              <span>{isOnBSCTestnet ? "Connected to BSC Testnet!" : "Please switch to BSC Testnet"}</span>
             </AnimatedShinyText>
           </div>
         </div>
@@ -315,7 +181,7 @@ export default function DashboardCTA() {
       <motion.div variants={itemVariants}>
         <TextBlur
           className="mx-auto max-w-[27rem] pt-1.5 text-center text-base text-zinc-300 sm:text-lg"
-          text={isOnBSC ? "Your wallet has been successfully connected to BSC Network. Welcome to the platform!" : "Please switch to BSC Network to access all features."}
+          text={isOnBSCTestnet ? "Your wallet has been successfully connected to BSC Testnet. Welcome to the platform!" : "Please switch to BSC Testnet to access all features."}
           duration={0.8}
         />
       </motion.div>
@@ -332,18 +198,8 @@ export default function DashboardCTA() {
             {address ? `${address.slice(0, 8)}...${address.slice(-8)} (Click to Copy)` : "No Address"}
           </EnhancedButton>
           
-          <EnhancedButton
-            variant="expandIcon"
-            Icon={FaLink}
-            onClick={handleNetworkSwitch}
-            iconPlacement="right"
-            disabled={isSwitching}
-            className={`w-full ${!isOnBSC ? 'bg-red-600 hover:bg-red-700 border-red-500 text-white' : ''}`}>
-            {isSwitching ? "Switching..." : getChainInfo()}
-          </EnhancedButton>
-          
           {/* Additional Switch Button when on wrong network */}
-          {!isOnBSC && (
+          {!isOnBSCTestnet && (
             <EnhancedButton
               variant="expandIcon"
               Icon={FaTriangleExclamation}
@@ -351,7 +207,7 @@ export default function DashboardCTA() {
               iconPlacement="right"
               disabled={isSwitching}
               className="w-full bg-orange-600 hover:bg-orange-700 border-orange-500 text-white">
-              {isSwitching ? "Switching Network..." : "🔄 Switch to BSC Network"}
+              {isSwitching ? "Switching Network..." : "🔄 Switch to BSC Testnet"}
             </EnhancedButton>
           )}
           
@@ -363,96 +219,94 @@ export default function DashboardCTA() {
             className="w-full mt-2">
             Disconnect Wallet
           </EnhancedButton>
-          
-          {/* Debug button - remove this in production */}
-          <button
-            onClick={() => {
-              const currentId = actualChainId || 'undefined';
-              const networkName = actualChainId ? getNetworkName(actualChainId) : 'No Chain';
-              toast.info(`Debug: Chain ID is ${currentId} (${networkName})`, {
-                duration: 5000,
-                position: 'bottom-center',
-              });
-              console.log('Manual chain check:', { actualChainId, chain, chainId, isOnBSC });
-            }}
-            className="w-full mt-2 p-2 text-xs bg-gray-800 hover:bg-gray-700 rounded border border-gray-600">
-            🔍 Debug: Check Current Chain
-          </button>
         </div>
       </motion.div>
 
-      {/* User Cards Display - NEW ADDITION */}
-      <motion.div variants={itemVariants} className="mt-8 w-full">
-        <div className="flex items-center justify-center mb-4">
-          <h3 className="text-xl font-semibold text-yellow-100 flex items-center gap-2">
-            <FaCreditCard /> Your Exclusive Cards
-          </h3>
-        </div>
-        
-        {isLoadingCards ? (
-          <div className="flex justify-center">
-            <div className="text-zinc-400">Loading your cards...</div>
+      {/* User Cards Display - Only show when on correct network */}
+      {isOnBSCTestnet && (
+        <motion.div variants={itemVariants} className="mt-8 w-full">
+          <div className="flex items-center justify-center mb-4">
+            <h3 className="text-xl font-semibold text-yellow-100 flex items-center gap-2">
+              <FaCreditCard /> Your Exclusive Cards
+            </h3>
           </div>
-        ) : userCards.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
-            {userCards.map((card, index) => (
-              <motion.div
-                key={card.id}
-                variants={itemVariants}
-                className={`relative p-6 rounded-xl border-2 ${getCardColors(card.card_type)} text-black cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg`}
-                onClick={() => copyCardNumber(card.card_number)}
-              >
-                <div className="absolute top-4 right-4 text-2xl">
-                  {getCardIcon(card.card_type)}
-                </div>
-                
-                <div className="mb-4">
-                  <div className="text-sm font-medium opacity-80 uppercase tracking-wider">
-                    {card.card_type} Card
-                  </div>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="font-mono text-lg tracking-wider">
-                    {card.card_number.match(/.{1,4}/g)?.join(' ')}
+          
+          {isLoadingCards ? (
+            <div className="flex justify-center">
+              <div className="text-zinc-400">Loading your cards...</div>
+            </div>
+          ) : userCards.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
+              {userCards.map((card, index) => (
+                <motion.div
+                  key={card.id}
+                  variants={itemVariants}
+                  className={`relative p-6 rounded-xl border-2 ${getCardColors(card.card_type)} text-black cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg`}
+                  onClick={() => copyCardNumber(card.card_number)}
+                >
+                  <div className="absolute top-4 right-4 text-2xl">
+                    {getCardIcon(card.card_type)}
                   </div>
                   
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <div className="text-xs opacity-70">CVV</div>
-                      <div className="font-mono text-sm">{card.cvv}</div>
+                  <div className="mb-4">
+                    <div className="text-sm font-medium opacity-80 uppercase tracking-wider">
+                      {card.card_type} Card
                     </div>
-                    <div>
-                      <div className="text-xs opacity-70">EXPIRES</div>
-                      <div className="font-mono text-sm">
-                        {new Date(card.expiration_date).toLocaleDateString('en-US', { 
-                          month: '2-digit', 
-                          year: '2-digit' 
-                        })}
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="font-mono text-lg tracking-wider">
+                      {card.card_number.match(/.{1,4}/g)?.join(' ')}
+                    </div>
+                    
+                    <div className="flex justify-between items-end">
+                      <div>
+                        <div className="text-xs opacity-70">CVV</div>
+                        <div className="font-mono text-sm">{card.cvv}</div>
+                      </div>
+                      <div>
+                        <div className="text-xs opacity-70">EXPIRES</div>
+                        <div className="font-mono text-sm">
+                          {new Date(card.expiration_date).toLocaleDateString('en-US', { 
+                            month: '2-digit', 
+                            year: '2-digit' 
+                          })}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-                
-                <div className="absolute bottom-2 left-6 text-xs opacity-50">
-                  Click to copy card number
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex justify-center">
-            <div className="text-zinc-400">No cards found. Cards should be generated automatically.</div>
-          </div>
-        )}
-      </motion.div>
+                  
+                  <div className="absolute bottom-2 left-6 text-xs opacity-50">
+                    Click to copy card number
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <div className="text-zinc-400">No cards found. Cards should be generated automatically.</div>
+            </div>
+          )}
+        </motion.div>
+      )}
 
-      {/* Cards Stats - NEW ADDITION */}
-      {userCards.length > 0 && (
+      {/* Cards Stats - Only show when on correct network */}
+      {isOnBSCTestnet && userCards.length > 0 && (
         <motion.div variants={itemVariants} className="mt-6 text-center">
           <div className="text-sm text-zinc-400">
             You have {userCards.length} exclusive card{userCards.length !== 1 ? 's' : ''} • 
             Cards created on {userCards[0]?.created_at ? new Date(userCards[0].created_at).toLocaleDateString() : 'N/A'}
+          </div>
+        </motion.div>
+      )}
+
+      {/* Network requirement notice */}
+      {!isOnBSCTestnet && (
+        <motion.div variants={itemVariants} className="mt-8 text-center">
+          <div className="p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
+            <p className="text-yellow-300 text-sm">
+              🔐 Connect to BSC Testnet to view your exclusive cards and access all features.
+            </p>
           </div>
         </motion.div>
       )}

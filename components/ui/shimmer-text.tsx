@@ -22,11 +22,11 @@ const AnimatedShinyText: FC<AnimatedShinyTextProps> = ({
       className={cn(
         "mx-auto max-w-md text-yellow-100/45",
 
-        // Shimmer effect
-        "animate-shimmer bg-clip-text bg-no-repeat [background-position:0_0] [background-size:var(--shimmer-width)_100%] [transition:background-position_1s_cubic-bezier(.6,.6,0,1)_infinite]",
+        // Optimize shimmer effect
+        "will-change-[background-position] animate-shimmer bg-clip-text bg-no-repeat [background-position:0_0] [background-size:var(--shimmer-width)_100%]",
 
-        // Shimmer gradient
-        "bg-gradient-to-r from-transparent via-black/80 via-50% to-transparent dark:via-yellow-300",
+        // Optimize shimmer gradient
+        "[transition:background-position_2s_ease-in-out_infinite] bg-gradient-to-r from-transparent via-black/80 via-50% to-transparent dark:via-yellow-300/80",
 
         className,
       )}>

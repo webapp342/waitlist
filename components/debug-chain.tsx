@@ -2,6 +2,7 @@
 
 import { useAccount, useChainId, useChains } from 'wagmi';
 import { useEffect } from 'react';
+import { BSC_TESTNET_CHAIN_ID } from '@/lib/wagmi';
 
 export default function DebugChain() {
   const { address, isConnected, chain, connector } = useAccount();
@@ -17,6 +18,7 @@ export default function DebugChain() {
       console.log('connector:', connector);
       console.log('address:', address);
       console.log('configured chains:', chains);
+      console.log('Is BSC Testnet:', (chain?.id || chainId) === BSC_TESTNET_CHAIN_ID);
       console.log('======================');
     }
   }, [isConnected, chainId, chain, connector, address, chains]);
@@ -30,7 +32,10 @@ export default function DebugChain() {
       <div>chain?.id: {chain?.id}</div>
       <div>chain?.name: {chain?.name}</div>
       <div>connector: {connector?.name}</div>
-      <div>Is BSC: {(chain?.id || chainId) === 56 ? 'YES' : 'NO'}</div>
+      <div className={`font-bold ${(chain?.id || chainId) === BSC_TESTNET_CHAIN_ID ? 'text-green-400' : 'text-red-400'}`}>
+        BSC Testnet: {(chain?.id || chainId) === BSC_TESTNET_CHAIN_ID ? 'YES ✅' : 'NO ❌'}
+      </div>
+      <div className="text-xs mt-2 opacity-70">Required: Chain ID 97</div>
     </div>
   );
 } 

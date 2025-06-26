@@ -1,5 +1,6 @@
 import { http, createConfig } from 'wagmi'
 import { 
+  bscTestnet,
   bsc, 
   mainnet, 
   arbitrum, 
@@ -39,7 +40,6 @@ import {
   ronin,
   holesky,
   sepolia,
-  bscTestnet,
   scrollSepolia,
   lineaTestnet,
   polygonMumbai,
@@ -57,9 +57,11 @@ import { injected, walletConnect } from 'wagmi/connectors'
 
 const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || '8854ffe902172613202b1442500a8f1e'
 
-// Define all chains - both mainnet and testnet
+// BSC Testnet'i öncelikli olarak tanımla
 const chains = [
-  // Mainnets
+  // BSC Testnet öncelikli
+  bscTestnet,
+  // Diğer ağlar
   bsc,
   mainnet,
   arbitrum,
@@ -100,7 +102,6 @@ const chains = [
   // Testnets
   holesky,
   sepolia,
-  bscTestnet,
   scrollSepolia,
   lineaTestnet,
   polygonMumbai,
@@ -134,6 +135,20 @@ export const config = createConfig({
   // Enable multi injected provider discovery
   multiInjectedProviderDiscovery: true,
 })
+
+// BSC Testnet sabitlerini export et
+export const BSC_TESTNET_CHAIN_ID = 97;
+export const BSC_TESTNET_CONFIG = {
+  chainId: '0x61', // 97 in hex
+  chainName: 'BSC Testnet',
+  nativeCurrency: {
+    name: 'BNB',
+    symbol: 'tBNB',
+    decimals: 18,
+  },
+  rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545/'],
+  blockExplorerUrls: ['https://testnet.bscscan.com/'],
+};
 
 declare module 'wagmi' {
   interface Register {

@@ -9,10 +9,16 @@ import DebugChain from "@/components/debug-chain";
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 
 export default function Dashboard() {
   const { isConnected } = useAccount();
   const router = useRouter();
+
+  // Clear any existing toasts on dashboard load
+  useEffect(() => {
+    toast.dismiss();
+  }, []);
 
   // Redirect to home if wallet is not connected
   useEffect(() => {
@@ -38,9 +44,9 @@ export default function Dashboard() {
       <Footer />
 
       <Particles
-        quantityDesktop={350}
-        quantityMobile={100}
-        ease={80}
+        quantityDesktop={150}
+        quantityMobile={50}
+        ease={120}
         color={"#F7FF9B"}
         refresh
       />

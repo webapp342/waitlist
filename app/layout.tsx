@@ -39,9 +39,28 @@ export default function RootLayout({
       <body className={FigtreeFont.className}>
         <Providers>
           {children}
-          <Toaster richColors position="top-center" />
+          <Toaster 
+            richColors 
+            position="top-center" 
+            toastOptions={{
+              duration: 3000,
+            }}
+          />
           <Analytics />
         </Providers>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Clear any existing toasts on page load
+              if (typeof window !== 'undefined') {
+                setTimeout(() => {
+                  const toasts = document.querySelectorAll('[data-sonner-toast]');
+                  toasts.forEach(toast => toast.remove());
+                }, 100);
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   );
