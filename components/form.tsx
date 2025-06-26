@@ -9,9 +9,10 @@ import { containerVariants, itemVariants } from "@/lib/animation-variants";
 import { useAccount, useConnect, useDisconnect, useChainId, useSwitchChain } from 'wagmi';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { bscTestnet } from 'wagmi/chains';
-import { BSC_TESTNET_CHAIN_ID } from '@/lib/wagmi';
 import { toast } from "sonner";
+
+// BSC Testnet Chain ID
+const BSC_TESTNET_ID = 97;
 
 export default function Form() {
   const { address, isConnected, chain } = useAccount();
@@ -56,7 +57,7 @@ export default function Form() {
       const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
       
       // Check if user is on BSC Testnet
-      if (actualChainId === BSC_TESTNET_CHAIN_ID) {
+      if (actualChainId === BSC_TESTNET_ID) {
         // User is on correct network, redirect to dashboard
         const timer = setTimeout(() => {
           setIsRedirecting(true);
@@ -114,7 +115,7 @@ export default function Form() {
           </div>
         )}
       </motion.div>
-
+      
       {/* Network Info */}
       {isConnected && !isRedirecting && (
         <motion.div variants={itemVariants} className="mt-2">

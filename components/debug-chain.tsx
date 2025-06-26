@@ -2,7 +2,8 @@
 
 import { useAccount, useChainId, useChains } from 'wagmi';
 import { useEffect } from 'react';
-import { BSC_TESTNET_CHAIN_ID } from '@/lib/wagmi';
+
+const BSC_TESTNET_CHAIN_ID = 97;
 
 export default function DebugChain() {
   const { address, isConnected, chain, connector } = useAccount();

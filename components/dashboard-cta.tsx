@@ -8,12 +8,16 @@ import { containerVariants, itemVariants } from "@/lib/animation-variants";
 import { useAccount, useDisconnect, useChainId, useSwitchChain, useChains } from 'wagmi';
 import { FaWallet, FaArrowRightFromBracket, FaTriangleExclamation, FaCreditCard } from "react-icons/fa6";
 import { toast } from "sonner";
-import { bscTestnet } from 'wagmi/chains';
 import { useEffect, useState } from 'react';
 import { userService, cardService, Card } from '@/lib/supabase';
-import { BSC_TESTNET_CHAIN_ID, BSC_TESTNET_CONFIG } from '@/lib/wagmi';
+import { UserData } from '@/types';
+import { ethers } from 'ethers';
 
-export default function DashboardCTA() {
+interface DashboardCTAProps {
+  userData: UserData;
+}
+
+export default function DashboardCTA({ userData }: DashboardCTAProps) {
   const { address, isConnected, chain } = useAccount();
   const { disconnect } = useDisconnect();
   const chainId = useChainId();
@@ -38,10 +42,10 @@ export default function DashboardCTA() {
     });
   }, [chainId, chain, isConnected, chains]);
 
-  // Check if user is on the correct network (BSC TESTNET - Chain ID 97)
+  // Check if user is on the correct network (BSC Testnet - Chain ID 97)
   const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
-  const isOnBSCTestnet = actualChainId === BSC_TESTNET_CHAIN_ID;
-
+  const isOnBSCTestnet = actualChainId === 97; // BSC Testnet Chain ID
+        
   // Save user to database when wallet is connected to correct network
   useEffect(() => {
     const saveUserToDatabase = async () => {
@@ -75,11 +79,41 @@ export default function DashboardCTA() {
     }
   };
 
+  // Calculate staked amount and determine card reservation status
+  const getStakedAmount = () => {
+    try {
+      if (!userData.stakedAmount) return 0;
+      // Convert from wei if needed, or parse directly if already formatted
+      if (userData.stakedAmount.includes('.')) {
+        return parseFloat(userData.stakedAmount);
+      }
+      return parseFloat(ethers.formatEther(userData.stakedAmount));
+    } catch {
+      return 0;
+    }
+  };
+
+  const stakedAmount = getStakedAmount();
+
+  // Determine if card should be reserved based on staking amount
+  const isCardReserved = (cardType: string) => {
+    switch (cardType) {
+      case 'bronze':
+        return stakedAmount >= 1000 && stakedAmount < 2000;
+      case 'silver':
+        return stakedAmount >= 2000 && stakedAmount < 3500;
+      case 'gold':
+        return stakedAmount >= 3500;
+      default:
+        return false;
+    }
+  };
+
   const handleNetworkSwitch = async () => {
     try {
       // Try wagmi first
       try {
-        await switchChain({ chainId: bscTestnet.id });
+        await switchChain({ chainId: 97 }); // BSC Testnet Chain ID
         return;
       } catch (wagmiError: any) {
         console.log('Wagmi switch failed, trying manual method:', wagmiError);
@@ -91,7 +125,7 @@ export default function DashboardCTA() {
             // Try to switch first
             await ethereum.request({
               method: 'wallet_switchEthereumChain',
-              params: [{ chainId: BSC_TESTNET_CONFIG.chainId }],
+              params: [{ chainId: '0x61' }], // 97 in hex
             });
           } catch (switchError: any) {
             // This error code indicates that the chain has not been added to MetaMask
@@ -99,7 +133,17 @@ export default function DashboardCTA() {
               try {
                 await ethereum.request({
                   method: 'wallet_addEthereumChain',
-                  params: [BSC_TESTNET_CONFIG],
+                  params: [{
+                  chainId: '0x61',
+                  chainName: 'BSC Testnet',
+                  nativeCurrency: {
+                    name: 'BNB',
+                    symbol: 'tBNB',
+                    decimals: 18
+                  },
+                  rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545'],
+                  blockExplorerUrls: ['https://testnet.bscscan.com']
+                }],
                 });
               } catch (addError) {
                 throw addError;
@@ -114,6 +158,7 @@ export default function DashboardCTA() {
       }
     } catch (error: any) {
       console.error('Network switch failed:', error);
+      toast.error('Network switch failed: ' + error.message);
     }
   };
 
@@ -145,6 +190,19 @@ export default function DashboardCTA() {
       gold: "bg-gradient-to-br from-yellow-700 to-yellow-500 border-yellow-400"
     };
     return colors[cardType as keyof typeof colors] || "bg-gray-800";
+  };
+
+  const getRequiredStakeForCard = (cardType: string) => {
+    switch (cardType) {
+      case 'bronze':
+        return '1,000 - 1,999';
+      case 'silver':
+        return '2,000 - 3,499';
+      case 'gold':
+        return '3,500+';
+      default:
+        return '';
+    }
   };
 
   return (
@@ -185,6 +243,17 @@ export default function DashboardCTA() {
           duration={0.8}
         />
       </motion.div>
+
+      {/* Staking Info Display */}
+      {isOnBSCTestnet && (
+        <motion.div variants={itemVariants} className="mt-4 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg">
+            <span className="text-blue-300 text-sm">
+              💰 Staked: {stakedAmount.toFixed(2)} TOKENS
+            </span>
+          </div>
+        </motion.div>
+      )}
 
       {/* Wallet Address Display - Using Same Button Design */}
       <motion.div variants={itemVariants} className="mt-6 flex w-full justify-center">
@@ -244,6 +313,13 @@ export default function DashboardCTA() {
                   className={`relative p-6 rounded-xl border-2 ${getCardColors(card.card_type)} text-black cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg`}
                   onClick={() => copyCardNumber(card.card_number)}
                 >
+                  {/* RESERVED Badge */}
+                  {isCardReserved(card.card_type) && (
+                    <div className="absolute -top-2 -right-2 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full border-2 border-white shadow-lg transform rotate-12">
+                      RESERVED
+                    </div>
+                  )}
+                  
                   <div className="absolute top-4 right-4 text-2xl">
                     {getCardIcon(card.card_type)}
                   </div>
@@ -251,6 +327,9 @@ export default function DashboardCTA() {
                   <div className="mb-4">
                     <div className="text-sm font-medium opacity-80 uppercase tracking-wider">
                       {card.card_type} Card
+                    </div>
+                    <div className="text-xs opacity-60 mt-1">
+                      Required: {getRequiredStakeForCard(card.card_type)} TOKENS
                     </div>
                   </div>
                   
@@ -279,6 +358,15 @@ export default function DashboardCTA() {
                   <div className="absolute bottom-2 left-6 text-xs opacity-50">
                     Click to copy card number
                   </div>
+                  
+                  {/* Status indicator */}
+                  {!isCardReserved(card.card_type) && (
+                    <div className="absolute bottom-2 right-6 text-xs opacity-50">
+                      {stakedAmount < 1000 && card.card_type === 'bronze' && 'Stake 1,000+ to reserve'}
+                      {stakedAmount < 2000 && card.card_type === 'silver' && 'Stake 2,000+ to reserve'}
+                      {stakedAmount < 3500 && card.card_type === 'gold' && 'Stake 3,500+ to reserve'}
+                    </div>
+                  )}
                 </motion.div>
               ))}
             </div>
@@ -295,8 +383,23 @@ export default function DashboardCTA() {
         <motion.div variants={itemVariants} className="mt-6 text-center">
           <div className="text-sm text-zinc-400">
             You have {userCards.length} exclusive card{userCards.length !== 1 ? 's' : ''} • 
+            {userCards.filter(card => isCardReserved(card.card_type)).length} reserved • 
             Cards created on {userCards[0]?.created_at ? new Date(userCards[0].created_at).toLocaleDateString() : 'N/A'}
           </div>
+        </motion.div>
+      )}
+
+      {/* Staking CTA for unreserved cards */}
+      {isOnBSCTestnet && userCards.length > 0 && userCards.some(card => !isCardReserved(card.card_type)) && (
+        <motion.div variants={itemVariants} className="mt-4 text-center">
+          <EnhancedButton
+            variant="expandIcon"
+            Icon={FaCreditCard}
+            onClick={() => window.location.href = '/stake'}
+            iconPlacement="right"
+            className="bg-purple-600 hover:bg-purple-700 border-purple-500">
+            🚀 Stake More to Reserve Cards
+          </EnhancedButton>
         </motion.div>
       )}
 

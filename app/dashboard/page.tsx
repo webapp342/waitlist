@@ -10,10 +10,12 @@ import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
+import { useWallet } from '@/hooks/useWallet';
 
 export default function Dashboard() {
   const { isConnected } = useAccount();
   const router = useRouter();
+  const { userData } = useWallet();
 
   // Clear any existing toasts on dashboard load
   useEffect(() => {
@@ -36,7 +38,7 @@ export default function Dashboard() {
       <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8">
         <DashboardHeader />
 
-        <DashboardCTA />
+        <DashboardCTA userData={userData} />
 
         <Logos />
       </section>
