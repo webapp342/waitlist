@@ -5,13 +5,14 @@ import TextBlur from "@/components/ui/text-blur";
 import AnimatedShinyText from "@/components/ui/shimmer-text";
 import { EnhancedButton } from "@/components/ui/enhanced-btn";
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
-import { useAccount, useDisconnect, useChainId, useSwitchChain, useChains } from 'wagmi';
+import { useAccount, useDisconnect, useChainId, useSwitchChain, useChains, useBalance } from 'wagmi';
 import { FaWallet, FaArrowRightFromBracket, FaTriangleExclamation, FaCreditCard } from "react-icons/fa6";
 import { toast } from "sonner";
 import { useEffect, useState } from 'react';
 import { userService, cardService, Card } from '@/lib/supabase';
 import { UserData } from '@/types';
 import { ethers } from 'ethers';
+import CreditCard from './CreditCard';
 
 interface DashboardCTAProps {
   userData: UserData;
@@ -25,10 +26,38 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
   const { switchChain, isPending: isSwitching } = useSwitchChain();
   const [userCards, setUserCards] = useState<Card[]>([]);
   const [isLoadingCards, setIsLoadingCards] = useState(false);
+  const [currentCardIndex, setCurrentCardIndex] = useState(0);
+  const [bnbPrice, setBnbPrice] = useState<number>(0);
+
+  // Get user's BNB balance
+  const { data: balance } = useBalance({
+    address: address,
+    chainId: 97, // BSC Testnet
+  });
 
   // Clear any existing toasts on component mount
   useEffect(() => {
     toast.dismiss();
+  }, []);
+
+  // Fetch BNB price from CoinGecko
+  useEffect(() => {
+    const fetchBNBPrice = async () => {
+      try {
+        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd');
+        const data = await response.json();
+        setBnbPrice(data.binancecoin.usd);
+      } catch (error) {
+        console.error('Error fetching BNB price:', error);
+        setBnbPrice(0);
+      }
+    };
+
+    fetchBNBPrice();
+    // Update price every 60 seconds
+    const interval = setInterval(fetchBNBPrice, 60000);
+    
+    return () => clearInterval(interval);
   }, []);
 
   // Debug logging
@@ -174,36 +203,23 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
     toast.success("💳 Card number copied to clipboard!");
   };
 
-  const getCardIcon = (cardType: string) => {
-    const icons = {
-      bronze: "🥉",
-      silver: "🥈", 
-      gold: "🥇"
-    };
-    return icons[cardType as keyof typeof icons] || "💳";
+  const handlePrevCard = () => {
+    setCurrentCardIndex((prev) => (prev === 0 ? userCards.length - 1 : prev - 1));
   };
 
-  const getCardColors = (cardType: string) => {
-    const colors = {
-      bronze: "bg-gradient-to-br from-orange-800 to-orange-600 border-orange-500",
-      silver: "bg-gradient-to-br from-gray-700 to-gray-500 border-gray-400",
-      gold: "bg-gradient-to-br from-yellow-700 to-yellow-500 border-yellow-400"
-    };
-    return colors[cardType as keyof typeof colors] || "bg-gray-800";
+  const handleNextCard = () => {
+    setCurrentCardIndex((prev) => (prev === userCards.length - 1 ? 0 : prev + 1));
   };
 
-  const getRequiredStakeForCard = (cardType: string) => {
-    switch (cardType) {
-      case 'bronze':
-        return '1,000 - 1,999';
-      case 'silver':
-        return '2,000 - 3,499';
-      case 'gold':
-        return '3,500+';
-      default:
-        return '';
-    }
+  // Format BNB balance for display in USD
+  const formatBalance = () => {
+    if (!balance || bnbPrice === 0) return '$0.00';
+    const balanceValue = parseFloat(balance.formatted);
+    const usdValue = balanceValue * bnbPrice;
+    return `$ ${usdValue.toFixed(2)}`;
   };
+
+
 
   return (
     <motion.div
@@ -305,70 +321,111 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
               <div className="text-zinc-400">Loading your cards...</div>
             </div>
           ) : userCards.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-6xl mx-auto">
-              {userCards.map((card, index) => (
-                <motion.div
-                  key={card.id}
-                  variants={itemVariants}
-                  className={`relative p-6 rounded-xl border-2 ${getCardColors(card.card_type)} text-black cursor-pointer transition-all duration-300 hover:scale-105 hover:shadow-lg`}
-                  onClick={() => copyCardNumber(card.card_number)}
-                >
-                  {/* RESERVED Badge */}
-                  {isCardReserved(card.card_type) && (
-                    <div className="absolute -top-2 -right-2 bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full border-2 border-white shadow-lg transform rotate-12">
-                      RESERVED
-                    </div>
-                  )}
-                  
-                  <div className="absolute top-4 right-4 text-2xl">
-                    {getCardIcon(card.card_type)}
-                  </div>
-                  
-                  <div className="mb-4">
-                    <div className="text-sm font-medium opacity-80 uppercase tracking-wider">
-                      {card.card_type} Card
-                    </div>
-                    <div className="text-xs opacity-60 mt-1">
-                      Required: {getRequiredStakeForCard(card.card_type)} TOKENS
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="font-mono text-lg tracking-wider">
-                      {card.card_number.match(/.{1,4}/g)?.join(' ')}
-                    </div>
+            <div className="relative w-full max-w-[800px] mx-auto">
+              <div className="relative h-[300px] flex items-center justify-center">
+                {/* Cards Container */}
+                <div className="relative w-full h-full flex items-center justify-center">
+                  {userCards.map((card, index) => {
+                    const isCenter = index === currentCardIndex;
+                    const isLeft = index === (currentCardIndex === 0 ? userCards.length - 1 : currentCardIndex - 1);
+                    const isRight = index === (currentCardIndex === userCards.length - 1 ? 0 : currentCardIndex + 1);
                     
-                    <div className="flex justify-between items-end">
-                      <div>
-                        <div className="text-xs opacity-70">CVV</div>
-                        <div className="font-mono text-sm">{card.cvv}</div>
-                      </div>
-                      <div>
-                        <div className="text-xs opacity-70">EXPIRES</div>
-                        <div className="font-mono text-sm">
-                          {new Date(card.expiration_date).toLocaleDateString('en-US', { 
-                            month: '2-digit', 
-                            year: '2-digit' 
-                          })}
+                    if (!isCenter && !isLeft && !isRight) return null;
+
+                    let position = 'translate-x-0';
+                    let scale = 'scale-100';
+                    let zIndex = 'z-10';
+                    let opacity = 'opacity-100';
+
+                    if (isLeft) {
+                      position = '-translate-x-32 md:-translate-x-40';
+                      scale = 'scale-75';
+                      zIndex = 'z-0';
+                      opacity = 'opacity-60';
+                    } else if (isRight) {
+                      position = 'translate-x-32 md:translate-x-40';
+                      scale = 'scale-75';
+                      zIndex = 'z-0';
+                      opacity = 'opacity-60';
+                    } else if (isCenter) {
+                      position = 'translate-x-0';
+                      scale = 'scale-100';
+                      zIndex = 'z-10';
+                      opacity = 'opacity-100';
+                    }
+
+                    return (
+                      <motion.div
+                        key={card.id}
+                        className={`absolute ${position} ${scale} ${zIndex} ${opacity} cursor-pointer transition-all duration-300 ease-out`}
+                        onClick={() => !isCenter ? setCurrentCardIndex(index) : copyCardNumber(card.card_number)}
+                        initial={false}
+                        animate={{
+                          x: isLeft ? -140 : isRight ? 140 : 0,
+                          scale: isCenter ? 1 : 0.75,
+                          opacity: isCenter ? 1 : 0.6,
+                          rotateY: isLeft ? 25 : isRight ? -25 : 0,
+                        }}
+                        transition={{ duration: 0.4, ease: "easeInOut" }}
+                        style={{ 
+                          transformStyle: "preserve-3d",
+                          perspective: "1000px"
+                        }}
+                      >
+                        <div className="w-[280px] md:w-[320px] hover:scale-105 transition-transform duration-200">
+                          <CreditCard
+                            cardType={card.card_type as 'bronze' | 'silver' | 'gold'}
+                            cardNumber={card.card_number}
+                            cvv={card.cvv}
+                            expirationDate={card.expiration_date}
+                            isReserved={isCardReserved(card.card_type)}
+                            balance={formatBalance()}
+                            onClick={() => {}}
+                          />
+                          
+                          
                         </div>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="absolute bottom-2 left-6 text-xs opacity-50">
-                    Click to copy card number
-                  </div>
-                  
-                  {/* Status indicator */}
-                  {!isCardReserved(card.card_type) && (
-                    <div className="absolute bottom-2 right-6 text-xs opacity-50">
-                      {stakedAmount < 1000 && card.card_type === 'bronze' && 'Stake 1,000+ to reserve'}
-                      {stakedAmount < 2000 && card.card_type === 'silver' && 'Stake 2,000+ to reserve'}
-                      {stakedAmount < 3500 && card.card_type === 'gold' && 'Stake 3,500+ to reserve'}
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Card Indicators */}
+              <div className="flex justify-center gap-2 -mt-10">
+                {userCards.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentCardIndex(index)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      index === currentCardIndex
+                        ? "w-8 bg-yellow-400 shadow-lg"
+                        : "w-2 bg-zinc-600 hover:bg-zinc-500"
+                    }`}
+                    aria-label={`Go to card ${index + 1}`}
+                  />
+                ))}
+              </div>
+
+              {/* Current Card Info */}
+              <div className="flex justify-center mt-4">
+                <motion.div
+                  key={currentCardIndex}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-center"
+                >
+                  {/* Status indicator for current card */}
+                  {!isCardReserved(userCards[currentCardIndex]?.card_type) && (
+                    <div className="text-xs text-zinc-400 px-2">
+                      {stakedAmount < 1000 && userCards[currentCardIndex]?.card_type === 'bronze' && 'Stake 1,000+ TOKENS to reserve'}
+                      {stakedAmount < 2000 && userCards[currentCardIndex]?.card_type === 'silver' && 'Stake 2,000+ TOKENS to reserve'}
+                      {stakedAmount < 3500 && userCards[currentCardIndex]?.card_type === 'gold' && 'Stake 3,500+ TOKENS to reserve'}
                     </div>
                   )}
                 </motion.div>
-              ))}
+              </div>
             </div>
           ) : (
             <div className="flex justify-center">

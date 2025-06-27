@@ -26,6 +26,23 @@ export interface User {
   created_at?: string
 }
 
+// New Card interface for the unified table structure
+export interface CardRow {
+  id?: number
+  user_id: number
+  card_number_bronze: string
+  card_number_silver: string
+  card_number_gold: string
+  cvv_bronze: string
+  cvv_silver: string
+  cvv_gold: string
+  expiration_date_bronze: string
+  expiration_date_silver: string
+  expiration_date_gold: string
+  created_at?: string
+}
+
+// Individual card type for backwards compatibility
 export interface Card {
   id?: number
   user_id: number
@@ -145,7 +162,7 @@ export const userService = {
 
 // Card service functions
 export const cardService = {
-  // Get user cards by wallet address
+  // Get user cards by wallet address (returns array of 3 cards)
   async getUserCards(walletAddress: string): Promise<Card[]> {
     // Check if Supabase is properly configured
     if (!supabaseUrl || !supabaseAnonKey) {
@@ -161,19 +178,59 @@ export const cardService = {
         return []
       }
 
-      // Get cards for this user
+      // Get cards row for this user
       const { data, error } = await supabase
         .from('cards')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
+        .single()
 
       if (error) {
+        if (error.code === 'PGRST116') {
+          // No cards found
+          console.log('No cards found for user:', walletAddress)
+          return []
+        }
         console.error('Error fetching user cards:', error)
         throw error
       }
 
-      return data || []
+      if (!data) {
+        return []
+      }
+
+      // Convert single row to array of 3 cards
+      const cards: Card[] = [
+        {
+          id: data.id,
+          user_id: data.user_id,
+          card_number: data.card_number_bronze,
+          cvv: data.cvv_bronze,
+          expiration_date: data.expiration_date_bronze,
+          card_type: 'bronze',
+          created_at: data.created_at
+        },
+        {
+          id: data.id,
+          user_id: data.user_id,
+          card_number: data.card_number_silver,
+          cvv: data.cvv_silver,
+          expiration_date: data.expiration_date_silver,
+          card_type: 'silver',
+          created_at: data.created_at
+        },
+        {
+          id: data.id,
+          user_id: data.user_id,
+          card_number: data.card_number_gold,
+          cvv: data.cvv_gold,
+          expiration_date: data.expiration_date_gold,
+          card_type: 'gold',
+          created_at: data.created_at
+        }
+      ]
+
+      return cards
     } catch (error) {
       console.error('Error in getUserCards:', error)
       return []
@@ -183,7 +240,7 @@ export const cardService = {
   // Check if user has cards
   async userHasCards(walletAddress: string): Promise<boolean> {
     const cards = await this.getUserCards(walletAddress)
-    return cards.length >= 3
+    return cards.length === 3
   },
 
   // Get card stats
@@ -194,20 +251,22 @@ export const cardService = {
       return { totalCards: 0, bronzeCards: 0, silverCards: 0, goldCards: 0 }
     }
 
-    const { data, error } = await supabase
+    const { count, error } = await supabase
       .from('cards')
-      .select('card_type')
+      .select('*', { count: 'exact', head: true })
 
     if (error) {
       console.error('Error getting card stats:', error)
       throw error
     }
 
+    // Each row represents 3 cards (bronze, silver, gold)
+    const totalRows = count || 0
     const stats = {
-      totalCards: data?.length || 0,
-      bronzeCards: data?.filter(card => card.card_type === 'bronze').length || 0,
-      silverCards: data?.filter(card => card.card_type === 'silver').length || 0,
-      goldCards: data?.filter(card => card.card_type === 'gold').length || 0,
+      totalCards: totalRows * 3,
+      bronzeCards: totalRows,
+      silverCards: totalRows,
+      goldCards: totalRows,
     }
 
     return stats

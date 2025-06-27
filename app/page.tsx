@@ -25,8 +25,9 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-12 md:pt-24">
       <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8">
         <Header />
-        <CTA />
-        <Form />
+        <div className="mt-24 md:mt-15">
+          <CTA />
+        </div>
         <Logos />
       </section>
 
