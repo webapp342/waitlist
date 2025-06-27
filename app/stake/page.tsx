@@ -1,20 +1,101 @@
 'use client';
 
 import { useAccount } from 'wagmi';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Particles from "@/components/ui/particles";
 import Footer from "@/components/footer";
+import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import Link from 'next/link';
 import { useWallet } from '@/hooks/useWallet';
 import { ethers } from 'ethers';
+import { ArrowLeft, ChevronDown, ChevronUp, Info, Zap, TrendingUp, Shield, Clock, DollarSign } from 'lucide-react';
+
+// Card stake requirements
+const CARD_REQUIREMENTS = {
+  BRONZE: 1000,
+  SILVER: 2000,
+  GOLD: 3500
+};
+
+// Enhanced styles
+const glowStyles = `
+  [&]:before:absolute [&]:before:inset-0 
+  [&]:before:rounded-3xl
+  [&]:before:bg-gradient-to-r [&]:before:from-blue-500/10 [&]:before:via-purple-500/10 [&]:before:to-blue-500/10
+  [&]:before:animate-glow [&]:before:blur-xl
+  relative overflow-hidden
+`;
+
+const shimmerStyles = `
+  [&]:before:absolute [&]:before:inset-0 
+  [&]:before:bg-gradient-to-r [&]:before:from-transparent [&]:before:via-white/10 [&]:before:to-transparent
+  [&]:before:animate-[shimmer_2s_infinite] [&]:before:content-['']
+  relative overflow-hidden
+`;
+
+// Rocket animation keyframes
+const rocketKeyframes = `
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+  @keyframes colorFlow {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+`;
+
+const rocketStyles = `
+  ${rocketKeyframes}
+  [&]:animate-[float_3s_ease-in-out_infinite]
+  [&_.rocket]:animate-[float_3s_ease-in-out_infinite]
+  [&]:bg-gradient-to-r [&]:from-yellow-500 [&]:via-orange-500 [&]:to-yellow-500
+  [&]:bg-[length:200%_auto]
+  [&]:animate-[colorFlow_3s_ease-in-out_infinite]
+  relative overflow-hidden
+`;
+
+// Metallic text animation
+const metallicKeyframes = `
+  @keyframes shine {
+    to {
+      background-position: 200% center;
+    }
+  }
+`;
+
+const metallicTextStyles = `
+  background: linear-gradient(
+    to right,
+    #A78B6D 20%,
+    #F8E4BE 30%,
+    #F8E4BE 40%,
+    #A78B6D 50%,
+    #A78B6D 60%,
+    #F8E4BE 70%,
+    #F8E4BE 80%,
+    #A78B6D 90%
+  );
+  background-size: 200% auto;
+  background-clip: text;
+  text-fill-color: transparent;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shine 3s linear infinite;
+`;
 
 export default function StakePage() {
   const { isConnected, address } = useAccount();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [stakeAmount, setStakeAmount] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   
   const { 
     walletState, 
@@ -27,6 +108,14 @@ export default function StakePage() {
     getAllowance
   } = useWallet();
 
+  // Set stake amount from URL parameter
+  useEffect(() => {
+    const amountParam = searchParams.get('amount');
+    if (amountParam && !isNaN(Number(amountParam))) {
+      setStakeAmount(amountParam);
+    }
+  }, [searchParams]);
+
   // Redirect to home if wallet is not connected
   useEffect(() => {
     if (!isConnected) {
@@ -35,19 +124,17 @@ export default function StakePage() {
   }, [isConnected, router]);
 
   if (!isConnected) {
-    return null; // Don't render anything while redirecting
+    return null;
   }
 
   // Format token amounts from wei to ether
   const formatTokenAmount = (amount: string) => {
     try {
       if (!amount || amount === '0') return '0.00';
-      // If already formatted (contains decimal), return as is
       if (amount.includes('.')) {
         const num = parseFloat(amount);
         return isNaN(num) ? '0.00' : num.toFixed(2);
       }
-      // If in wei format, convert using ethers
       const formatted = ethers.formatEther(amount);
       const num = parseFloat(formatted);
       return isNaN(num) ? '0.00' : num.toFixed(2);
@@ -63,7 +150,7 @@ export default function StakePage() {
       if (!amount || amount === '0') return '0.00';
       const formatted = ethers.formatEther(amount);
       const num = parseFloat(formatted);
-      return isNaN(num) ? '0.00' : num.toFixed(6); // More precision for BNB
+      return isNaN(num) ? '0.00' : num.toFixed(6);
     } catch (error) {
       console.error('Error formatting BNB amount:', error);
       return '0.00';
@@ -77,24 +164,55 @@ export default function StakePage() {
     }
 
     try {
-      // First approve tokens
       const approveSuccess = await approveTokens(stakeAmount);
       if (approveSuccess) {
-        // Then stake tokens
         await stakeTokens(stakeAmount);
-        setStakeAmount(''); // Clear input on success
+        setStakeAmount('');
       }
     } catch (error) {
       console.error('Approve and stake error:', error);
     }
   };
 
-  // Handle unstake for a specific stake
-  const handleUnstake = async (stakeId: string) => {
-    console.log('🔄 Unstaking with ID:', stakeId);
+  // Handle presale button click
+  const handlePresaleClick = () => {
+    const requiredAmount = stakeAmount || '0';
+    window.location.href = `/presale?amount=${requiredAmount}`;
+  };
+
+  // Check if user has enough balance
+  const hasEnoughBalance = () => {
+    if (!stakeAmount || !userData.tokenBalance) return true;
+    const stakeAmountNum = parseFloat(stakeAmount);
+    const balanceNum = parseFloat(formatTokenAmount(userData.tokenBalance));
+    return balanceNum >= stakeAmountNum;
+  };
+
+  // Calculate estimated rewards
+  const calculateEstimatedRewards = () => {
+    if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
+      return { daily: 0, yearly: 0, dailyUSD: 0, yearlyUSD: 0 };
+    }
+
+    const stakeAmountNum = parseFloat(stakeAmount);
+    const apr = 10;
     
+    const yearlyReward = (stakeAmountNum * apr) / 100;
+    const dailyReward = yearlyReward / 365;
+
+    return {
+      daily: dailyReward,
+      yearly: yearlyReward,
+      dailyUSD: dailyReward * 0.1,
+      yearlyUSD: yearlyReward * 0.1
+    };
+  };
+
+  const estimatedRewards = calculateEstimatedRewards();
+
+  // Handle unstake
+  const handleUnstake = async (stakeId: string) => {
     try {
-      // Check minimum staking period
       const stake = userData.stakes.find((s: any) => s.stakeId === stakeId);
       if (stake) {
         const stakeTimestamp = Number(stake.timestamp);
@@ -102,237 +220,314 @@ export default function StakePage() {
         const stakingPeriod = currentTime - stakeTimestamp;
         const minPeriod = Number(userData.minimumStakingPeriod);
         
-        console.log('📊 Stake Details:', {
-          stakeId,
-          stakeTimestamp,
-          currentTime,
-          stakingPeriod,
-          minPeriod,
-          canUnstake: stakingPeriod >= minPeriod
-        });
-        
         if (stakingPeriod < minPeriod) {
           const remainingTime = minPeriod - stakingPeriod;
           const remainingDays = Math.ceil(remainingTime / 86400);
-          console.warn(`⚠️ Cannot unstake yet. Need to wait ${remainingDays} more days`);
-          // We can still try the transaction - let the contract handle the validation
+          console.warn(`Cannot unstake yet. Need to wait ${remainingDays} more days`);
         }
       }
       
-      // Convert stakeId to number for the contract call
       const stakeIdNumber = parseInt(stakeId);
-      console.log('🔢 Converted stake ID to number:', stakeIdNumber);
-      
-      // Check BNB fee
-      const requiredFee = userData.feeInfo?.unstakingFeeBNB || '0';
-      console.log('💰 Required BNB fee:', formatBNBAmount(requiredFee), 'BNB');
-      console.log('💰 Current BNB balance:', formatTokenAmount(userData.bnbBalance || '0'), 'BNB');
-      
       const result = await unstakeTokens(stakeIdNumber.toString());
-      console.log('✅ Unstake result:', result);
+      console.log('Unstake result:', result);
     } catch (error: any) {
-      console.error('❌ Unstake error:', error);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error code:', error.code);
+      console.error('Unstake error:', error);
     }
   };
 
-  // Handle emergency withdraw for a specific stake
+  // Handle emergency withdraw
   const handleEmergencyWithdraw = async (stakeId: string) => {
-    console.log('🚨 Emergency withdraw with ID:', stakeId);
     try {
       const result = await emergencyWithdraw(stakeId);
-      console.log('✅ Emergency withdraw result:', result);
+      console.log('Emergency withdraw result:', result);
     } catch (error) {
-      console.error('❌ Emergency withdraw error:', error);
+      console.error('Emergency withdraw error:', error);
     }
+  };
+
+  // Calculate user's staking status
+  const totalStaked = parseFloat(formatTokenAmount(userData.stakedAmount));
+  const totalPending = parseFloat(formatTokenAmount(userData.pendingRewards));
+  const availableBalance = parseFloat(formatTokenAmount(userData.tokenBalance));
+
+  // Get card type based on stake amount
+  const getCardTypeForAmount = (amount: number) => {
+    if (amount >= CARD_REQUIREMENTS.GOLD) return 'GOLD';
+    if (amount >= CARD_REQUIREMENTS.SILVER) return 'SILVER';
+    if (amount >= CARD_REQUIREMENTS.BRONZE) return 'BRONZE';
+    return null;
+  };
+
+  // Get minimum required amount for next card tier
+  const getRequiredAmountForNextTier = (currentAmount: number) => {
+    if (currentAmount < CARD_REQUIREMENTS.BRONZE) return CARD_REQUIREMENTS.BRONZE;
+    if (currentAmount < CARD_REQUIREMENTS.SILVER) return CARD_REQUIREMENTS.SILVER;
+    if (currentAmount < CARD_REQUIREMENTS.GOLD) return CARD_REQUIREMENTS.GOLD;
+    return CARD_REQUIREMENTS.GOLD;
+  };
+
+  // Format insufficient balance message
+  const getInsufficientBalanceMessage = () => {
+    if (!stakeAmount) return '';
+    
+    const stakeAmountNum = parseFloat(stakeAmount);
+    const balanceNum = parseFloat(formatTokenAmount(userData.tokenBalance));
+    const difference = stakeAmountNum - balanceNum;
+    
+    if (difference <= 0) return '';
+
+    const targetCard = getCardTypeForAmount(stakeAmountNum);
+    if (targetCard) {
+      return `Insufficient balance. You need ${difference.toFixed(2)} more BBLIP to activate your ${targetCard} card (min. ${CARD_REQUIREMENTS[targetCard]} BBLIP stake required).`;
+    }
+    
+    return `Insufficient balance. You need ${difference.toFixed(2)} more BBLIP.`;
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-12 md:pt-24">
-      <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full max-w-4xl">
-        {/* Header */}
-        <div className="mb-8 text-center">
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-4 transition-colors">
-            ← Back to Dashboard
-          </Link>
-          <h1 className="text-4xl font-bold text-white mb-2">
-            Stake Your Tokens
-          </h1>
-          <p className="text-gray-400">Stake tokens and earn rewards on BSC Testnet</p>
-        </div>
-
-        {/* Error Message */}
-        {walletState.error && (
-          <div className="w-full max-w-md mb-4">
-            <div className="p-4 rounded-xl text-center font-medium bg-red-500/20 text-red-300 border border-red-500/50">
-              {walletState.error}
-            </div>
+    <>
+      <style jsx global>{`
+        ${rocketKeyframes}
+        ${metallicKeyframes}
+      `}</style>
+      <Header />
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-32 md:pt-32">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
+          
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+              Stake BBLIP
+            </h1>
+            <p className="text-gray-400 text-sm md:text-base">
+              Earn <span className="text-green-400 font-semibold">10% APR</span> by staking your tokens
+            </p>
           </div>
-        )}
 
-        {/* Staking Card */}
-        <div className="w-full max-w-md bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-          <div className="space-y-6">
-            {/* Wallet Info */}
-            <div className="bg-white/5 rounded-lg p-4">
-              <p className="text-sm text-gray-400 mb-1">Connected Wallet</p>
-              <p className="font-mono text-sm">{address?.slice(0, 6)}...{address?.slice(-4)}</p>
+          {/* Main Staking Card */}
+          <div className="bg-[#0A0A0A]/80 backdrop-blur-xl rounded-3xl border border-white/10 p-6 md:p-8 mb-6">
+            
+            {/* User Status Summary */}
+            <div className="mb-8">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 rounded-xl bg-black/40">
+                  <p className="text-xs text-gray-400 mb-1">Available</p>
+                  <p className="text-lg font-bold text-white">{formatTokenAmount(userData.tokenBalance)}</p>
+                  <p className="text-xs text-gray-500">BBLIP</p>
+                </div>
+                <div className="text-center p-4 rounded-xl bg-black/40">
+                  <p className="text-xs text-gray-400 mb-1">Staked</p>
+                  <p className="text-lg font-bold text-blue-400">{formatTokenAmount(userData.stakedAmount)}</p>
+                  <p className="text-xs text-gray-500">BBLIP</p>
+                  {userData.stakedAmount && parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.BRONZE && (
+                    <div className="mt-1">
+                      <span className={cn(
+                        "text-xs px-2 py-0.5 rounded-full bg-black/60",
+                        parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.GOLD 
+                          ? "text-yellow-400"
+                          : parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.SILVER
+                          ? "text-gray-400"
+                          : "text-amber-600"
+                      )}>
+                        {parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.GOLD 
+                          ? 'GOLD'
+                          : parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.SILVER
+                          ? 'SILVER'
+                          : 'BRONZE'}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                <div className="text-center p-4 rounded-xl bg-black/40">
+                  <p className="text-xs text-gray-400 mb-1">Rewards</p>
+                  <p className="text-lg font-bold text-green-400">{formatTokenAmount(userData.pendingRewards)}</p>
+                  <p className="text-xs text-gray-500">BBLIP</p>
+                </div>
+              </div>
             </div>
 
-            {/* Balance Info */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/5 rounded-lg p-4">
-                <p className="text-sm text-gray-400 mb-1">Available Balance</p>
-                <p className="font-semibold">{formatTokenAmount(userData.tokenBalance)} TOKENS</p>
+            {/* Stake Input Section */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-medium text-gray-300">Amount to Stake</label>
+                <button
+                  onClick={() => setStakeAmount(formatTokenAmount(userData.tokenBalance))}
+                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  disabled={walletState.loading}
+                >
+                  Use Max
+                </button>
               </div>
-              <div className="bg-white/5 rounded-lg p-4">
-                <p className="text-sm text-gray-400 mb-1">Total Staked</p>
-                <p className="font-semibold">{formatTokenAmount(userData.stakedAmount)} TOKENS</p>
-              </div>
-            </div>
-
-            {/* Stake Input */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Amount to Stake</label>
-              <div className="flex gap-2">
+              
+              <div className="relative">
                 <Input
                   type="number"
                   placeholder="0.00"
                   value={stakeAmount}
                   onChange={(e) => setStakeAmount(e.target.value)}
-                  className="flex-1"
+                  className="h-14 text-lg font-semibold bg-black/60 border-white/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
                   disabled={walletState.loading}
                 />
-                <Button
-                  variant="outline"
-                  onClick={() => setStakeAmount(userData.tokenBalance)}
-                  className="px-4"
-                  disabled={walletState.loading}
-                >
-                  MAX
-                </Button>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                  BBLIP
+                </div>
               </div>
-              <p className="text-xs text-gray-400 mt-1">
-                Staking Fee: {userData.feeInfo?.stakingFeeBNB ? `${formatBNBAmount(userData.feeInfo.stakingFeeBNB)} BNB` : '0.005 BNB'}
-              </p>
+
+              {/* Balance Check */}
+              {stakeAmount && !hasEnoughBalance() && (
+                <div className="mt-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+                  <p className="text-sm text-red-400">
+                    {getInsufficientBalanceMessage()}
+                  </p>
+                </div>
+              )}
+
+              {/* Purchase Button */}
+              {stakeAmount && !hasEnoughBalance() && (
+                <Link 
+                  href={`/presale?amount=${parseFloat(stakeAmount) - availableBalance}`}
+                  className={cn(
+                    "mt-2 w-full flex items-center justify-center px-4 py-3 rounded-xl",
+                    "bg-black/60 border border-blue-500/20",
+                    "text-blue-400 hover:text-blue-300 hover:bg-black/40",
+                    "transition-all duration-300"
+                  )}
+                >
+                  <div className="flex items-center gap-2">
+                    <DollarSign className="w-4 h-4" />
+                    <span className="font-medium">
+                      Purchase BBLIP from Presale
+                    </span>
+                  </div>
+                </Link>
+              )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              <Button 
-                className="w-full" 
-                size="lg"
-                onClick={handleApproveAndStake}
-                disabled={walletState.loading || !stakeAmount || parseFloat(stakeAmount) <= 0}
-              >
-                {walletState.loading ? 'Processing...' : 'Approve & Stake'}
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={claimRewards}
-                disabled={walletState.loading || parseFloat(userData.pendingRewards) <= 0}
-              >
-                Claim Rewards ({formatTokenAmount(userData.pendingRewards)} TOKENS)
-              </Button>
+            {/* Estimated Rewards Section */}
+            <div className="p-4 rounded-xl bg-black/40 border border-white/10 mb-6">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-green-400" />
+                </div>
+                <h3 className="text-sm font-medium text-white">Estimated Rewards</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Daily</p>
+                  <p className="text-lg font-bold text-green-400">{estimatedRewards.daily.toFixed(4)}</p>
+                  <p className="text-xs text-gray-500">~${estimatedRewards.dailyUSD.toFixed(2)} USD</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Yearly</p>
+                  <p className="text-lg font-bold text-blue-400">{estimatedRewards.yearly.toFixed(2)}</p>
+                  <p className="text-xs text-gray-500">~${estimatedRewards.yearlyUSD.toFixed(2)} USD</p>
+                </div>
+              </div>
             </div>
 
-            {/* Rewards Info */}
-            <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-lg p-4 border border-yellow-500/20">
-              <p className="text-sm text-gray-400 mb-1">Pending Rewards</p>
-              <p className="font-semibold text-yellow-400">{formatTokenAmount(userData.pendingRewards)} TOKENS</p>
-            </div>
+            {/* Stake Button */}
+            <Button
+              className={cn(
+                "w-full bg-blue-500 hover:bg-blue-600",
+                "text-white font-medium",
+                "transition-all duration-300"
+              )}
+              size="lg"
+              disabled={!hasEnoughBalance() || walletState.loading}
+              onClick={handleApproveAndStake}
+            >
+              {walletState.loading ? (
+                <div className="flex items-center">
+                  <span className="mr-2">Processing...</span>
+                </div>
+              ) : (
+                <div className="flex items-center">
+                  <Zap className="w-4 h-4 mr-2" />
+                  Approve & Stake
+                </div>
+              )}
+            </Button>
+          </div>
 
-            {/* Your Stakes */}
-            {userData.stakes && userData.stakes.length > 0 && (
-              <div className="bg-white/5 rounded-lg p-4">
-                <h3 className="font-semibold mb-3">Your Stakes ({userData.stakes.length})</h3>
-                <div className="space-y-3">
-                  {userData.stakes.map((stake: any, index) => {
-                    if (!stake.isActive) return null;
-                    
-                    return (
-                      <div key={index} className="bg-white/5 rounded-lg p-3">
-                        <div className="flex justify-between items-start mb-2">
-                          <div>
-                            <p className="text-sm font-medium">{formatTokenAmount(stake.amount)} TOKENS</p>
-                            <p className="text-xs text-gray-400">
-                              Stake ID: {stake.stakeId}
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              {new Date(Number(stake.timestamp) * 1000).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-2 gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleUnstake(stake.stakeId)}
-                            disabled={walletState.loading}
-                            className="text-xs"
-                          >
-                            Unstake
-                          </Button>
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => handleEmergencyWithdraw(stake.stakeId)}
-                            disabled={walletState.loading}
-                            className="text-xs"
-                          >
-                            Emergency
-                          </Button>
-                        </div>
-                        <p className="text-xs text-gray-400 mt-2">
-                          Fee: {userData.feeInfo?.unstakingFeeBNB ? `${formatBNBAmount(userData.feeInfo.unstakingFeeBNB)} BNB` : '0.005 BNB'}
-                        </p>
-                      </div>
-                    );
-                  })}
+          {/* Staking Details Accordion */}
+          <div className="bg-[#0A0A0A]/80 backdrop-blur-xl rounded-xl border border-white/10 overflow-hidden">
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="w-full px-4 py-4 flex items-center justify-between text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
+                  <Info className="w-4 h-4 text-blue-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-white">Staking Details</h3>
+                  <p className="text-xs text-gray-400">Terms and conditions</p>
+                </div>
+              </div>
+              {showDetails ? (
+                <ChevronUp className="w-5 h-5 text-gray-400" />
+              ) : (
+                <ChevronDown className="w-5 h-5 text-gray-400" />
+              )}
+            </button>
+            
+            {showDetails && (
+              <div className="px-4 pb-4">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-white">Annual Percentage Rate</h4>
+                      <p className="text-xs text-gray-400">Earn 10% APR on your staked tokens</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
+                      <Shield className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-white">Minimum Stake</h4>
+                      <p className="text-xs text-gray-400">1,000 BBLIP minimum required for Bronze card activation</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
+                      <Clock className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-white">Staking Period</h4>
+                      <p className="text-xs text-gray-400">No lock-up period, unstake anytime</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
+                      <DollarSign className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-white">Staking Fee</h4>
+                      <p className="text-xs text-gray-400">No fees for staking or unstaking</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
-
-            {/* BNB Balance Info */}
-            <div className="bg-blue-500/10 rounded-lg p-4 border border-blue-500/20">
-              <p className="text-sm text-gray-400 mb-1">BNB Balance</p>
-              <p className="font-semibold text-blue-400">{formatTokenAmount(userData.bnbBalance || '0')} BNB</p>
-              <p className="text-xs text-gray-400 mt-1">
-                {parseFloat(userData.bnbBalance || '0') < 0.01 && "⚠️ Low BNB balance for fees"}
-              </p>
-            </div>
           </div>
         </div>
 
-        {/* Info Section */}
-        <div className="mt-8 text-center text-sm text-gray-400 max-w-md">
-          <p className="mb-2">
-            🔒 Stake your tokens to earn rewards
-          </p>
-          <p>
-            💡 APR: 10% | Minimum stake: 100 TOKENS
-          </p>
-          <p className="mt-2 text-yellow-400">
-            ⚠️ BNB Fee System - Fees required for staking/unstaking
-          </p>
-          <p className="text-xs mt-1">
-            Min staking period: {userData.minimumStakingPeriod ? `${Math.floor(Number(userData.minimumStakingPeriod) / 86400)} days` : 'Loading...'}
-          </p>
-        </div>
-      </section>
+        <Footer />
 
-      <Footer />
-
-      <Particles
-        quantityDesktop={150}
-        quantityMobile={50}
-        ease={120}
-        color={"#F7FF9B"}
-        refresh
-      />
-    </main>
+        <Particles
+          quantityDesktop={100}
+          quantityMobile={30}
+          ease={120}
+          color={"#3B82F6"}
+          refresh
+        />
+      </main>
+    </>
   );
 } 

@@ -5,8 +5,8 @@ import TextBlur from "@/components/ui/text-blur";
 import AnimatedShinyText from "@/components/ui/shimmer-text";
 import { EnhancedButton } from "@/components/ui/enhanced-btn";
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
-import { useAccount, useDisconnect, useChainId, useSwitchChain, useChains, useBalance } from 'wagmi';
-import { FaWallet, FaArrowRightFromBracket, FaTriangleExclamation, FaCreditCard } from "react-icons/fa6";
+import { useAccount, useChainId, useSwitchChain, useChains, useBalance } from 'wagmi';
+import { FaTriangleExclamation, FaCreditCard } from "react-icons/fa6";
 import { toast } from "sonner";
 import { useEffect, useState } from 'react';
 import { userService, cardService, Card } from '@/lib/supabase';
@@ -20,7 +20,6 @@ interface DashboardCTAProps {
 
 export default function DashboardCTA({ userData }: DashboardCTAProps) {
   const { address, isConnected, chain } = useAccount();
-  const { disconnect } = useDisconnect();
   const chainId = useChainId();
   const chains = useChains();
   const { switchChain, isPending: isSwitching } = useSwitchChain();
@@ -191,13 +190,6 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
     }
   };
 
-  const copyToClipboard = async () => {
-    if (address) {
-      await navigator.clipboard.writeText(address);
-      toast.success("📋 Wallet address copied to clipboard!");
-    }
-  };
-
   const copyCardNumber = async (cardNumber: string) => {
     await navigator.clipboard.writeText(cardNumber);
     toast.success("💳 Card number copied to clipboard!");
@@ -219,6 +211,40 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
     return `$ ${usdValue.toFixed(2)}`;
   };
 
+  // Calculate required stake amount for current active card
+  const getRequiredStakeAmount = () => {
+    if (userCards.length === 0) return 0;
+    
+    const currentCard = userCards[currentCardIndex];
+    if (!currentCard) return 0;
+
+    const currentStaked = stakedAmount;
+    let requiredAmount = 0;
+
+    switch (currentCard.card_type) {
+      case 'bronze':
+        requiredAmount = Math.max(0, 1000 - currentStaked);
+        break;
+      case 'silver':
+        requiredAmount = Math.max(0, 2000 - currentStaked);
+        break;
+      case 'gold':
+        requiredAmount = Math.max(0, 3500 - currentStaked);
+        break;
+      default:
+        requiredAmount = 0;
+    }
+
+    return requiredAmount;
+  };
+
+  // Handle stake button click
+  const handleStakeClick = () => {
+    const requiredAmount = getRequiredStakeAmount();
+    // Always send the required amount, even if it's 0
+    window.location.href = `/stake?amount=${requiredAmount}`;
+  };
+
 
 
   return (
@@ -228,93 +254,33 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
       initial="hidden"
       animate="visible">
 
-      <motion.div variants={itemVariants}>
-        <div className="flex items-center justify-center">
-          <div className="flex w-fit items-center justify-center rounded-full bg-muted/80 text-center">
-            <AnimatedShinyText className="px-4 py-1">
-              <span>{isOnBSCTestnet ? "Connected to BSC Testnet!" : "Please switch to BSC Testnet"}</span>
-            </AnimatedShinyText>
-          </div>
-        </div>
-      </motion.div>
+    
 
-      <motion.img
-        src="/logo.svg"
-        alt="logo"
-        className="mx-auto h-24 w-24"
-        variants={itemVariants}
-      />
 
-      <motion.div variants={itemVariants}>
-        <TextBlur
-          className="text-center text-3xl font-medium tracking-tighter sm:text-5xl"
-          text="Welcome to Dashboard"
-        />
-      </motion.div>
 
-      <motion.div variants={itemVariants}>
-        <TextBlur
-          className="mx-auto max-w-[27rem] pt-1.5 text-center text-base text-zinc-300 sm:text-lg"
-          text={isOnBSCTestnet ? "Your wallet has been successfully connected to BSC Testnet. Welcome to the platform!" : "Please switch to BSC Testnet to access all features."}
-          duration={0.8}
-        />
-      </motion.div>
+ 
 
-      {/* Staking Info Display */}
-      {isOnBSCTestnet && (
-        <motion.div variants={itemVariants} className="mt-4 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/20 border border-blue-500/30 rounded-lg">
-            <span className="text-blue-300 text-sm">
-              💰 Staked: {stakedAmount.toFixed(2)} TOKENS
-            </span>
-          </div>
-        </motion.div>
-      )}
-
-      {/* Wallet Address Display - Using Same Button Design */}
-      <motion.div variants={itemVariants} className="mt-6 flex w-full justify-center">
-        <div className="flex w-full max-w-[24rem] flex-col gap-2">
-          <EnhancedButton
-            variant="expandIcon"
-            Icon={FaWallet}
-            onClick={copyToClipboard}
-            iconPlacement="right"
-            className="w-full">
-            {address ? `${address.slice(0, 8)}...${address.slice(-8)} (Click to Copy)` : "No Address"}
-          </EnhancedButton>
-          
-          {/* Additional Switch Button when on wrong network */}
-          {!isOnBSCTestnet && (
+      {/* Network Switch Button - Only show when on wrong network */}
+      {!isOnBSCTestnet && (
+        <motion.div variants={itemVariants} className="mt-12 flex w-full justify-center">
+          <div className="flex w-full max-w-[24rem] flex-col gap-2">
             <EnhancedButton
               variant="expandIcon"
               Icon={FaTriangleExclamation}
               onClick={handleNetworkSwitch}
               iconPlacement="right"
               disabled={isSwitching}
-              className="w-full bg-orange-600 hover:bg-orange-700 border-orange-500 text-white">
+              className="w-full bg-red-600  text-white">
               {isSwitching ? "Switching Network..." : "🔄 Switch to BSC Testnet"}
             </EnhancedButton>
-          )}
-          
-          <EnhancedButton
-            variant="expandIcon"
-            Icon={FaArrowRightFromBracket}
-            onClick={() => disconnect()}
-            iconPlacement="right"
-            className="w-full mt-2">
-            Disconnect Wallet
-          </EnhancedButton>
-        </div>
-      </motion.div>
+          </div>
+        </motion.div>
+      )}
 
       {/* User Cards Display - Only show when on correct network */}
       {isOnBSCTestnet && (
         <motion.div variants={itemVariants} className="mt-8 w-full">
-          <div className="flex items-center justify-center mb-4">
-            <h3 className="text-xl font-semibold text-yellow-100 flex items-center gap-2">
-              <FaCreditCard /> Your Exclusive Cards
-            </h3>
-          </div>
+         
           
           {isLoadingCards ? (
             <div className="flex justify-center">
@@ -446,13 +412,13 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
         </motion.div>
       )}
 
-      {/* Staking CTA for unreserved cards */}
-      {isOnBSCTestnet && userCards.length > 0 && userCards.some(card => !isCardReserved(card.card_type)) && (
+      {/* Staking CTA for current active card */}
+      {isOnBSCTestnet && userCards.length > 0 && (
         <motion.div variants={itemVariants} className="mt-4 text-center">
           <EnhancedButton
             variant="expandIcon"
             Icon={FaCreditCard}
-            onClick={() => window.location.href = '/stake'}
+            onClick={handleStakeClick}
             iconPlacement="right"
             className="bg-purple-600 hover:bg-purple-700 border-purple-500">
             🚀 Stake More to Reserve Cards

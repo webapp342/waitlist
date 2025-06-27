@@ -1,13 +1,34 @@
+"use client";
+
 import Link from "next/link";
 import { Button } from "./ui/button";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Menu } from "lucide-react";
+import { Menu, LogOut } from "lucide-react";
 import { useState } from "react";
+import { useAccount, useDisconnect } from 'wagmi';
+import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+  const router = useRouter();
+
+  const handleDisconnect = () => {
+    disconnect();
+    toast.success("Wallet disconnected successfully!");
+    router.push('/');
+  };
+
+  const copyAddress = async () => {
+    if (address) {
+      await navigator.clipboard.writeText(address);
+      toast.success("Address copied to clipboard!");
+    }
+  };
 
   return (
     <div className="fixed w-full top-0 z-[50] px-4 pt-4">
@@ -52,15 +73,39 @@ export default function Header() {
           </motion.div>
         </div>
 
-        {/* Desktop Connect Wallet Button */}
-        <motion.div variants={itemVariants} className="hidden md:flex items-center">
-          <Button
-            size="lg"
-            variant="default"
-            className="bg-yellow-200 text-black hover:bg-yellow-300 transition-colors rounded-2xl px-6 font-medium"
-          >
-            Connect Wallet
-          </Button>
+        {/* Desktop Wallet Button */}
+        <motion.div variants={itemVariants} className="hidden md:flex items-center gap-2">
+          {isConnected && address ? (
+            <>
+              {/* Wallet Address Button */}
+              <Button
+                onClick={copyAddress}
+                size="lg"
+                variant="outline"
+                className="bg-transparent border-zinc-600 text-zinc-300 hover:bg-zinc-800 hover:border-yellow-200 hover:text-yellow-200 transition-colors rounded-2xl px-4 font-medium"
+              >
+                {`${address.slice(0, 6)}...${address.slice(-4)}`}
+              </Button>
+              
+              {/* Disconnect Button */}
+              <Button
+                onClick={handleDisconnect}
+                size="lg"
+                variant="outline"
+                className="bg-transparent border-red-600 text-red-400 hover:bg-red-600 hover:text-white transition-colors rounded-2xl px-4 font-medium"
+              >
+                <LogOut size={16} />
+              </Button>
+            </>
+          ) : (
+            <Button
+              size="lg"
+              variant="default"
+              className="bg-yellow-200 text-black hover:bg-yellow-300 transition-colors rounded-2xl px-6 font-medium"
+            >
+              Connect Wallet
+            </Button>
+          )}
         </motion.div>
 
         {/* Mobile Menu Button */}
@@ -96,6 +141,40 @@ export default function Header() {
               >
                 Stake
               </Link>
+              
+              {/* Mobile Wallet Controls */}
+              <div className="border-t border-zinc-700 pt-4 flex flex-col gap-2">
+                {isConnected && address ? (
+                  <>
+                    <Button
+                      onClick={copyAddress}
+                      size="sm"
+                      variant="outline"
+                      className="bg-transparent border-zinc-600 text-zinc-300 hover:bg-zinc-800 hover:border-yellow-200 hover:text-yellow-200 transition-colors rounded-xl px-3 font-medium text-sm"
+                    >
+                      {`${address.slice(0, 8)}...${address.slice(-6)}`}
+                    </Button>
+                    
+                    <Button
+                      onClick={handleDisconnect}
+                      size="sm"
+                      variant="outline"
+                      className="bg-transparent border-red-600 text-red-400 hover:bg-red-600 hover:text-white transition-colors rounded-xl px-3 font-medium text-sm"
+                    >
+                      <LogOut size={14} className="mr-2" />
+                      Disconnect
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    size="sm"
+                    variant="default"
+                    className="bg-yellow-200 text-black hover:bg-yellow-300 transition-colors rounded-xl px-4 font-medium"
+                  >
+                    Connect Wallet
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}

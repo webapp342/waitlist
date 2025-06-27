@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAccount } from 'wagmi';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Particles from "@/components/ui/particles";
 import Footer from "@/components/footer";
@@ -25,6 +25,7 @@ const PAYMENT_TOKENS = [
 export default function PresalePage() {
   const { isConnected } = useAccount();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [desiredTokens, setDesiredTokens] = useState('');
   const [selectedToken, setSelectedToken] = useState<number>(TOKEN_IDS.bnb);
   const [isApproving, setIsApproving] = useState(false);
@@ -44,6 +45,14 @@ export default function PresalePage() {
     calculatePaymentAmount,
     TOKEN_PRICES
   } = usePresale();
+
+  // Set desired tokens from URL parameter
+  useEffect(() => {
+    const amountParam = searchParams.get('amount');
+    if (amountParam && !isNaN(Number(amountParam)) && Number(amountParam) > 0) {
+      setDesiredTokens(amountParam);
+    }
+  }, [searchParams]);
 
   // Redirect to home if wallet is not connected
   useEffect(() => {
