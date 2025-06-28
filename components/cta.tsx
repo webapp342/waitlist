@@ -20,9 +20,9 @@ export default function CTA() {
   const router = useRouter();
 
   const cardImages = [
-    { src: "/Classic.svg", alt: "Bblip Classic Card" },
-    { src: "/light.svg", alt: "Bblip Light Card" },
-    { src: "/Classi2c.svg", alt: "Bblip Classic 2 Card" },
+    { src: "/Classic.png", alt: "Bblip Classic Card" },
+    { src: "/light.png", alt: "Bblip Light Card" },
+    { src: "/Classi2c.png", alt: "Bblip Classic 2 Card" },
   ];
 
   const handleWalletAction = () => {

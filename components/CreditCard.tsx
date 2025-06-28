@@ -23,13 +23,13 @@ export default function CreditCard({
   const getSVGPath = () => {
     switch (cardType) {
       case 'bronze':
-        return '/bronze.svg';
+        return '/bronze.png';
       case 'silver':
-        return '/silver.svg';
+        return '/silver.png';
       case 'gold':
-        return '/gold.svg';
+        return '/gold.png';
       default:
-        return '/bronze.svg';
+        return '/bronze.png';
     }
   };
 
