@@ -87,7 +87,7 @@ export default function CreditCard({
               }`} />
               {/* Status Text */}
               <span className={`text-xs font-bold ${
-                isReserved ? 'text-green-300' : 'text-red-300'
+                isReserved ? 'text-green-300' : 'text-red-400'
               }`}>
                 {isReserved ? 'Reserved' : 'Inactive'}
               </span>

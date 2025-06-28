@@ -1,12 +1,12 @@
 'use client'
 
-import { motion } from "framer-motion";
+import { motion, PanInfo, useAnimation, useMotionValue, useTransform } from "framer-motion";
 import TextBlur from "@/components/ui/text-blur";
 import AnimatedShinyText from "@/components/ui/shimmer-text";
 import { EnhancedButton } from "@/components/ui/enhanced-btn";
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
 import { useAccount, useChainId, useSwitchChain, useChains, useBalance } from 'wagmi';
-import { FaTriangleExclamation, FaCreditCard } from "react-icons/fa6";
+import { FaTriangleExclamation, FaCreditCard, FaRegCopy, FaCheck } from "react-icons/fa6";
 import { toast } from "sonner";
 import { useEffect, useState } from 'react';
 import { userService, cardService, Card } from '@/lib/supabase';
@@ -16,9 +16,10 @@ import CreditCard from './CreditCard';
 
 interface DashboardCTAProps {
   userData: UserData;
+  totalUsd: number;
 }
 
-export default function DashboardCTA({ userData }: DashboardCTAProps) {
+export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) {
   const { address, isConnected, chain } = useAccount();
   const chainId = useChainId();
   const chains = useChains();
@@ -26,38 +27,23 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
   const [userCards, setUserCards] = useState<Card[]>([]);
   const [isLoadingCards, setIsLoadingCards] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [bnbPrice, setBnbPrice] = useState<number>(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const [showCardModal, setShowCardModal] = useState(false);
+  const [modalTab, setModalTab] = useState<'details' | 'features'>('details');
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  
+  // Animation controls
+  const controls = useAnimation();
+  const x = useMotionValue(0);
+  const rotate = useTransform(x, [-200, 0, 200], [-10, 0, 10]);
+  const opacity = useTransform(x, [-200, -150, 0, 150, 200], [0.3, 0.5, 1, 0.5, 0.3]);
+  const scale = useTransform(x, [-200, -150, 0, 150, 200], [0.8, 0.9, 1, 0.9, 0.8]);
 
   // Get user's BNB balance
   const { data: balance } = useBalance({
     address: address,
     chainId: 97, // BSC Testnet
   });
-
-  // Clear any existing toasts on component mount
-  useEffect(() => {
-    toast.dismiss();
-  }, []);
-
-  // Fetch BNB price from CoinGecko
-  useEffect(() => {
-    const fetchBNBPrice = async () => {
-      try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd');
-        const data = await response.json();
-        setBnbPrice(data.binancecoin.usd);
-      } catch (error) {
-        console.error('Error fetching BNB price:', error);
-        setBnbPrice(0);
-      }
-    };
-
-    fetchBNBPrice();
-    // Update price every 60 seconds
-    const interval = setInterval(fetchBNBPrice, 60000);
-    
-    return () => clearInterval(interval);
-  }, []);
 
   // Debug logging
   useEffect(() => {
@@ -127,9 +113,9 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
   const isCardReserved = (cardType: string) => {
     switch (cardType) {
       case 'bronze':
-        return stakedAmount >= 1000 && stakedAmount < 2000;
+        return stakedAmount >= 1000;
       case 'silver':
-        return stakedAmount >= 2000 && stakedAmount < 3500;
+        return stakedAmount >= 2000;
       case 'black':
         return stakedAmount >= 3500;
       default:
@@ -190,25 +176,46 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
     }
   };
 
-  const copyCardNumber = async (cardNumber: string) => {
-    await navigator.clipboard.writeText(cardNumber);
-    toast.success("💳 Card number copied to clipboard!");
+  // Copy handler with feedback
+  const handleCopy = async (value: string, field: string) => {
+    await navigator.clipboard.writeText(value);
+    setCopiedField(field);
+    setTimeout(() => setCopiedField(null), 1500);
   };
 
   const handlePrevCard = () => {
+    controls.start({
+      x: [0, 150, 0],
+      transition: { type: "spring", stiffness: 300, damping: 30 }
+    });
     setCurrentCardIndex((prev) => (prev === 0 ? userCards.length - 1 : prev - 1));
   };
 
   const handleNextCard = () => {
+    controls.start({
+      x: [0, -150, 0],
+      transition: { type: "spring", stiffness: 300, damping: 30 }
+    });
     setCurrentCardIndex((prev) => (prev === userCards.length - 1 ? 0 : prev + 1));
   };
-
-  // Format BNB balance for display in USD
-  const formatBalance = () => {
-    if (!balance || bnbPrice === 0) return '$0.00';
-    const balanceValue = parseFloat(balance.formatted);
-    const usdValue = balanceValue * bnbPrice;
-    return `$ ${usdValue.toFixed(2)}`;
+  
+  // Handle drag gestures for card swiping
+  const handleDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    const threshold = 100;
+    
+    if (info.offset.x > threshold) {
+      handlePrevCard();
+    } else if (info.offset.x < -threshold) {
+      handleNextCard();
+    } else {
+      // Reset to center if not past threshold
+      controls.start({
+        x: 0,
+        transition: { type: "spring", stiffness: 500, damping: 30 }
+      });
+    }
+    
+    setIsDragging(false);
   };
 
   // Calculate required stake amount for current active card
@@ -245,7 +252,229 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
     window.location.href = `/stake?amount=${requiredAmount}`;
   };
 
+  // Card carousel component with touch/drag support
+  const CardCarousel = () => {
+    return (
+      <div className="relative w-full mt-10 max-w-[800px] mx-auto">
+        <div 
+          className="relative h-[280px] sm:h-[300px] md:h-[340px] lg:h-[380px] flex items-center justify-center"
+          style={{ perspective: "1200px" }}
+        >
+          {/* Cards Container */}
+          <div className="relative w-full h-full flex items-center justify-center">
+            {userCards.map((card, index) => {
+              const isCenter = index === currentCardIndex;
+              const isLeft = index === (currentCardIndex === 0 ? userCards.length - 1 : currentCardIndex - 1);
+              const isRight = index === (currentCardIndex === userCards.length - 1 ? 0 : currentCardIndex + 1);
+              
+              if (!isCenter && !isLeft && !isRight) return null;
 
+              return (
+                <motion.div
+                  key={card.id}
+                  className={`absolute cursor-pointer`}
+                  initial={false}
+                  animate={isCenter ? {
+                    x: 0,
+                    rotateY: 0,
+                    scale: 1,
+                    opacity: 1,
+                    zIndex: 10
+                  } : isLeft ? {
+                    x: -150,
+                    rotateY: 15,
+                    scale: 0.85,
+                    opacity: 0.6,
+                    zIndex: 5
+                  } : {
+                    x: 150,
+                    rotateY: -15,
+                    scale: 0.85,
+                    opacity: 0.6,
+                    zIndex: 5
+                  }}
+                  transition={{ 
+                    type: "spring",
+                    stiffness: 300,
+                    damping: 30,
+                    mass: 0.8
+                  }}
+                  onClick={() => {
+                    if (!isDragging) {
+                      if (!isCenter) {
+                        isLeft ? handlePrevCard() : handleNextCard();
+                      } else {
+                        setModalTab('details');
+                        setShowCardModal(true);
+                      }
+                    }
+                  }}
+                  style={isCenter ? {
+                    x,
+                    rotateY: rotate,
+                    scale,
+                    opacity,
+                    transformStyle: "preserve-3d",
+                  } : {
+                    transformStyle: "preserve-3d",
+                  }}
+                  drag={isCenter ? "x" : false}
+                  dragConstraints={{ left: 0, right: 0 }}
+                  dragElastic={0.1}
+                  onDragStart={() => setIsDragging(true)}
+                  onDragEnd={handleDragEnd}
+                  whileTap={isCenter ? { cursor: "grabbing" } : undefined}
+                >
+                  <div className={`w-[280px] sm:w-[320px] md:w-[380px] lg:w-[420px] transition-shadow duration-300 ${isCenter ? 'shadow-xl' : 'shadow-md'}`}>
+                    <CreditCard
+                      cardType={card.card_type as 'bronze' | 'silver' | 'black'}
+                      cardNumber={card.card_number}
+                      cvv={card.cvv}
+                      expirationDate={card.expiration_date}
+                      isReserved={isCardReserved(card.card_type)}
+                      balance={`$${totalUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                      onClick={() => {}}
+                    />
+                  </div>
+                  
+                  {/* Add reflection effect for premium look */}
+                  {isCenter && (
+                    <div 
+                      className="absolute inset-0 rounded-xl bg-gradient-to-b from-white/10 to-transparent pointer-events-none"
+                      style={{ transform: "translateZ(1px)" }}
+                    />
+                  )}
+
+                  {/* Card Features Button & Dots - Hemen kartın altına, çok az boşlukla */}
+                  {isCenter && (
+                    <div className="flex items-center justify-center gap-2 mt-2 -mb-5">
+                      <button
+                        onClick={() => {
+                          setModalTab('features');
+                          setTimeout(() => setShowCardModal(true), 0);
+                        }}
+                        className="text-yellow-200 font-semibold text-sm underline underline-offset-4 hover:text-yellow-300 transition-colors"
+                        aria-label="See card features and limits"
+                      >
+                        See Card Features & Limits
+                      </button>
+                      <div className="flex gap-1 ml-2">
+                        {userCards.map((_, index) => (
+                          <button
+                            key={index}
+                            onClick={() => setCurrentCardIndex(index)}
+                            className={`h-2 rounded-full transition-all duration-300 ${
+                              index === currentCardIndex
+                                ? "w-8 bg-yellow-200 shadow-lg"
+                                : "w-2 bg-zinc-600 hover:bg-zinc-500"
+                            }`}
+                            aria-label={`Go to card ${index + 1}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })}
+          </div>
+          
+        </div>
+      </div>
+    );
+  };
+
+  const getCardFeatures = (cardType: string) => {
+    switch (cardType) {
+      case 'bronze':
+        return {
+          title: '',
+          features: [
+            'Digital subscriptions only',
+            '2% BBLIP rewards on subscriptions',
+            '$200 monthly subscription limit',
+            'Virtual card only',
+            'Subscription management dashboard'
+          ],
+          featuresDetailed: [
+            { title: 'Digital Subscriptions', desc: 'Digital subscriptions only' },
+            { title: 'BBLIP Rewards', desc: '2% BBLIP rewards on subscriptions' },
+            { title: 'Subscription Limit', desc: '$200 monthly subscription limit' },
+            { title: 'Virtual Card', desc: 'Virtual card only' },
+            { title: 'Subscription Management', desc: 'Subscription management dashboard' }
+          ],
+          limits: {
+            daily: 200,
+            monthly: 200,
+            type: 'Daily Limit'
+          }
+        };
+      case 'silver':
+        return {
+          title: 'E-Commerce Card',
+          features: [
+            'Online shopping specialized',
+            '1.5% BBLIP rewards on e-commerce',
+            '$1,000 daily online limit',
+            'E-commerce protection insurance',
+            'Shopping analytics dashboard'
+          ],
+          featuresDetailed: [
+            { title: 'Online Shopping', desc: 'Online shopping specialized' },
+            { title: 'BBLIP Rewards', desc: '1.5% BBLIP rewards on e-commerce' },
+            { title: 'Online Limit', desc: '$1,000 daily online limit' },
+            { title: 'E-commerce Protection', desc: 'E-commerce protection insurance' },
+            { title: 'Shopping Analytics', desc: 'Shopping analytics dashboard' }
+          ],
+          limits: {
+            daily: 1000,
+            monthly: 5000,
+            type: 'Daily Limit'
+          }
+        };
+      case 'black':
+        return {
+          title: 'Premium Physical Card',
+          features: [
+            'NFC enabled physical card',
+            '$25,000 daily payment limit',
+            'Apple Pay / Google Pay ready',
+            'Premium metal card design'
+          ],
+          featuresDetailed: [
+            { title: 'NFC Enabled', desc: 'NFC enabled physical card' },
+            { title: 'Payment Limit', desc: '$25,000 daily payment limit' },
+            { title: 'Apple Pay / Google Pay', desc: 'Apple Pay / Google Pay ready' },
+            { title: 'Premium Design', desc: 'Premium metal card design' }
+          ],
+          limits: {
+            daily: 25000,
+            monthly: 50000,
+            type: 'Daily Limit'
+          }
+        };
+      default:
+        return {
+          title: '',
+          features: [],
+          featuresDetailed: [],
+          limits: {
+            daily: 0,
+            monthly: 0,
+            type: ''
+          }
+        };
+    }
+  };
+
+  // Add a helper to format expiration date as MM/YY
+  const formatExpiry = (date: string) => {
+    if (!date) return '';
+    const d = new Date(date);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const yy = String(d.getFullYear()).slice(-2);
+    return `${mm}/${yy}`;
+  };
 
   return (
     <motion.div
@@ -253,12 +482,6 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
       variants={containerVariants}
       initial="hidden"
       animate="visible">
-
-    
-
-
-
- 
 
       {/* Network Switch Button - Only show when on wrong network */}
       {!isOnBSCTestnet && (
@@ -279,119 +502,12 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
       {/* User Cards Display - Only show when on correct network */}
       {isOnBSCTestnet && (
         <motion.div variants={itemVariants} className="mt-8 w-full">
-         
-          
           {isLoadingCards ? (
             <div className="flex justify-center">
               <div className="text-zinc-400">Loading your cards...</div>
             </div>
           ) : userCards.length > 0 ? (
-            <div className="relative w-full max-w-[800px] mx-auto">
-              <div className="relative h-[280px] sm:h-[300px] md:h-[340px] lg:h-[380px] flex items-center justify-center">
-                {/* Cards Container */}
-                <div className="relative w-full h-full flex items-center justify-center">
-                  {userCards.map((card, index) => {
-                    const isCenter = index === currentCardIndex;
-                    const isLeft = index === (currentCardIndex === 0 ? userCards.length - 1 : currentCardIndex - 1);
-                    const isRight = index === (currentCardIndex === userCards.length - 1 ? 0 : currentCardIndex + 1);
-                    
-                    if (!isCenter && !isLeft && !isRight) return null;
-
-                    let position = 'translate-x-0';
-                    let scale = 'scale-100';
-                    let zIndex = 'z-10';
-                    let opacity = 'opacity-100';
-
-                    if (isLeft) {
-                      position = '-translate-x-32 md:-translate-x-40';
-                      scale = 'scale-75';
-                      zIndex = 'z-0';
-                      opacity = 'opacity-60';
-                    } else if (isRight) {
-                      position = 'translate-x-32 md:translate-x-40';
-                      scale = 'scale-75';
-                      zIndex = 'z-0';
-                      opacity = 'opacity-60';
-                    } else if (isCenter) {
-                      position = 'translate-x-0';
-                      scale = 'scale-100';
-                      zIndex = 'z-10';
-                      opacity = 'opacity-100';
-                    }
-
-                    return (
-                      <motion.div
-                        key={card.id}
-                        className={`absolute ${position} ${scale} ${zIndex} ${opacity} cursor-pointer transition-all duration-300 ease-out`}
-                        onClick={() => !isCenter ? setCurrentCardIndex(index) : copyCardNumber(card.card_number)}
-                        initial={false}
-                        animate={{
-                          x: isLeft ? -140 : isRight ? 140 : 0,
-                          scale: isCenter ? 1 : 0.75,
-                          opacity: isCenter ? 1 : 0.6,
-                          rotateY: isLeft ? 25 : isRight ? -25 : 0,
-                        }}
-                        transition={{ duration: 0.4, ease: "easeInOut" }}
-                        style={{ 
-                          transformStyle: "preserve-3d",
-                          perspective: "1000px"
-                        }}
-                      >
-                        <div className="w-[280px] sm:w-[320px] md:w-[380px] lg:w-[420px] hover:scale-105 transition-transform duration-200">
-                          <CreditCard
-                            cardType={card.card_type as 'bronze' | 'silver' | 'black'}
-                            cardNumber={card.card_number}
-                            cvv={card.cvv}
-                            expirationDate={card.expiration_date}
-                            isReserved={isCardReserved(card.card_type)}
-                            balance={formatBalance()}
-                            onClick={() => {}}
-                          />
-                          
-                          
-                        </div>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Card Indicators */}
-              <div className="flex justify-center gap-2 -mt-10">
-                {userCards.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentCardIndex(index)}
-                    className={`h-2 rounded-full transition-all duration-300 ${
-                      index === currentCardIndex
-                        ? "w-8 bg-yellow-200 shadow-lg"
-                        : "w-2 bg-zinc-600 hover:bg-zinc-500"
-                    }`}
-                    aria-label={`Go to card ${index + 1}`}
-                  />
-                ))}
-              </div>
-
-              {/* Current Card Info */}
-              <div className="flex justify-center mt-4">
-                <motion.div
-                  key={currentCardIndex}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="text-center"
-                >
-                  {/* Status indicator for current card */}
-                  {!isCardReserved(userCards[currentCardIndex]?.card_type) && (
-                    <div className="text-xs text-zinc-400 px-2">
-                      {stakedAmount < 1000 && userCards[currentCardIndex]?.card_type === 'bronze' && 'Stake 1,000+ TOKENS to reserve'}
-                      {stakedAmount < 2000 && userCards[currentCardIndex]?.card_type === 'silver' && 'Stake 2,000+ TOKENS to reserve'}
-                      {stakedAmount < 3500 && userCards[currentCardIndex]?.card_type === 'black' && 'Stake 3,500+ TOKENS to reserve'}
-                    </div>
-                  )}
-                </motion.div>
-              </div>
-            </div>
+            <CardCarousel />
           ) : (
             <div className="flex justify-center">
               <div className="text-zinc-400">No cards found. Cards should be generated automatically.</div>
@@ -400,33 +516,29 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
         </motion.div>
       )}
 
-      {/* Cards Stats - Only show when on correct network */}
-      {isOnBSCTestnet && userCards.length > 0 && (
-        <motion.div variants={itemVariants} className="mt-6 text-center">
-          <div className="text-sm text-zinc-400">
-            You have {userCards.length} exclusive card{userCards.length !== 1 ? 's' : ''} • 
-            {userCards.filter(card => isCardReserved(card.card_type)).length} reserved • 
-            Cards created on {userCards[0]?.created_at ? new Date(userCards[0].created_at).toLocaleDateString() : 'N/A'}
-          </div>
-        </motion.div>
-      )}
+   
 
       {/* Staking CTA for current active card */}
       {isOnBSCTestnet && userCards.length > 0 && (
         <motion.div variants={itemVariants} className="mt-4 text-center">
           <EnhancedButton
-            onClick={handleStakeClick}
-            className="text-center w-full bg-yellow-200  text-black bg-yellow-300 border-yellow-200">
+            onClick={isCardReserved(userCards[currentCardIndex]?.card_type) ? 
+              () => window.location.href = '/asset-priorities' : 
+              handleStakeClick}
+            className="text-center w-full bg-yellow-200 text-black bg-yellow-300 border-yellow-200">
             {!isCardReserved(userCards[currentCardIndex]?.card_type) ? (
               <>
-                {stakedAmount < 1000 && userCards[currentCardIndex]?.card_type === 'bronze' && 'Stake 1,000 BBLIP to Activate'}
-                {stakedAmount < 2000 && userCards[currentCardIndex]?.card_type === 'silver' && 'Stake 2,000 BBLIP to Activate'}
-                {stakedAmount < 3500 && userCards[currentCardIndex]?.card_type === 'black' && 'Stake 3,500 BBLIP to Activate'}
+                {userCards[currentCardIndex]?.card_type === 'bronze' && `Stake ${getRequiredStakeAmount().toLocaleString()} BBLIP to Activate`}
+                {userCards[currentCardIndex]?.card_type === 'silver' && `Stake ${getRequiredStakeAmount().toLocaleString()} BBLIP to Activate`}
+                {userCards[currentCardIndex]?.card_type === 'black' && `Stake ${getRequiredStakeAmount().toLocaleString()} BBLIP to Activate`}
               </>
-            ) : 'Card Reserved'}
+            ) : 'Set Your Asset Spending Priorities'}
           </EnhancedButton>
         </motion.div>
       )}
+
+
+    
 
       {/* Network requirement notice */}
       {!isOnBSCTestnet && (
@@ -437,6 +549,117 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
             </p>
           </div>
         </motion.div>
+      )}
+
+      {/* Card Features Modal */}
+      {showCardModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-zinc-900 rounded-2xl p-6 max-w-md w-full mx-4 shadow-xl border border-yellow-400/10 relative">
+            <button
+              onClick={() => setShowCardModal(false)}
+              className="absolute top-3 right-3 text-zinc-400 hover:text-yellow-200 text-xl font-bold"
+              aria-label="Close card details modal"
+            >
+              ×
+            </button>
+            {/* Tab Bar */}
+            <div className="flex mb-6 border-b border-yellow-400/10">
+              <button
+                className={`flex-1 py-2 text-sm font-semibold transition-colors ${modalTab === 'details' ? 'text-yellow-200 border-b-2 border-yellow-200' : 'text-zinc-400 hover:text-yellow-200'}`}
+                onClick={() => setModalTab('details')}
+              >
+                Details
+              </button>
+              <button
+                className={`flex-1 py-2 text-sm font-semibold transition-colors ${modalTab === 'features' ? 'text-yellow-200 border-b-2 border-yellow-200' : 'text-zinc-400 hover:text-yellow-200'}`}
+                onClick={() => setModalTab('features')}
+              >
+                Features
+              </button>
+            </div>
+            {/* Tab Content */}
+            {modalTab === 'details' ? (
+              <div className="flex flex-col gap-4">
+                <div className="bg-gradient-to-br from-zinc-800 to-zinc-900 border border-yellow-400/10 rounded-xl p-5 shadow flex flex-col gap-4 relative">
+                  {/* Card Number Row */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="text-xs text-zinc-400 font-medium mb-1">Card Number</div>
+                      <div className="font-mono text-xl text-yellow-100 tracking-widest select-all">{userCards[currentCardIndex]?.card_number.replace(/(.{4})/g, '$1 ')}</div>
+                      {copiedField === 'number' && <div className="text-xs text-green-400 mt-1 animate-pulse">Copied!</div>}
+                    </div>
+                    <button
+                      onClick={() => handleCopy(userCards[currentCardIndex]?.card_number, 'number')}
+                      className="text-yellow-200 hover:text-yellow-300 p-2 rounded-full border border-yellow-400/20 bg-black/30 ml-2"
+                      aria-label="Copy card number"
+                    >
+                      {copiedField === 'number' ? <FaCheck className="w-5 h-5 text-green-400" /> : <FaRegCopy className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  {/* CVV & Expiry Row */}
+                  <div className="flex items-center gap-4">
+                    <div className="flex-1 flex items-center justify-between gap-2">
+                      <div>
+                        <div className="text-xs text-zinc-400 font-medium mb-1">CVV</div>
+                        <div className="font-mono text-lg text-yellow-100 select-all">{userCards[currentCardIndex]?.cvv}</div>
+                        {copiedField === 'cvv' && <div className="text-xs text-green-400 mt-1 animate-pulse">Copied!</div>}
+                      </div>
+                      <button
+                        onClick={() => handleCopy(userCards[currentCardIndex]?.cvv, 'cvv')}
+                        className="text-yellow-200 hover:text-yellow-300 p-2 rounded-full border border-yellow-400/20 bg-black/30 ml-2"
+                        aria-label="Copy CVV"
+                      >
+                        {copiedField === 'cvv' ? <FaCheck className="w-5 h-5 text-green-400" /> : <FaRegCopy className="w-5 h-5" />}
+                      </button>
+                    </div>
+                    <div className="flex-1 flex items-center justify-between gap-2">
+                      <div>
+                        <div className="text-xs text-zinc-400 font-medium mb-1">Expires</div>
+                        <div className="font-mono text-lg text-yellow-100 select-all">{formatExpiry(userCards[currentCardIndex]?.expiration_date)}</div>
+                        {copiedField === 'exp' && <div className="text-xs text-green-400 mt-1 animate-pulse">Copied!</div>}
+                      </div>
+                      <button
+                        onClick={() => handleCopy(userCards[currentCardIndex]?.expiration_date, 'exp')}
+                        className="text-yellow-200 hover:text-yellow-300 p-2 rounded-full border border-yellow-400/20 bg-black/30 ml-2"
+                        aria-label="Copy expiration date"
+                      >
+                        {copiedField === 'exp' ? <FaCheck className="w-5 h-5 text-green-400" /> : <FaRegCopy className="w-5 h-5" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <>
+             
+              
+                {/* Features Grid with Titles and Descriptions */}
+                <div className="grid grid-cols-1 gap-3 mt-2 mb-4">
+                  {getCardFeatures(userCards[currentCardIndex]?.card_type).featuresDetailed?.map((feature, index) => (
+                    <div key={index} className="flex items-start gap-2 py-2 border-b border-yellow-400/5 last:border-0">
+                      <span className="mt-1 w-2 h-2 rounded-full bg-yellow-300 inline-block"></span>
+                      <div>
+                        <div className="text-sm text-yellow-200 font-semibold">{feature.title}</div>
+                        <div className="text-xs text-zinc-400 mt-0.5">{feature.desc}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {/* Financial Limits Box */}
+                <div className="bg-black/30 rounded-lg p-3 border border-yellow-400/10 flex flex-col gap-2">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-400 font-medium">Daily Limit</span>
+                    <span className="text-yellow-200 font-bold">${getCardFeatures(userCards[currentCardIndex]?.card_type)?.limits?.daily?.toLocaleString?.() || '0'}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-zinc-400 font-medium">Monthly Limit</span>
+                    <span className="text-yellow-200 font-bold">${getCardFeatures(userCards[currentCardIndex]?.card_type)?.limits?.monthly?.toLocaleString?.() || '0'}</span>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
       )}
     </motion.div>
   );

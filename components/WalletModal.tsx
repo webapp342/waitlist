@@ -1,6 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useConnect } from 'wagmi';
 import { FaTimes } from 'react-icons/fa';
+import { FaWallet } from 'react-icons/fa6';
 
 interface WalletModalProps {
   open: boolean;
@@ -9,6 +10,11 @@ interface WalletModalProps {
 
 export default function WalletModal({ open, onClose }: WalletModalProps) {
   const { connect, connectors, isPending } = useConnect();
+
+  // Filter out the injected connector and any other connectors we want to hide
+  const filteredConnectors = connectors.filter(connector => 
+    connector.id !== 'injected' && connector.name !== 'Mock Connector'
+  );
 
   const handleSelect = async (connector: any) => {
     try {
@@ -49,19 +55,39 @@ export default function WalletModal({ open, onClose }: WalletModalProps) {
             >
               <FaTimes />
             </button>
-            <h2 className="text-xl font-semibold mb-4 text-white text-center">Connect Wallet</h2>
+            <div className="text-center mb-6">
+              <div className="flex justify-center mb-3">
+                <div className="w-12 h-12 bg-yellow-200/20 rounded-full flex items-center justify-center">
+                  <FaWallet className="text-yellow-200 w-5 h-5" />
+                </div>
+              </div>
+              <h2 className="text-xl font-semibold text-white">Connect Wallet</h2>
+              <p className="text-zinc-400 text-sm mt-1">Choose your preferred wallet to continue</p>
+            </div>
+            
             <div className="flex flex-col gap-3">
-              {connectors.map((connector) => (
+              {filteredConnectors.map((connector) => (
                 <button
                   key={connector.id}
                   onClick={() => handleSelect(connector)}
                   disabled={isPending}
-                  className="w-full px-4 py-3 bg-black/60 backdrop-blur-xl border border-yellow-400/10 hover:bg-black/40 hover:border-yellow-400/20 text-white font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full px-4 py-3.5 bg-black/60 backdrop-blur-xl border border-yellow-400/10 hover:bg-black/40 hover:border-yellow-400/20 text-white font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  {connector.name}
-                  {isPending && ' (connecting)'}
+                  <span>{connector.name}</span>
+                  {isPending && (
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  )}
                 </button>
               ))}
+            </div>
+            
+            <div className="mt-5 pt-4 border-t border-zinc-800/70">
+              <p className="text-xs text-zinc-500 text-center">
+                By connecting your wallet, you agree to our Terms of Service and Privacy Policy
+              </p>
             </div>
           </motion.div>
         </motion.div>

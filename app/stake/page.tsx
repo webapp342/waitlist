@@ -306,42 +306,29 @@ function StakeContent() {
           {/* Main Staking Card */}
           <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-3xl border border-yellow-400/10 p-6 md:p-8 mb-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10">
             
+            {/* Portfolio Overview Header */}
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-6 h-6 rounded-full bg-yellow-400/20 border border-yellow-400/30 flex items-center justify-center">
+                <TrendingUp className="w-3 h-3 text-yellow-200" />
+              </div>
+              <h2 className="text-lg font-semibold text-white">Portfolio Overview</h2>
+            </div>
+
             {/* User Status Summary */}
-            <div className="mb-8">
-              <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/5">
-                  <p className="text-xs text-gray-400 mb-1">Available</p>
-                  <p className="text-lg font-bold text-white">{formatTokenAmount(userData.tokenBalance)}</p>
-                  <p className="text-xs text-gray-500">BBLIP</p>
-                </div>
-                <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/5">
-                  <p className="text-xs text-gray-400 mb-1">Staked</p>
-                  <p className="text-lg font-bold text-yellow-200">{formatTokenAmount(userData.stakedAmount)}</p>
-                  <p className="text-xs text-gray-500">BBLIP</p>
-                  {userData.stakedAmount && parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.BRONZE && (
-                    <div className="mt-1">
-                      <span className={cn(
-                        "text-xs px-2 py-0.5 rounded-full bg-black/80 border border-yellow-400/10",
-                        parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.BLACK 
-                          ? "text-yellow-200"
-                          : parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.SILVER
-                          ? "text-gray-300"
-                          : "text-amber-600"
-                      )}>
-                        {parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.BLACK 
-                          ? 'BLACK'
-                          : parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.SILVER
-                          ? 'SILVER'
-                          : 'BRONZE'}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/5">
-                  <p className="text-xs text-gray-400 mb-1">Rewards</p>
-                  <p className="text-lg font-bold text-yellow-200">{formatTokenAmount(userData.pendingRewards)}</p>
-                  <p className="text-xs text-gray-500">BBLIP</p>
-                </div>
+            <div className="grid grid-cols-3 gap-3 md:gap-4 mb-6">
+              <div className="bg-gradient-to-br from-black/80 to-black/60 p-3 md:p-6 rounded-xl md:rounded-2xl border border-yellow-400/10 shadow-lg">
+                <p className="text-lg md:text-2xl font-bold text-white mb-1">{formatTokenAmount(userData.tokenBalance)}</p>
+                <p className="text-xs md:text-sm text-gray-400">BBLIP Balance</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-black/80 to-black/60 p-3 md:p-6 rounded-xl md:rounded-2xl border border-yellow-400/20 shadow-lg shadow-yellow-400/5">
+                <p className="text-lg md:text-2xl font-bold text-yellow-200 mb-1">{formatTokenAmount(userData.stakedAmount)}</p>
+                <p className="text-xs md:text-sm text-gray-400">Total Staked</p>
+              </div>
+
+              <div className="bg-gradient-to-br from-black/80 to-black/60 p-3 md:p-6 rounded-xl md:rounded-2xl border border-green-400/10 shadow-lg">
+                <p className="text-lg md:text-2xl font-bold text-green-200 mb-1">{formatTokenAmount(userData.pendingRewards)}</p>
+                <p className="text-xs md:text-sm text-gray-400">P.Rewards</p>
               </div>
             </div>
 
@@ -361,10 +348,10 @@ function StakeContent() {
               <div className="relative">
                 <Input
                   type="number"
-                  placeholder="0.00"
+                  placeholder="1000"
                   value={stakeAmount}
                   onChange={(e) => setStakeAmount(e.target.value)}
-                  className="h-14 text-lg font-semibold bg-black/60 border-yellow-400/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
+                  className="h-12 md:h-14 text-lg font-semibold bg-black/60 border-yellow-400/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
                   disabled={walletState.loading}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
@@ -372,53 +359,52 @@ function StakeContent() {
                 </div>
               </div>
 
-              {/* Balance Check */}
+              {/* Professional Insufficient Balance Design */}
               {stakeAmount && !hasEnoughBalance() && (
-                <div className="mt-2 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                  <p className="text-sm text-red-400">
-                    {getInsufficientBalanceMessage()}
-                  </p>
-                </div>
-              )}
-
-              {/* Purchase Button */}
-              {stakeAmount && !hasEnoughBalance() && (
-                <Link 
-                  href={`/presale?amount=${parseFloat(stakeAmount) - availableBalance}`}
-                  className={cn(
-                    "mt-2 w-full flex items-center justify-center px-4 py-3 rounded-xl",
-                    "bg-black/60 border border-yellow-400/20",
-                    "text-yellow-200 hover:text-yellow-300 hover:bg-black/40",
-                    "transition-all duration-300"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    <DollarSign className="w-4 h-4" />
-                    <span className="font-medium">
-                      Purchase BBLIP from Presale
-                    </span>
+                <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-400/20">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center mt-0.5 flex-shrink-0">
+                      <Info className="w-3 h-3 text-orange-400" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-sm font-medium text-orange-200 mb-2">Insufficient Balance</h4>
+                      <p className="text-xs text-orange-300/80 mb-3 leading-relaxed">
+                        You need <span className="font-semibold text-orange-200">{(parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))).toFixed(2)} more BBLIP</span> to complete this stake.
+                        {getCardTypeForAmount(parseFloat(stakeAmount)) && (
+                          <span className="block mt-1">
+                            This will activate your <span className="font-semibold text-yellow-200">{getCardTypeForAmount(parseFloat(stakeAmount))}</span> card tier.
+                          </span>
+                        )}
+                      </p>
+                      
+                      <Link 
+                        href={`/presale?amount=${parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))}`}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 border border-orange-400/30 text-orange-200 hover:text-orange-100 transition-all duration-200 text-sm font-medium"
+                      >
+                        <DollarSign className="w-4 h-4" />
+                        Buy {(parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))).toFixed(2)} BBLIP
+                      </Link>
+                    </div>
                   </div>
-                </Link>
+                </div>
               )}
             </div>
 
-            {/* Estimated Rewards Section */}
-            <div className="p-4 rounded-xl bg-black/60 border border-yellow-400/10 mb-6">
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-yellow-200" />
-                </div>
+            {/* Estimated Rewards Section - Compact for Mobile */}
+            <div className="p-3 md:p-4 rounded-xl bg-black/60 border border-yellow-400/10 mb-6">
+              <div className="flex items-center gap-2 mb-3 md:mb-4">
+                <TrendingUp className="w-4 h-4 text-yellow-200" />
                 <h3 className="text-sm font-medium text-white">Estimated Rewards</h3>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Daily</p>
-                  <p className="text-lg font-bold text-yellow-200">{estimatedRewards.daily.toFixed(4)}</p>
+                  <p className="text-base md:text-lg font-bold text-yellow-200">{estimatedRewards.daily.toFixed(4)}</p>
                   <p className="text-xs text-gray-500">~${estimatedRewards.dailyUSD.toFixed(2)} USD</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Yearly</p>
-                  <p className="text-lg font-bold text-yellow-200">{estimatedRewards.yearly.toFixed(2)}</p>
+                  <p className="text-base md:text-lg font-bold text-yellow-200">{estimatedRewards.yearly.toFixed(2)}</p>
                   <p className="text-xs text-gray-500">~${estimatedRewards.yearlyUSD.toFixed(2)} USD</p>
                 </div>
               </div>
@@ -427,7 +413,7 @@ function StakeContent() {
             {/* Stake Button */}
             <Button
               className={cn(
-                "w-full bg-yellow-200 hover:bg-yellow-300 text-black font-medium shadow-lg",
+                "w-full bg-yellow-200 hover:bg-yellow-300 text-black font-medium shadow-lg h-12 md:h-14",
                 "transition-all duration-300"
               )}
               size="lg"
@@ -435,47 +421,83 @@ function StakeContent() {
               onClick={handleApproveAndStake}
             >
               {walletState.loading ? (
-                <div className="flex items-center">
-                  <span className="mr-2">Processing...</span>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                  Processing...
                 </div>
               ) : (
-                <div className="flex items-center">
-                  <Zap className="w-4 h-4 mr-2" />
+                <div className="flex items-center gap-2">
+                  <Zap className="w-4 h-4" />
                   Approve & Stake
                 </div>
               )}
             </Button>
           </div>
 
+          {/* Rewards Available - Compact Design */}
+          {userData.pendingRewards && parseFloat(formatTokenAmount(userData.pendingRewards)) > 0 && (
+            <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-xl border border-green-400/20 p-4 mb-6 shadow-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center">
+                    <DollarSign className="w-4 h-4 text-green-400" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-white">Rewards Available</h4>
+                    <p className="text-xs text-gray-400">{formatTokenAmount(userData.pendingRewards)} BBLIP</p>
+                  </div>
+                </div>
+                
+                <Button
+                  onClick={claimRewards}
+                  disabled={walletState.loading}
+                  className={cn(
+                    "bg-green-400 hover:bg-green-500 text-black font-medium px-4",
+                    "transition-all duration-300"
+                  )}
+                  size="sm"
+                >
+                  {walletState.loading ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                      Processing...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-4 h-4" />
+                      Claim
+                    </div>
+                  )}
+                </Button>
+              </div>
+            </div>
+          )}
+
           {/* Staking Details Accordion */}
-          <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-xl border border-yellow-400/10 overflow-hidden">
+          <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-xl border border-yellow-400/10 overflow-hidden mb-6">
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="w-full px-4 py-4 flex items-center justify-between text-left"
+              className="w-full px-4 py-3 flex items-center justify-between text-left"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
-                  <Info className="w-4 h-4 text-yellow-200" />
-                </div>
+                <Info className="w-4 h-4 text-yellow-200" />
                 <div>
                   <h3 className="text-sm font-medium text-white">Staking Details</h3>
                   <p className="text-xs text-gray-400">Terms and conditions</p>
                 </div>
               </div>
               {showDetails ? (
-                <ChevronUp className="w-5 h-5 text-gray-400" />
+                <ChevronUp className="w-4 h-4 text-gray-400" />
               ) : (
-                <ChevronDown className="w-5 h-5 text-gray-400" />
+                <ChevronDown className="w-4 h-4 text-gray-400" />
               )}
             </button>
             
             {showDetails && (
-              <div className="px-4 pb-4">
-                <div className="space-y-4">
+              <div className="px-4 pb-4 border-t border-yellow-400/10">
+                <div className="space-y-3 pt-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
-                      <TrendingUp className="w-4 h-4 text-yellow-200" />
-                    </div>
+                    <TrendingUp className="w-4 h-4 text-yellow-200" />
                     <div>
                       <h4 className="text-sm font-medium text-white">Annual Percentage Rate</h4>
                       <p className="text-xs text-gray-400">Earn 10% APR on your staked tokens</p>
@@ -483,9 +505,7 @@ function StakeContent() {
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
-                      <Shield className="w-4 h-4 text-yellow-200" />
-                    </div>
+                    <Shield className="w-4 h-4 text-yellow-200" />
                     <div>
                       <h4 className="text-sm font-medium text-white">Minimum Stake</h4>
                       <p className="text-xs text-gray-400">1,000 BBLIP minimum required for Bronze card activation</p>
@@ -493,9 +513,7 @@ function StakeContent() {
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
-                      <Clock className="w-4 h-4 text-yellow-200" />
-                    </div>
+                    <Clock className="w-4 h-4 text-yellow-200" />
                     <div>
                       <h4 className="text-sm font-medium text-white">Staking Period</h4>
                       <p className="text-xs text-gray-400">No lock-up period, unstake anytime</p>
@@ -503,9 +521,7 @@ function StakeContent() {
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
-                      <DollarSign className="w-4 h-4 text-yellow-200" />
-                    </div>
+                    <DollarSign className="w-4 h-4 text-yellow-200" />
                     <div>
                       <h4 className="text-sm font-medium text-white">Staking Fee</h4>
                       <p className="text-xs text-gray-400">No fees for staking or unstaking</p>
@@ -515,6 +531,118 @@ function StakeContent() {
               </div>
             )}
           </div>
+
+          {/* Active Stakes List */}
+          {userData.stakes && userData.stakes.length > 0 && (
+            <>
+              {/* Active Stakes Header */}
+              <div className="mb-4">
+                <h3 className="text-lg font-semibold text-white">Active Stakes</h3>
+                <p className="text-sm text-gray-400">Manage your staking positions</p>
+              </div>
+
+              {/* Stakes List */}
+              <div className="space-y-4 mb-6">
+                {userData.stakes.map((stake: any, index: number) => {
+                  const stakeAmount = formatTokenAmount(stake.amount);
+                  const stakeDate = new Date(Number(stake.timestamp) * 1000);
+                  const currentTime = Math.floor(Date.now() / 1000);
+                  const stakingPeriod = currentTime - Number(stake.timestamp);
+                  const minPeriod = Number(userData.minimumStakingPeriod);
+                  const canUnstake = stakingPeriod >= minPeriod;
+                  const remainingTime = minPeriod - stakingPeriod;
+                  const remainingDays = Math.ceil(remainingTime / 86400);
+
+                  return (
+                    <div key={index} className="bg-gradient-to-br from-black/80 to-black/60 p-6 rounded-2xl border border-yellow-400/10 shadow-lg">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-yellow-400/10 border border-yellow-400/20 flex items-center justify-center">
+                            <span className="text-yellow-200 font-bold text-sm">#{stake.stakeId}</span>
+                          </div>
+                          <div>
+                            <p className="text-xl font-bold text-white">{stakeAmount} BBLIP</p>
+                            <p className="text-sm text-gray-400">
+                              Staked on {stakeDate.toLocaleDateString('en-US', { 
+                                year: 'numeric', 
+                                month: 'short', 
+                                day: 'numeric' 
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className={cn(
+                              "w-2 h-2 rounded-full",
+                              canUnstake ? "bg-green-400" : "bg-orange-400"
+                            )}></div>
+                            <span className={cn(
+                              "text-sm font-medium",
+                              canUnstake ? "text-green-300" : "text-orange-300"
+                            )}>
+                              {canUnstake ? 'Ready' : 'Locked'}
+                            </span>
+                          </div>
+                          {!canUnstake && (
+                            <p className="text-xs text-gray-400">
+                              {remainingDays} days remaining
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-4 border-t border-yellow-400/10">
+                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                          <Clock className="w-4 h-4" />
+                          <span>
+                            {canUnstake 
+                              ? `Staked for ${Math.floor(stakingPeriod / 86400)} days`
+                              : `${remainingDays} days until unlock`
+                            }
+                          </span>
+                        </div>
+                        
+                        <Button
+                          onClick={() => handleUnstake(stake.stakeId)}
+                          disabled={walletState.loading}
+                          className={cn(
+                            "bg-yellow-200 hover:bg-yellow-300 text-black font-medium px-6",
+                            "transition-all duration-300",
+                            !canUnstake && "opacity-50 cursor-not-allowed"
+                          )}
+                          size="sm"
+                        >
+                          {walletState.loading ? (
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                              Processing...
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <ArrowLeft className="w-4 h-4" />
+                              Unstake
+                            </div>
+                          )}
+                        </Button>
+                      </div>
+
+                      {!canUnstake && (
+                        <div className="mt-4 p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
+                          <div className="flex items-center gap-2">
+                            <Info className="w-4 h-4 text-orange-300" />
+                            <p className="text-sm text-orange-300">
+                              This stake is still in the minimum lock period. You can unstake in {remainingDays} days.
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
         <Footer />

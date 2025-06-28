@@ -15,6 +15,7 @@ import Container from "@/components/container";
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import FeaturesGridSecond from "@/components/features-grid-second";
 
 export default function Home() {
   const { isConnected } = useAccount();
@@ -53,9 +54,15 @@ export default function Home() {
           <Logos />
         </Container>
       </section>
+
+
+      <FeaturesGridSecond />
+
       
       {/* Testimonials */}
       <Testimonials />
+
+
       
       {/* FAQ Section */}
       <FAQSection />

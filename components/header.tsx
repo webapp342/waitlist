@@ -56,10 +56,10 @@ export default function Header() {
           {/* Desktop Menu */}
           <motion.nav variants={itemVariants} className="hidden md:flex items-center gap-10">
             <Link 
-              href="/features" 
+              href="/presale" 
               className="text-base font-medium text-zinc-400 hover:text-yellow-200 transition-colors"
             >
-              Features
+              Presale
             </Link>
             <Link 
               href="/dashboard" 
@@ -126,11 +126,11 @@ export default function Header() {
           <div className="absolute top-full left-0 right-0 mt-2 p-2 bg-[#111111]/95 backdrop-blur-lg rounded-[20px] border border-zinc-800/50 shadow-xl md:hidden">
             <nav className="flex flex-col gap-5 mb-6">
               <Link 
-                href="/features" 
+                href="/presale" 
                 className="text-base font-medium text-zinc-300 hover:text-yellow-200 transition-colors px-2 py-1.5 rounded-lg hover:bg-white/5"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Features
+                Presale
               </Link>
               <Link 
                 href="/dashboard" 

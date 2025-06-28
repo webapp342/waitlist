@@ -1,7 +1,9 @@
 'use client'
 
 import { motion } from 'framer-motion'
+import { ChevronRight } from 'lucide-react'
 import Container from './container'
+import { useRef, useState, useEffect } from 'react'
 
 interface Testimonial {
   name: string
@@ -86,6 +88,35 @@ const testimonials: Testimonial[] = [
 ]
 
 export default function Testimonials() {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [activeIndex, setActiveIndex] = useState(0);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return;
+    
+    const scrollAmount = direction === 'left' ? -320 : 320;
+    scrollContainerRef.current.scrollBy({
+      left: scrollAmount,
+      behavior: 'smooth'
+    });
+  };
+
+  // Update active index based on scroll position
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const handleScrollEnd = () => {
+      const scrollLeft = container.scrollLeft;
+      const cardWidth = 320; // min-w-[320px] from our card class
+      const newIndex = Math.round(scrollLeft / cardWidth);
+      setActiveIndex(newIndex);
+    };
+
+    container.addEventListener('scrollend', handleScrollEnd);
+    return () => container.removeEventListener('scrollend', handleScrollEnd);
+  }, []);
+
   return (
     <section className="w-full py-20">
       <Container size="lg">
@@ -103,22 +134,11 @@ export default function Testimonials() {
           </p>
         </motion.div>
         
-        <div className="relative">
-          {/* Scroll Buttons */}
-          <button
-            onClick={() => document.getElementById('t-scroll')?.scrollBy({left:-320,behavior:'smooth'})}
-            className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur border border-zinc-700 text-white"
-            aria-label="Scroll left">
-            ◄
-          </button>
-          <button
-            onClick={() => document.getElementById('t-scroll')?.scrollBy({left:320,behavior:'smooth'})}
-            className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 z-10 p-2 rounded-full bg-black/60 hover:bg-black/80 backdrop-blur border border-zinc-700 text-white"
-            aria-label="Scroll right">
-            ►
-          </button>
-
-          <div id="t-scroll" className="flex gap-6 overflow-x-scroll overflow-y-hidden pb-4 scroll-smooth snap-x snap-mandatory no-scrollbar touch-pan-x">
+        <div className="relative max-w-[1200px] mx-auto">
+          <div 
+            ref={scrollContainerRef}
+            className="flex gap-6 overflow-x-scroll overflow-y-hidden pb-4 scroll-smooth snap-x snap-mandatory no-scrollbar touch-pan-x"
+          >
             {testimonials.map((item, idx) => (
               <motion.div
                 key={idx}
@@ -126,7 +146,7 @@ export default function Testimonials() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: idx * 0.05 }}
-                className="min-w-[280px] md:min-w-[320px] bg-black/40 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6 lg:p-8 flex flex-col hover:border-yellow-400/20 transition-colors duration-300 snap-start"
+                className="relative min-w-[280px] md:min-w-[320px] lg:min-w-[380px] bg-black/40 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6 lg:p-8 flex flex-col hover:border-yellow-400/20 transition-colors duration-300 snap-start"
               >
                 <p className="text-zinc-300 leading-relaxed flex-grow text-lg mb-6">
                   &quot;{item.quote}&quot;
@@ -140,7 +160,38 @@ export default function Testimonials() {
                     )}
                   </div>
                 </div>
+                {idx === 0 && (
+                  <button
+                    onClick={() => handleScroll('right')}
+                    className="absolute bottom-6 right-6 w-10 h-10 rounded-full bg-yellow-400/20 hover:bg-yellow-400/30 flex items-center justify-center transition-colors duration-300"
+                    aria-label="Next testimonial"
+                  >
+                    <ChevronRight className="w-6 h-6 text-yellow-200" />
+                  </button>
+                )}
               </motion.div>
+            ))}
+          </div>
+
+          {/* Navigation Dots */}
+          <div className="flex justify-center gap-2 mt-4">
+            {testimonials.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (!scrollContainerRef.current) return;
+                  scrollContainerRef.current.scrollTo({
+                    left: idx * (window.innerWidth >= 1024 ? 380 : 320),
+                    behavior: 'smooth'
+                  });
+                }}
+                className={`h-2 rounded-full transition-all duration-300 ${
+                  idx === activeIndex
+                    ? "w-8 bg-yellow-200"
+                    : "w-2 bg-zinc-600 hover:bg-zinc-500"
+                }`}
+                aria-label={`Go to testimonial ${idx + 1}`}
+              />
             ))}
           </div>
         </div>

@@ -6,20 +6,22 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Particles from "@/components/ui/particles";
 import Footer from "@/components/footer";
+import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePresale } from '@/hooks/usePresale';
 import { TOKEN_IDS } from '@/config/presale';
 import { formatUnits } from 'ethers';
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
-import TextBlur from "@/components/ui/text-blur";
-import AnimatedShinyText from "@/components/ui/shimmer-text";
+import { Info, ChevronDown, ChevronUp, TrendingUp, Shield, Clock, DollarSign, Zap } from 'lucide-react';
 
 const PAYMENT_TOKENS = [
-  { id: TOKEN_IDS.bnb, name: 'BNB', icon: '💎', color: 'from-yellow-600 to-yellow-400' },
-  { id: TOKEN_IDS.usdt, name: 'USDT', icon: '💵', color: 'from-green-600 to-green-400' },
-  { id: TOKEN_IDS.busd, name: 'BUSD', icon: '💰', color: 'from-blue-600 to-blue-400' },
+  { id: TOKEN_IDS.bnb, name: 'BNB', icon: '/bnb.svg', color: 'from-yellow-600 to-yellow-400' },
+  { id: TOKEN_IDS.usdt, name: 'USDT', icon: '/usdt.svg', color: 'from-green-600 to-green-400' },
+  { id: TOKEN_IDS.busd, name: 'BUSD', icon: '/busd.svg', color: 'from-blue-600 to-blue-400' },
 ];
 
 function PresalePageInner() {
@@ -34,6 +36,7 @@ function PresalePageInner() {
   const [error, setError] = useState<string | null>(null);
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [hasAllowance, setHasAllowance] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   
   const { 
     presaleInfo, 
@@ -164,13 +167,292 @@ function PresalePageInner() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-12 md:pt-24">
-        <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full max-w-4xl">
-          <div className="text-center">
-            <div className="text-2xl text-white mb-4">Loading presale information...</div>
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto"></div>
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-200"></div>
+          <p className="mt-4 text-gray-400">Loading presale information...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Header />
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-32 md:pt-32">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
+          
+          <div className="text-center mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-2">
+              Buy BBLIP
+            </h1>
+            <p className="text-gray-400 text-sm md:text-base">
+              Join the presale and get BBLIP at the <span className="text-yellow-200 font-semibold">best price!</span>
+            </p>
           </div>
-        </section>
+
+          {/* Presale Progress Stepper */}
+          <div className="mb-8">
+            <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-2xl border border-yellow-400/10 p-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10">
+              <div className="flex items-center justify-between relative">
+                {/* Progress Line */}
+                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-zinc-800 -translate-y-1/2 z-0"></div>
+                <div className="absolute top-1/2 left-0 w-2/3 h-0.5 bg-yellow-400 -translate-y-1/2 z-0"></div>
+
+                {/* Stage 1 - Seed Sale (Completed) */}
+                <div className="flex flex-col items-center relative z-10 bg-[#0A0A0A] px-4">
+                  <div className="w-12 h-12 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center mb-3">
+                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-sm font-semibold text-white mb-1">Seed Sale</h3>
+                    <p className="text-xs text-gray-400 mb-2">Completed</p>
+                    <p className="text-lg font-bold text-white">$0.07</p>
+                  </div>
+                </div>
+
+                {/* Stage 2 - Presale (Active) */}
+                <div className="flex flex-col items-center relative z-10 bg-[#0A0A0A] px-4">
+                  <div className="w-12 h-12 rounded-full bg-yellow-400 border-2 border-yellow-300 flex items-center justify-center mb-3 shadow-lg shadow-yellow-400/25">
+                    <span className="text-black font-bold text-sm">02</span>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-sm font-semibold text-yellow-400 mb-1">Presale</h3>
+                    <p className="text-xs text-yellow-300 mb-2">Active Now</p>
+                    <p className="text-lg font-bold text-yellow-400">$0.10</p>
+                  </div>
+                </div>
+
+                {/* Stage 3 - Public Launch */}
+                <div className="flex flex-col items-center relative z-10 bg-[#0A0A0A] px-4">
+                  <div className="w-12 h-12 rounded-full bg-zinc-700/50 border-2 border-zinc-600 flex items-center justify-center mb-3">
+                    <span className="text-zinc-400 font-bold text-sm">03</span>
+                  </div>
+                  <div className="text-center">
+                    <h3 className="text-sm font-semibold text-zinc-300 mb-1">Public Launch</h3>
+                    <p className="text-xs text-zinc-400 mb-2">Coming Soon</p>
+                    <p className="text-lg font-bold text-zinc-300">$0.14</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Presale Card */}
+          <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-3xl border border-yellow-400/10 p-6 md:p-8 mb-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10">
+            
+            {/* Presale Info Grid */}
+            <div className="grid grid-cols-3 gap-4 mb-8">
+              <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/10">
+                <p className="text-lg font-bold text-yellow-200">$0.10</p>
+                <p className="text-xs text-gray-400">Token Price</p>
+              </div>
+              <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/10">
+                <p className="text-lg font-bold text-white">0</p>
+                <p className="text-xs text-gray-400">Purchased</p>
+              </div>
+              <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/10">
+                <p className="text-lg font-bold text-yellow-200">Presale</p>
+                <p className="text-xs text-gray-400">Round 2</p>
+              </div>
+            </div>
+
+            {/* Token Amount Input */}
+            <div className="mb-6">
+              <div className="flex items-center justify-between mb-3">
+                <label className="text-sm font-medium text-gray-300">Tokens to Purchase</label>
+              </div>
+              
+              <div className="relative">
+                <Input
+                  type="number"
+                  placeholder="1000"
+                  value={desiredTokens}
+                  onChange={(e) => setDesiredTokens(e.target.value)}
+                  className="h-12 md:h-14 text-lg font-semibold bg-black/60 border-yellow-400/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
+                  disabled={loading || presaleInfo?.isPaused}
+                />
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
+                  BBLIP
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Token Selection */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-300 mb-3">Choose Payment Method</label>
+              <div className="grid grid-cols-3 gap-3">
+                {PAYMENT_TOKENS.map((token) => (
+                  <button
+                    key={token.id}
+                    onClick={() => setSelectedToken(token.id)}
+                    className={cn(
+                      "p-3 md:p-4 rounded-xl flex flex-col items-center justify-center transition-all duration-300 border-2",
+                      selectedToken === token.id 
+                        ? 'bg-yellow-400/10 border-yellow-400/60 scale-105 shadow-lg' 
+                        : 'bg-black/30 border-yellow-400/10 hover:border-yellow-400/30 hover:scale-102'
+                    )}
+                  >
+                    <Image src={token.icon} alt={token.name} width={32} height={32} className="mb-2" />
+                    <span className="font-medium text-sm text-white">{token.name}</span>
+                    <span className="text-xs text-gray-400">${formatPrice(TOKEN_PRICES[token.id])}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Payment Summary - Compact Design */}
+            {desiredTokens && paymentAmount !== '0' && (
+              <div className="p-4 rounded-xl bg-black/60 border border-yellow-400/10 mb-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <DollarSign className="w-4 h-4 text-yellow-200" />
+                  <h3 className="text-sm font-medium text-white">Payment Summary</h3>
+                </div>
+                <div className="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <p className="text-sm text-gray-400">Amount</p>
+                    <p className="font-semibold text-white">{desiredTokens} BBLIP</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Cost</p>
+                    <p className="font-semibold text-white">{Number(formatUnits(paymentAmount, 18)).toFixed(6)} {selectedTokenName}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Rate</p>
+                    <p className="text-sm text-gray-400">$0.10 per token</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Error/Status Messages */}
+            {(error || statusMessage) && (
+              <div className={cn(
+                "w-full mb-4 p-3 rounded-xl text-center font-medium border flex items-center justify-center gap-2",
+                error 
+                  ? 'bg-red-500/10 text-red-300 border-red-500/20' 
+                  : 'bg-green-500/10 text-green-300 border-green-500/20'
+              )}>
+                {error ? (
+                  <Info className="w-4 h-4" />
+                ) : (
+                  <div className="w-4 h-4 border-2 border-green-300/30 border-t-green-300 rounded-full animate-spin"></div>
+                )}
+                {error || statusMessage}
+              </div>
+            )}
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              {selectedToken !== TOKEN_IDS.bnb && !hasAllowance && paymentAmount !== '0' && (
+                <Button
+                  className={cn(
+                    "w-full bg-yellow-200 hover:bg-yellow-300 text-black font-medium shadow-lg h-12 md:h-14",
+                    "transition-all duration-300"
+                  )}
+                  size="lg"
+                  disabled={isApproving || !desiredTokens}
+                  onClick={handleApprove}
+                >
+                  {isApproving ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                      Approving...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-4 h-4" />
+                      Approve {selectedTokenName}
+                    </div>
+                  )}
+                </Button>
+              )}
+
+              <Button
+                className={cn(
+                  "w-full bg-yellow-200 hover:bg-yellow-300 text-black font-medium shadow-lg h-12 md:h-14",
+                  "transition-all duration-300"
+                )}
+                size="lg"
+                disabled={
+                  isBuying || 
+                  !desiredTokens || 
+                  paymentAmount === '0' || 
+                  (selectedToken !== TOKEN_IDS.bnb && !hasAllowance)
+                }
+                onClick={handleBuy}
+              >
+                {isBuying ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                    Processing...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Buy with {selectedTokenName}
+                  </div>
+                )}
+              </Button>
+            </div>
+          </div>
+
+          {/* Presale Details Accordion - Compact */}
+          <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-xl border border-yellow-400/10 overflow-hidden mb-6">
+            <button
+              onClick={() => setShowDetails(!showDetails)}
+              className="w-full px-4 py-3 flex items-center justify-between text-left"
+            >
+              <div className="flex items-center gap-3">
+                <Info className="w-4 h-4 text-yellow-200" />
+                <div>
+                  <h3 className="text-sm font-medium text-white">Presale Details</h3>
+                  <p className="text-xs text-gray-400">Terms and information</p>
+                </div>
+              </div>
+              {showDetails ? (
+                <ChevronUp className="w-4 h-4 text-gray-400" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-gray-400" />
+              )}
+            </button>
+            
+            {showDetails && (
+              <div className="px-4 pb-4 border-t border-yellow-400/10">
+                <div className="space-y-3 pt-4">
+                  <div className="flex items-center gap-3">
+                    <TrendingUp className="w-4 h-4 text-yellow-200" />
+                    <div>
+                      <h4 className="text-sm font-medium text-white">Current Price</h4>
+                      <p className="text-xs text-gray-400">$0.10 per BBLIP token (Presale Round 2)</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-4 h-4 text-yellow-200" />
+                    <div>
+                      <h4 className="text-sm font-medium text-white">Secure Purchase</h4>
+                      <p className="text-xs text-gray-400">Multiple payment options with smart contract security</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center gap-3">
+                    <Clock className="w-4 h-4 text-yellow-200" />
+                    <div>
+                      <h4 className="text-sm font-medium text-white">Early Bird Pricing</h4>
+                      <p className="text-xs text-gray-400">Available during presale period only</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <Footer />
+
         <Particles
           quantityDesktop={150}
           quantityMobile={50}
@@ -179,201 +461,20 @@ function PresalePageInner() {
           refresh
         />
       </main>
-    );
-  }
-
-  return (
-    <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-12 md:pt-24">
-      <motion.section 
-        className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full max-w-4xl"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {/* Header */}
-        <motion.div variants={itemVariants} className="mb-8 text-center">
-          <Link href="/dashboard" className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-white mb-4 transition-colors">
-            ← Back to Dashboard
-          </Link>
-          
-          <div className="flex items-center justify-center mb-4">
-            <div className="flex w-fit items-center justify-center rounded-full bg-muted/80 text-center">
-              <AnimatedShinyText className="px-4 py-1">
-                <span>🚀 Token Presale is Live!</span>
-              </AnimatedShinyText>
-            </div>
-          </div>
-          
-          <TextBlur
-            className="text-4xl font-bold text-white mb-2"
-            text="Token Presale"
-          />
-          <p className="text-gray-400">Purchase tokens at presale price with multiple payment options</p>
-        </motion.div>
-
-        {/* Status/Error Messages */}
-        {(error || statusMessage) && (
-          <motion.div variants={itemVariants} className="w-full max-w-md mb-6">
-            <div className={`p-4 rounded-xl text-center font-medium ${
-              error 
-                ? 'bg-red-500/20 text-red-300 border border-red-500/50'
-                : 'bg-green-500/20 text-green-300 border border-green-500/50'
-            }`}>
-              {error || statusMessage}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Presale Info */}
-        {presaleInfo && (
-          <motion.div variants={itemVariants} className="w-full max-w-md mb-6">
-            <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-              <h3 className="font-semibold mb-4 text-center">📊 Presale Statistics</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white/5 rounded-lg p-3">
-                  <p className="text-sm text-gray-400">Token Price</p>
-                  <p className="font-semibold">${formatPrice(TOKEN_PRICES.tokenPriceUSD)}</p>
-                </div>
-                <div className="bg-white/5 rounded-lg p-3">
-                  <p className="text-sm text-gray-400">Your Purchased</p>
-                  <p className="font-semibold">{Number(formatUnits(presaleInfo.userTokensPurchased, 18)).toFixed(2)}</p>
-                </div>
-              </div>
-              {presaleInfo.isPaused && (
-                <div className="mt-4 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-                  <p className="text-red-300 text-sm text-center">⚠️ Presale is currently paused</p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Main Presale Card */}
-        <motion.div variants={itemVariants} className="w-full max-w-md bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10">
-          <div className="space-y-6">
-            
-            {/* Payment Token Selection */}
-            <div>
-              <label className="block text-sm font-medium mb-3">Choose Payment Method</label>
-              <div className="grid grid-cols-3 gap-3">
-                {PAYMENT_TOKENS.map((token) => (
-                  <button
-                    key={token.id}
-                    onClick={() => setSelectedToken(token.id)}
-                    className={`p-4 rounded-xl flex flex-col items-center justify-center transition-all duration-300 ${
-                      selectedToken === token.id
-                        ? 'bg-blue-500/20 border-2 border-blue-500/50 scale-105 shadow-lg'
-                        : 'bg-white/5 border-2 border-transparent hover:border-blue-500/30 hover:scale-102'
-                    }`}
-                  >
-                    <span className="text-2xl mb-2">{token.icon}</span>
-                    <span className="font-medium text-sm">{token.name}</span>
-                    <span className="text-xs text-gray-400">${formatPrice(TOKEN_PRICES[token.id])}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Token Amount Input */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Tokens to Purchase</label>
-              <Input
-                type="number"
-                placeholder="Enter desired token amount"
-                value={desiredTokens}
-                onChange={(e) => setDesiredTokens(e.target.value)}
-                className="w-full"
-                disabled={loading || presaleInfo?.isPaused}
-              />
-            </div>
-
-            {/* Payment Calculation */}
-            {desiredTokens && paymentAmount !== '0' && (
-              <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-lg p-4 border border-blue-500/20">
-                <div className="text-sm text-gray-400 mb-2">💰 Payment Summary</div>
-                <div className="space-y-2">
-                  <div className="flex justify-between">
-                    <span className="text-sm">Amount:</span>
-                    <span className="font-semibold">{desiredTokens} TOKENS</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Cost:</span>
-                    <span className="font-semibold">{Number(formatUnits(paymentAmount, 18)).toFixed(6)} {selectedTokenName}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-sm">Rate:</span>
-                    <span className="text-sm text-gray-400">${formatPrice(TOKEN_PRICES.tokenPriceUSD)} per token</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="space-y-3">
-              {selectedToken !== TOKEN_IDS.bnb && !hasAllowance && (
-                <Button
-                  className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                  size="lg"
-                  onClick={handleApprove}
-                  disabled={!desiredTokens || paymentAmount === '0' || presaleInfo?.isPaused || isApproving}
-                >
-                  {isApproving ? 'Approving...' : `Approve ${selectedTokenName}`}
-                </Button>
-              )}
-
-              <Button
-                className={`w-full bg-gradient-to-r ${selectedTokenData?.color || 'from-blue-600 to-purple-600'} hover:opacity-90`}
-                size="lg"
-                onClick={handleBuy}
-                disabled={!desiredTokens || paymentAmount === '0' || presaleInfo?.isPaused || isBuying || (!hasAllowance && selectedToken !== TOKEN_IDS.bnb)}
-              >
-                {presaleInfo?.isPaused 
-                  ? 'Presale Paused'
-                  : isBuying
-                    ? 'Processing...'
-                    : `Buy with ${selectedTokenName} ${selectedTokenData?.icon || ''}`}
-              </Button>
-            </div>
-
-            {/* Helper Text */}
-            {selectedToken !== TOKEN_IDS.bnb && !hasAllowance && !isApproving && !isBuying && (
-              <div className="text-center">
-                <p className="text-xs text-gray-400">
-                  💡 First approve {selectedTokenName} spending, then complete your purchase
-                </p>
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        {/* Additional Info */}
-        <motion.div variants={itemVariants} className="mt-8 text-center text-sm text-gray-400 max-w-md">
-          <p className="mb-2">
-            🔒 Secure token purchase with multiple payment options
-          </p>
-          <p>
-            💎 Early bird pricing available during presale period
-          </p>
-        </motion.div>
-      </motion.section>
-
-      <Footer />
-
-      <Particles
-        quantityDesktop={150}
-        quantityMobile={50}
-        ease={120}
-        color={"#F7FF9B"}
-        refresh
-      />
-    </main>
+    </>
   );
 }
 
-// Wrap useSearchParams usage in Suspense as required by Next.js 15
 export default function PresalePage() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-200"></div>
+          <p className="mt-4 text-gray-400">Loading...</p>
+        </div>
+      </div>
+    }>
       <PresalePageInner />
     </Suspense>
   );
