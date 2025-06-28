@@ -2,7 +2,7 @@
 
 import { useAccount } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import Particles from "@/components/ui/particles";
 import Footer from "@/components/footer";
 import Header from "@/components/header";
@@ -89,7 +89,7 @@ const metallicTextStyles = `
   animation: shine 3s linear infinite;
 `;
 
-export default function StakePage() {
+function StakeContent() {
   const { isConnected, address } = useAccount();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -295,37 +295,37 @@ export default function StakePage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
           
           <div className="text-center mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">
+            <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-2">
               Stake BBLIP
             </h1>
             <p className="text-gray-400 text-sm md:text-base">
-              Earn <span className="text-green-400 font-semibold">10% APR</span> by staking your tokens
+              Earn <span className="text-yellow-400 font-semibold">10% APR</span> by staking your tokens
             </p>
           </div>
 
           {/* Main Staking Card */}
-          <div className="bg-[#0A0A0A]/80 backdrop-blur-xl rounded-3xl border border-white/10 p-6 md:p-8 mb-6">
+          <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-3xl border border-yellow-400/10 p-6 md:p-8 mb-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10">
             
             {/* User Status Summary */}
             <div className="mb-8">
               <div className="grid grid-cols-3 gap-4">
-                <div className="text-center p-4 rounded-xl bg-black/40">
+                <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/5">
                   <p className="text-xs text-gray-400 mb-1">Available</p>
                   <p className="text-lg font-bold text-white">{formatTokenAmount(userData.tokenBalance)}</p>
                   <p className="text-xs text-gray-500">BBLIP</p>
                 </div>
-                <div className="text-center p-4 rounded-xl bg-black/40">
+                <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/5">
                   <p className="text-xs text-gray-400 mb-1">Staked</p>
-                  <p className="text-lg font-bold text-blue-400">{formatTokenAmount(userData.stakedAmount)}</p>
+                  <p className="text-lg font-bold text-yellow-400">{formatTokenAmount(userData.stakedAmount)}</p>
                   <p className="text-xs text-gray-500">BBLIP</p>
                   {userData.stakedAmount && parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.BRONZE && (
                     <div className="mt-1">
                       <span className={cn(
-                        "text-xs px-2 py-0.5 rounded-full bg-black/60",
+                        "text-xs px-2 py-0.5 rounded-full bg-black/80 border border-yellow-400/10",
                         parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.GOLD 
                           ? "text-yellow-400"
                           : parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.SILVER
-                          ? "text-gray-400"
+                          ? "text-gray-300"
                           : "text-amber-600"
                       )}>
                         {parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.GOLD 
@@ -337,9 +337,9 @@ export default function StakePage() {
                     </div>
                   )}
                 </div>
-                <div className="text-center p-4 rounded-xl bg-black/40">
+                <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/5">
                   <p className="text-xs text-gray-400 mb-1">Rewards</p>
-                  <p className="text-lg font-bold text-green-400">{formatTokenAmount(userData.pendingRewards)}</p>
+                  <p className="text-lg font-bold text-yellow-400">{formatTokenAmount(userData.pendingRewards)}</p>
                   <p className="text-xs text-gray-500">BBLIP</p>
                 </div>
               </div>
@@ -351,7 +351,7 @@ export default function StakePage() {
                 <label className="text-sm font-medium text-gray-300">Amount to Stake</label>
                 <button
                   onClick={() => setStakeAmount(formatTokenAmount(userData.tokenBalance))}
-                  className="text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                  className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors"
                   disabled={walletState.loading}
                 >
                   Use Max
@@ -364,7 +364,7 @@ export default function StakePage() {
                   placeholder="0.00"
                   value={stakeAmount}
                   onChange={(e) => setStakeAmount(e.target.value)}
-                  className="h-14 text-lg font-semibold bg-black/60 border-white/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
+                  className="h-14 text-lg font-semibold bg-black/60 border-yellow-400/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
                   disabled={walletState.loading}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
@@ -387,8 +387,8 @@ export default function StakePage() {
                   href={`/presale?amount=${parseFloat(stakeAmount) - availableBalance}`}
                   className={cn(
                     "mt-2 w-full flex items-center justify-center px-4 py-3 rounded-xl",
-                    "bg-black/60 border border-blue-500/20",
-                    "text-blue-400 hover:text-blue-300 hover:bg-black/40",
+                    "bg-black/60 border border-yellow-400/20",
+                    "text-yellow-400 hover:text-yellow-300 hover:bg-black/40",
                     "transition-all duration-300"
                   )}
                 >
@@ -403,22 +403,22 @@ export default function StakePage() {
             </div>
 
             {/* Estimated Rewards Section */}
-            <div className="p-4 rounded-xl bg-black/40 border border-white/10 mb-6">
+            <div className="p-4 rounded-xl bg-black/60 border border-yellow-400/10 mb-6">
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-green-400" />
+                <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
+                  <TrendingUp className="w-4 h-4 text-yellow-400" />
                 </div>
                 <h3 className="text-sm font-medium text-white">Estimated Rewards</h3>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Daily</p>
-                  <p className="text-lg font-bold text-green-400">{estimatedRewards.daily.toFixed(4)}</p>
+                  <p className="text-lg font-bold text-yellow-400">{estimatedRewards.daily.toFixed(4)}</p>
                   <p className="text-xs text-gray-500">~${estimatedRewards.dailyUSD.toFixed(2)} USD</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Yearly</p>
-                  <p className="text-lg font-bold text-blue-400">{estimatedRewards.yearly.toFixed(2)}</p>
+                  <p className="text-lg font-bold text-yellow-400">{estimatedRewards.yearly.toFixed(2)}</p>
                   <p className="text-xs text-gray-500">~${estimatedRewards.yearlyUSD.toFixed(2)} USD</p>
                 </div>
               </div>
@@ -427,8 +427,9 @@ export default function StakePage() {
             {/* Stake Button */}
             <Button
               className={cn(
-                "w-full bg-blue-500 hover:bg-blue-600",
-                "text-white font-medium",
+                "w-full bg-gradient-to-r from-yellow-400 to-amber-500",
+                "hover:from-yellow-500 hover:to-amber-600",
+                "text-black font-medium shadow-lg",
                 "transition-all duration-300"
               )}
               size="lg"
@@ -449,14 +450,14 @@ export default function StakePage() {
           </div>
 
           {/* Staking Details Accordion */}
-          <div className="bg-[#0A0A0A]/80 backdrop-blur-xl rounded-xl border border-white/10 overflow-hidden">
+          <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-xl border border-yellow-400/10 overflow-hidden">
             <button
               onClick={() => setShowDetails(!showDetails)}
               className="w-full px-4 py-4 flex items-center justify-between text-left"
             >
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
-                  <Info className="w-4 h-4 text-blue-400" />
+                <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
+                  <Info className="w-4 h-4 text-yellow-400" />
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-white">Staking Details</h3>
@@ -474,8 +475,8 @@ export default function StakePage() {
               <div className="px-4 pb-4">
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
-                      <TrendingUp className="w-4 h-4 text-blue-400" />
+                    <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
+                      <TrendingUp className="w-4 h-4 text-yellow-400" />
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-white">Annual Percentage Rate</h4>
@@ -484,8 +485,8 @@ export default function StakePage() {
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
-                      <Shield className="w-4 h-4 text-blue-400" />
+                    <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
+                      <Shield className="w-4 h-4 text-yellow-400" />
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-white">Minimum Stake</h4>
@@ -494,8 +495,8 @@ export default function StakePage() {
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
-                      <Clock className="w-4 h-4 text-blue-400" />
+                    <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
+                      <Clock className="w-4 h-4 text-yellow-400" />
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-white">Staking Period</h4>
@@ -504,8 +505,8 @@ export default function StakePage() {
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-black/60 flex items-center justify-center">
-                      <DollarSign className="w-4 h-4 text-blue-400" />
+                    <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
+                      <DollarSign className="w-4 h-4 text-yellow-400" />
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-white">Staking Fee</h4>
@@ -521,13 +522,28 @@ export default function StakePage() {
         <Footer />
 
         <Particles
-          quantityDesktop={100}
-          quantityMobile={30}
+          quantityDesktop={150}
+          quantityMobile={50}
           ease={120}
-          color={"#3B82F6"}
+          color={"#F7FF9B"}
           refresh
         />
       </main>
     </>
+  );
+}
+
+export default function StakePage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-400"></div>
+          <p className="mt-4 text-gray-400">Loading...</p>
+        </div>
+      </div>
+    }>
+      <StakeContent />
+    </Suspense>
   );
 } 

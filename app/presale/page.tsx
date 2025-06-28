@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useAccount } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -22,7 +22,7 @@ const PAYMENT_TOKENS = [
   { id: TOKEN_IDS.busd, name: 'BUSD', icon: '💰', color: 'from-blue-600 to-blue-400' },
 ];
 
-export default function PresalePage() {
+function PresalePageInner() {
   const { isConnected } = useAccount();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -367,5 +367,14 @@ export default function PresalePage() {
         refresh
       />
     </main>
+  );
+}
+
+// Wrap useSearchParams usage in Suspense as required by Next.js 15
+export default function PresalePage() {
+  return (
+    <Suspense fallback={null}>
+      <PresalePageInner />
+    </Suspense>
   );
 } 

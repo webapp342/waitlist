@@ -1,3 +1,4 @@
+import "@/lib/indexedDbPolyfill";
 import "./globals.css";
 import type { Metadata } from "next";
 import { Figtree } from "next/font/google";

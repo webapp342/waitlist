@@ -5,7 +5,7 @@ import AnimatedShinyText from "./ui/shimmer-text";
 import { EnhancedButton } from "./ui/enhanced-btn";
 import { FaArrowRightLong } from "react-icons/fa6";
 import { useAccount, useConnect, useDisconnect } from 'wagmi';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
 import Image from 'next/image';
@@ -17,19 +17,7 @@ export default function CTA() {
   const { disconnect } = useDisconnect();
   const [showConnectors, setShowConnectors] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
-  const [isMobile, setIsMobile] = useState(false);
   const router = useRouter();
-
-  useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-
-    checkIfMobile();
-    window.addEventListener('resize', checkIfMobile);
-
-    return () => window.removeEventListener('resize', checkIfMobile);
-  }, []);
 
   const cardImages = [
     { src: "/Classic.svg", alt: "Bblip Classic Card" },
@@ -49,9 +37,7 @@ export default function CTA() {
     try {
       await connect({ connector });
       setShowConnectors(false);
-      if (connector.ready) {
-        router.replace('/dashboard');
-      }
+      router.replace('/dashboard');
     } catch (error) {
       console.error('Connection failed:', error);
       toast.error('Connection failed. Please try again.');
@@ -110,9 +96,6 @@ export default function CTA() {
       {/* Card Carousel */}
       <div className="relative w-full max-w-[800px] -mt-10 mb-0">
         <div className="relative h-[300px] flex items-center justify-center">
-          {/* Previous Button */}
-      
-
           {/* Cards Container */}
           <div className="relative w-full h-full flex items-center justify-center">
             {cardImages.map((card, index) => {
@@ -128,12 +111,12 @@ export default function CTA() {
               let opacity = 'opacity-100';
 
               if (isLeft) {
-                position = '-translate-x-32 md:-translate-x-40';
+                position = '-translate-x-40';
                 scale = 'scale-75';
                 zIndex = 'z-0';
                 opacity = 'opacity-60';
               } else if (isRight) {
-                position = 'translate-x-32 md:translate-x-40';
+                position = 'translate-x-40';
                 scale = 'scale-75';
                 zIndex = 'z-0';
                 opacity = 'opacity-60';
@@ -162,7 +145,7 @@ export default function CTA() {
                     perspective: "1000px"
                   }}
                 >
-                  <div className="w-[280px] md:w-[320px] hover:scale-105 transition-transform duration-200">
+                  <div className="w-[320px] hover:scale-105 transition-transform duration-200">
                     <Image
                       src={card.src}
                       alt={card.alt}
@@ -176,9 +159,6 @@ export default function CTA() {
               );
             })}
           </div>
-
-          {/* Next Button */}
-        
         </div>
 
         {/* Card Indicators */}
@@ -197,91 +177,73 @@ export default function CTA() {
           ))}
         </div>
 
-        {/* Card Labels */}
-        <div className="flex justify-center mt-4">
-          <motion.div
-            key={currentCardIndex}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.3 }}
-            className="text-center"
-          >
-         
-          </motion.div>
-        </div>
-      </div>
+        {/* Connect Wallet Button */}
+        <div className="mt-12 flex flex-col items-center gap-4">
+          <EnhancedButton onClick={handleWalletAction}>
+            <div className="flex items-center gap-2">
+              <Wallet className="w-4 h-4" />
+              <span>{isConnected ? 'Disconnect Wallet' : 'Connect Wallet'}</span>
+              {!isConnected && <FaArrowRightLong className="w-4 h-4" />}
+            </div>
+          </EnhancedButton>
 
-      {/* Connect Wallet Button Section */}
-      <div className="mt-8 flex w-full max-w-[24rem] flex-col gap-2">
-        <EnhancedButton
-          variant="expandIcon"
-          Icon={FaArrowRightLong}
-          onClick={handleWalletAction}
-          iconPlacement="right"
-          className="w-full"
-          disabled={isPending}>
-          {isPending ? "Connecting..." : isConnected ? `Connected: ${address?.slice(0, 6)}...${address?.slice(-4)}` : "Get the Card"}
-        </EnhancedButton>
-        
-        {/* Connector Options */}
-        {showConnectors && !isConnected && (
-          <div className="flex flex-col gap-2 mt-2">
-            {connectors
-              .filter((connector) => {
-                // Mobil cihazlarda injected connector'ı gizle
-                if (isMobile && connector.id === 'injected') {
-                  return false;
-                }
-                return true;
-              })
-              .map((connector) => (
+          {/* Wallet Connectors */}
+          {showConnectors && !isConnected && (
+            <div className="flex flex-col gap-2 w-full max-w-[320px]">
+              {connectors.map((connector) => (
                 <button
-                  key={connector.uid}
+                  key={connector.id}
                   onClick={() => handleConnectorClick(connector)}
-                  className="w-full p-2 text-sm border border-gray-600 rounded-lg hover:bg-gray-800 transition-colors"
-                  disabled={isPending}>
+                  disabled={isPending}
+                  className={`
+                    w-full px-4 py-3 rounded-xl text-sm font-medium
+                    bg-black/60 backdrop-blur-xl border border-yellow-400/10
+                    hover:bg-black/40 hover:border-yellow-400/20
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    transition-all duration-300
+                  `}
+                >
                   {connector.name}
+                  {isPending && ' (connecting)'}
                 </button>
               ))}
-          </div>
-        )}
-      </div>
-
-      <div className="mt-16 grid grid-cols-1 gap-8 sm:grid-cols-2">
-        {/* No KYC Feature */}
-        <div className="flex flex-col items-center rounded-2xl bg-zinc-900/50 p-6 text-center">
-          <div className="mb-4 rounded-full bg-yellow-200/10 p-3">
-            <Shield className="h-6 w-6 text-yellow-200" />
-          </div>
-          <h3 className="mb-2 text-lg font-medium text-white">100% Anonymous</h3>
-          <p className="text-sm text-zinc-400">No KYC required. No email, no phone number. Just connect your wallet and get your card.</p>
+            </div>
+          )}
         </div>
 
-        {/* Direct Spending Feature */}
-        <div className="flex flex-col items-center rounded-2xl bg-zinc-900/50 p-6 text-center">
-          <div className="mb-4 rounded-full bg-yellow-200/10 p-3">
-            <Wallet className="h-6 w-6 text-yellow-200" />
+        {/* Features Grid */}
+        <div className="mt-16 grid grid-cols-2 gap-4">
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-black/60 backdrop-blur-xl border border-yellow-400/10">
+            <Shield className="w-5 h-5 text-yellow-400" />
+            <div>
+              <h3 className="font-medium text-white">Secure</h3>
+              <p className="text-sm text-gray-400">Non-custodial solution</p>
+            </div>
           </div>
-          <h3 className="mb-2 text-lg font-medium text-white">Direct from Wallet</h3>
-          <p className="text-sm text-zinc-400">Spend your crypto assets directly from your wallet. No intermediary accounts needed.</p>
-        </div>
-
-        {/* Instant Access Feature */}
-        <div className="flex flex-col items-center rounded-2xl bg-zinc-900/50 p-6 text-center">
-          <div className="mb-4 rounded-full bg-yellow-200/10 p-3">
-            <Clock className="h-6 w-6 text-yellow-200" />
+          
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-black/60 backdrop-blur-xl border border-yellow-400/10">
+            <Clock className="w-5 h-5 text-yellow-400" />
+            <div>
+              <h3 className="font-medium text-white">Instant</h3>
+              <p className="text-sm text-gray-400">Real-time transactions</p>
+            </div>
           </div>
-          <h3 className="mb-2 text-lg font-medium text-white">Instant Access</h3>
-          <p className="text-sm text-zinc-400">Connect wallet, get card. Start spending your crypto in minutes, not days.</p>
-        </div>
-
-        {/* Privacy Feature */}
-        <div className="flex flex-col items-center rounded-2xl bg-zinc-900/50 p-6 text-center">
-          <div className="mb-4 rounded-full bg-yellow-200/10 p-3">
-            <Lock className="h-6 w-6 text-yellow-200" />
+          
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-black/60 backdrop-blur-xl border border-yellow-400/10">
+            <Lock className="w-5 h-5 text-yellow-400" />
+            <div>
+              <h3 className="font-medium text-white">Private</h3>
+              <p className="text-sm text-gray-400">No KYC required</p>
+            </div>
           </div>
-          <h3 className="mb-2 text-lg font-medium text-white">Complete Privacy</h3>
-          <p className="text-sm text-zinc-400">Your identity stays private. Only your wallet connects you to your card.</p>
+          
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-black/60 backdrop-blur-xl border border-yellow-400/10">
+            <Wallet className="w-5 h-5 text-yellow-400" />
+            <div>
+              <h3 className="font-medium text-white">Flexible</h3>
+              <p className="text-sm text-gray-400">Multi-wallet support</p>
+            </div>
+          </div>
         </div>
       </div>
     </section>
