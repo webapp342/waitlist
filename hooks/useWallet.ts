@@ -261,33 +261,48 @@ export const useWallet = () => {
           // Remove automatic network switching
           // await switchToTargetNetwork();
 
-          const provider = new ethers.BrowserProvider(walletClient as any);
-          const signer = await provider.getSigner();
+          // Create a signer provider using the connected wallet (for WRITE operations only)
+          const signerProvider = new ethers.BrowserProvider(walletClient as any);
+          const signer = await signerProvider.getSigner();
 
-          // Get current network and contracts
-          const currentChainId = await getCurrentNetwork();
-          const networkContracts = getContractsForNetwork(currentChainId || 97); // Default to BSC Testnet
-          
-          console.log(`🌐 Using contracts for network ${currentChainId}:`, networkContracts);
+          // --- READ-ONLY provider (no wallet — prevents unwanted pop-ups) ---
+          const PUBLIC_BSC_TESTNET_RPC = 'https://data-seed-prebsc-1-s1.binance.org:8545';
+          const readProvider = new ethers.JsonRpcProvider(PUBLIC_BSC_TESTNET_RPC);
 
-          const stakingContract = new ethers.Contract(
+          // Always use BSC Testnet contract addresses for read/write (adjust if multi-chain later)
+          const networkContracts = getContractsForNetwork(97);
+
+          console.log('🌐 Contracts (BSC Testnet):', networkContracts);
+
+          // READ-ONLY contract instances (attached to public RPC)
+          const stakingRead = new ethers.Contract(
             networkContracts.STAKING,
             STAKING_ABI,
-            signer
+            readProvider
           );
 
-          const tokenContract = new ethers.Contract(
+          const tokenRead = new ethers.Contract(
             networkContracts.TOKEN,
             TOKEN_ABI,
-            signer
+            readProvider
           );
 
+          // WRITE contract instances (connected to user signer)
+          const stakingWrite = stakingRead.connect(signer);
+          const tokenWrite = tokenRead.connect(signer);
+
+          // Save write-enabled contracts to state – UI actions will use these
           setContracts({
-            staking: stakingContract,
-            token: tokenContract
+            staking: stakingWrite as unknown as ethers.Contract,
+            token: tokenWrite as unknown as ethers.Contract,
           });
 
-          await loadUserData(stakingContract, tokenContract, address);
+          // Fetch on-chain data using READ-ONLY contracts (does NOT trigger wallet pop-up)
+          await loadUserData(
+            stakingRead as unknown as ethers.Contract,
+            tokenRead as unknown as ethers.Contract,
+            address
+          );
         } catch (error: any) {
           console.error('Contract initialization error:', error);
           setError(error.message);
