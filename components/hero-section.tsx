@@ -1,0 +1,43 @@
+'use client'
+
+import { motion } from 'framer-motion'
+import { Shield, Lock, Zap, Globe } from 'lucide-react'
+import Container from './container'
+
+
+
+export default function HeroSection() {
+  return (
+    <section className="w-full pt-20 pb-0">
+      <Container size="lg">
+        {/* Trust Badges */}
+        <motion.div 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="flex flex-wrap justify-center gap-3 sm:gap-4 mb-5"
+        >
+         
+        </motion.div>
+
+        {/* Value Proposition */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-center"
+        >
+          <div className="inline-flex items-center gap-2 px-4 py-2 mb-0 bg-yellow-400/10 border border-yellow-400/30 rounded-full">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-200 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-yellow-200"></span>
+            </span>
+            <span className="text-sm text-yellow-200 font-medium">Limited Early Access</span>
+          </div>
+          
+        
+        </motion.div>
+      </Container>
+    </section>
+  )
+} 

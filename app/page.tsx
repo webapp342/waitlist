@@ -1,11 +1,17 @@
 "use client";
 
 import CTA from "@/components/cta";
+import Testimonials from "@/components/testimonials";
 import Form from "@/components/form";
 import Logos from "@/components/logos";
 import Particles from "@/components/ui/particles";
 import Header from "@/components/header";
 import Footer from "@/components/footer";
+import HeroSection from "@/components/hero-section";
+import FeaturesGrid from "@/components/features-grid";
+import FAQSection from "@/components/faq-section";
+import CTAFinal from "@/components/cta-final";
+import Container from "@/components/container";
 import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -22,20 +28,50 @@ export default function Home() {
   }, [isConnected, router]);
 
   return (
-    <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-12 md:pt-24">
-      <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8">
-        <Header />
-        <div className="mt-24 md:mt-15">
+    <main className="flex min-h-screen flex-col items-center overflow-x-clip">
+      {/* Header */}
+      <Header />
+      
+      {/* Hero Section with Trust Badges */}
+      <HeroSection />
+      
+      {/* Main CTA with Cards */}
+      <section className="w-full py-12">
+        <Container size="lg">
           <CTA />
-        </div>
-        <Logos />
+        </Container>
       </section>
+      
+      {/* Partner Logos */}
+    
+      
+      {/* Features Grid */}
+      <FeaturesGrid />
 
+      <section className="w-full py-12">
+        <Container size="lg">
+          <Logos />
+        </Container>
+      </section>
+      
+      {/* Testimonials */}
+      <Testimonials />
+      
+      {/* FAQ Section */}
+      <FAQSection />
+      
+      {/* Final CTA */}
+    
+          <CTAFinal />
+    
+
+      {/* Footer */}
       <Footer />
 
+      {/* Background Particles */}
       <Particles
-        quantityDesktop={150}
-        quantityMobile={50}
+        quantityDesktop={120}
+        quantityMobile={40}
         ease={120}
         color={"#F7FF9B"}
         refresh

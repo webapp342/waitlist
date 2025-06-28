@@ -18,7 +18,7 @@ import { ArrowLeft, ChevronDown, ChevronUp, Info, Zap, TrendingUp, Shield, Clock
 const CARD_REQUIREMENTS = {
   BRONZE: 1000,
   SILVER: 2000,
-  GOLD: 3500
+  BLACK: 3500
 };
 
 // Enhanced styles
@@ -252,7 +252,7 @@ function StakeContent() {
 
   // Get card type based on stake amount
   const getCardTypeForAmount = (amount: number) => {
-    if (amount >= CARD_REQUIREMENTS.GOLD) return 'GOLD';
+    if (amount >= CARD_REQUIREMENTS.BLACK) return 'BLACK';
     if (amount >= CARD_REQUIREMENTS.SILVER) return 'SILVER';
     if (amount >= CARD_REQUIREMENTS.BRONZE) return 'BRONZE';
     return null;
@@ -262,8 +262,8 @@ function StakeContent() {
   const getRequiredAmountForNextTier = (currentAmount: number) => {
     if (currentAmount < CARD_REQUIREMENTS.BRONZE) return CARD_REQUIREMENTS.BRONZE;
     if (currentAmount < CARD_REQUIREMENTS.SILVER) return CARD_REQUIREMENTS.SILVER;
-    if (currentAmount < CARD_REQUIREMENTS.GOLD) return CARD_REQUIREMENTS.GOLD;
-    return CARD_REQUIREMENTS.GOLD;
+    if (currentAmount < CARD_REQUIREMENTS.BLACK) return CARD_REQUIREMENTS.BLACK;
+    return CARD_REQUIREMENTS.BLACK;
   };
 
   // Format insufficient balance message
@@ -299,7 +299,7 @@ function StakeContent() {
               Stake BBLIP
             </h1>
             <p className="text-gray-400 text-sm md:text-base">
-              Earn <span className="text-yellow-400 font-semibold">10% APR</span> by staking your tokens
+              Earn <span className="text-yellow-200 font-semibold">10% APR</span> by staking your tokens
             </p>
           </div>
 
@@ -316,20 +316,20 @@ function StakeContent() {
                 </div>
                 <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/5">
                   <p className="text-xs text-gray-400 mb-1">Staked</p>
-                  <p className="text-lg font-bold text-yellow-400">{formatTokenAmount(userData.stakedAmount)}</p>
+                  <p className="text-lg font-bold text-yellow-200">{formatTokenAmount(userData.stakedAmount)}</p>
                   <p className="text-xs text-gray-500">BBLIP</p>
                   {userData.stakedAmount && parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.BRONZE && (
                     <div className="mt-1">
                       <span className={cn(
                         "text-xs px-2 py-0.5 rounded-full bg-black/80 border border-yellow-400/10",
-                        parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.GOLD 
-                          ? "text-yellow-400"
+                        parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.BLACK 
+                          ? "text-yellow-200"
                           : parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.SILVER
                           ? "text-gray-300"
                           : "text-amber-600"
                       )}>
-                        {parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.GOLD 
-                          ? 'GOLD'
+                        {parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.BLACK 
+                          ? 'BLACK'
                           : parseFloat(formatTokenAmount(userData.stakedAmount)) >= CARD_REQUIREMENTS.SILVER
                           ? 'SILVER'
                           : 'BRONZE'}
@@ -339,7 +339,7 @@ function StakeContent() {
                 </div>
                 <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/5">
                   <p className="text-xs text-gray-400 mb-1">Rewards</p>
-                  <p className="text-lg font-bold text-yellow-400">{formatTokenAmount(userData.pendingRewards)}</p>
+                  <p className="text-lg font-bold text-yellow-200">{formatTokenAmount(userData.pendingRewards)}</p>
                   <p className="text-xs text-gray-500">BBLIP</p>
                 </div>
               </div>
@@ -351,7 +351,7 @@ function StakeContent() {
                 <label className="text-sm font-medium text-gray-300">Amount to Stake</label>
                 <button
                   onClick={() => setStakeAmount(formatTokenAmount(userData.tokenBalance))}
-                  className="text-xs text-yellow-400 hover:text-yellow-300 transition-colors"
+                  className="text-xs text-yellow-200 hover:text-yellow-300 transition-colors"
                   disabled={walletState.loading}
                 >
                   Use Max
@@ -388,7 +388,7 @@ function StakeContent() {
                   className={cn(
                     "mt-2 w-full flex items-center justify-center px-4 py-3 rounded-xl",
                     "bg-black/60 border border-yellow-400/20",
-                    "text-yellow-400 hover:text-yellow-300 hover:bg-black/40",
+                    "text-yellow-200 hover:text-yellow-300 hover:bg-black/40",
                     "transition-all duration-300"
                   )}
                 >
@@ -406,19 +406,19 @@ function StakeContent() {
             <div className="p-4 rounded-xl bg-black/60 border border-yellow-400/10 mb-6">
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
-                  <TrendingUp className="w-4 h-4 text-yellow-400" />
+                  <TrendingUp className="w-4 h-4 text-yellow-200" />
                 </div>
                 <h3 className="text-sm font-medium text-white">Estimated Rewards</h3>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Daily</p>
-                  <p className="text-lg font-bold text-yellow-400">{estimatedRewards.daily.toFixed(4)}</p>
+                  <p className="text-lg font-bold text-yellow-200">{estimatedRewards.daily.toFixed(4)}</p>
                   <p className="text-xs text-gray-500">~${estimatedRewards.dailyUSD.toFixed(2)} USD</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Yearly</p>
-                  <p className="text-lg font-bold text-yellow-400">{estimatedRewards.yearly.toFixed(2)}</p>
+                  <p className="text-lg font-bold text-yellow-200">{estimatedRewards.yearly.toFixed(2)}</p>
                   <p className="text-xs text-gray-500">~${estimatedRewards.yearlyUSD.toFixed(2)} USD</p>
                 </div>
               </div>
@@ -427,9 +427,7 @@ function StakeContent() {
             {/* Stake Button */}
             <Button
               className={cn(
-                "w-full bg-gradient-to-r from-yellow-400 to-amber-500",
-                "hover:from-yellow-500 hover:to-amber-600",
-                "text-black font-medium shadow-lg",
+                "w-full bg-yellow-200 hover:bg-yellow-300 text-black font-medium shadow-lg",
                 "transition-all duration-300"
               )}
               size="lg"
@@ -457,7 +455,7 @@ function StakeContent() {
             >
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
-                  <Info className="w-4 h-4 text-yellow-400" />
+                  <Info className="w-4 h-4 text-yellow-200" />
                 </div>
                 <div>
                   <h3 className="text-sm font-medium text-white">Staking Details</h3>
@@ -476,7 +474,7 @@ function StakeContent() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
-                      <TrendingUp className="w-4 h-4 text-yellow-400" />
+                      <TrendingUp className="w-4 h-4 text-yellow-200" />
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-white">Annual Percentage Rate</h4>
@@ -486,7 +484,7 @@ function StakeContent() {
                   
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
-                      <Shield className="w-4 h-4 text-yellow-400" />
+                      <Shield className="w-4 h-4 text-yellow-200" />
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-white">Minimum Stake</h4>
@@ -496,7 +494,7 @@ function StakeContent() {
                   
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
-                      <Clock className="w-4 h-4 text-yellow-400" />
+                      <Clock className="w-4 h-4 text-yellow-200" />
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-white">Staking Period</h4>
@@ -506,7 +504,7 @@ function StakeContent() {
                   
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-black/80 border border-yellow-400/10 flex items-center justify-center">
-                      <DollarSign className="w-4 h-4 text-yellow-400" />
+                      <DollarSign className="w-4 h-4 text-yellow-200" />
                     </div>
                     <div>
                       <h4 className="text-sm font-medium text-white">Staking Fee</h4>
@@ -538,7 +536,7 @@ export default function StakePage() {
     <Suspense fallback={
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-400"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-200"></div>
           <p className="mt-4 text-gray-400">Loading...</p>
         </div>
       </div>

@@ -130,7 +130,7 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
         return stakedAmount >= 1000 && stakedAmount < 2000;
       case 'silver':
         return stakedAmount >= 2000 && stakedAmount < 3500;
-      case 'gold':
+      case 'black':
         return stakedAmount >= 3500;
       default:
         return false;
@@ -228,7 +228,7 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
       case 'silver':
         requiredAmount = Math.max(0, 2000 - currentStaked);
         break;
-      case 'gold':
+      case 'black':
         requiredAmount = Math.max(0, 3500 - currentStaked);
         break;
       default:
@@ -264,15 +264,14 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
       {!isOnBSCTestnet && (
         <motion.div variants={itemVariants} className="mt-12 flex w-full justify-center">
           <div className="flex w-full max-w-[24rem] flex-col gap-2">
-            <EnhancedButton
-              variant="expandIcon"
-              Icon={FaTriangleExclamation}
+            <button
               onClick={handleNetworkSwitch}
-              iconPlacement="right"
               disabled={isSwitching}
-              className="w-full bg-red-600  text-white">
+              className="w-full px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <FaTriangleExclamation className="w-4 h-4" />
               {isSwitching ? "Switching Network..." : "🔄 Switch to BSC Testnet"}
-            </EnhancedButton>
+            </button>
           </div>
         </motion.div>
       )}
@@ -288,7 +287,7 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
             </div>
           ) : userCards.length > 0 ? (
             <div className="relative w-full max-w-[800px] mx-auto">
-              <div className="relative h-[300px] flex items-center justify-center">
+              <div className="relative h-[280px] sm:h-[300px] md:h-[340px] lg:h-[380px] flex items-center justify-center">
                 {/* Cards Container */}
                 <div className="relative w-full h-full flex items-center justify-center">
                   {userCards.map((card, index) => {
@@ -338,9 +337,9 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
                           perspective: "1000px"
                         }}
                       >
-                        <div className="w-[280px] md:w-[320px] hover:scale-105 transition-transform duration-200">
+                        <div className="w-[280px] sm:w-[320px] md:w-[380px] lg:w-[420px] hover:scale-105 transition-transform duration-200">
                           <CreditCard
-                            cardType={card.card_type as 'bronze' | 'silver' | 'gold'}
+                            cardType={card.card_type as 'bronze' | 'silver' | 'black'}
                             cardNumber={card.card_number}
                             cvv={card.cvv}
                             expirationDate={card.expiration_date}
@@ -365,7 +364,7 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
                     onClick={() => setCurrentCardIndex(index)}
                     className={`h-2 rounded-full transition-all duration-300 ${
                       index === currentCardIndex
-                        ? "w-8 bg-yellow-400 shadow-lg"
+                        ? "w-8 bg-yellow-200 shadow-lg"
                         : "w-2 bg-zinc-600 hover:bg-zinc-500"
                     }`}
                     aria-label={`Go to card ${index + 1}`}
@@ -387,7 +386,7 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
                     <div className="text-xs text-zinc-400 px-2">
                       {stakedAmount < 1000 && userCards[currentCardIndex]?.card_type === 'bronze' && 'Stake 1,000+ TOKENS to reserve'}
                       {stakedAmount < 2000 && userCards[currentCardIndex]?.card_type === 'silver' && 'Stake 2,000+ TOKENS to reserve'}
-                      {stakedAmount < 3500 && userCards[currentCardIndex]?.card_type === 'gold' && 'Stake 3,500+ TOKENS to reserve'}
+                      {stakedAmount < 3500 && userCards[currentCardIndex]?.card_type === 'black' && 'Stake 3,500+ TOKENS to reserve'}
                     </div>
                   )}
                 </motion.div>
@@ -416,12 +415,15 @@ export default function DashboardCTA({ userData }: DashboardCTAProps) {
       {isOnBSCTestnet && userCards.length > 0 && (
         <motion.div variants={itemVariants} className="mt-4 text-center">
           <EnhancedButton
-            variant="expandIcon"
-            Icon={FaCreditCard}
             onClick={handleStakeClick}
-            iconPlacement="right"
-            className="bg-purple-600 hover:bg-purple-700 border-purple-500">
-            🚀 Stake More to Reserve Cards
+            className="text-center w-full bg-yellow-200  text-black bg-yellow-300 border-yellow-200">
+            {!isCardReserved(userCards[currentCardIndex]?.card_type) ? (
+              <>
+                {stakedAmount < 1000 && userCards[currentCardIndex]?.card_type === 'bronze' && 'Stake 1,000 BBLIP to Activate'}
+                {stakedAmount < 2000 && userCards[currentCardIndex]?.card_type === 'silver' && 'Stake 2,000 BBLIP to Activate'}
+                {stakedAmount < 3500 && userCards[currentCardIndex]?.card_type === 'black' && 'Stake 3,500 BBLIP to Activate'}
+              </>
+            ) : 'Card Reserved'}
           </EnhancedButton>
         </motion.div>
       )}

@@ -49,7 +49,7 @@ export interface Card {
   card_number: string
   cvv: string
   expiration_date: string
-  card_type: 'bronze' | 'silver' | 'gold'
+  card_type: 'bronze' | 'silver' | 'black'
   created_at?: string
 }
 
@@ -225,7 +225,7 @@ export const cardService = {
           card_number: data.card_number_gold,
           cvv: data.cvv_gold,
           expiration_date: data.expiration_date_gold,
-          card_type: 'gold',
+          card_type: 'black',
           created_at: data.created_at
         }
       ]

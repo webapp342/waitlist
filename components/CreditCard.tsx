@@ -2,7 +2,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 
 interface CreditCardProps {
-  cardType: 'bronze' | 'silver' | 'gold';
+  cardType: 'bronze' | 'silver' | 'black';
   cardNumber: string;
   cvv: string;
   expirationDate: string;
@@ -26,7 +26,7 @@ export default function CreditCard({
         return '/bronze.png';
       case 'silver':
         return '/silver.png';
-      case 'gold':
+      case 'black':
         return '/gold.png';
       default:
         return '/bronze.png';

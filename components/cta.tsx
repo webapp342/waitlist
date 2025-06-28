@@ -1,21 +1,21 @@
 import { TypeAnimation } from 'react-type-animation';
-import { Shield, Wallet, Clock, Lock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Shield, Wallet, Clock, Lock, ChevronLeft, ChevronRight, Container } from "lucide-react";
 import TextBlur from "./ui/text-blur";
 import AnimatedShinyText from "./ui/shimmer-text";
 import { EnhancedButton } from "./ui/enhanced-btn";
 import { FaArrowRightLong } from "react-icons/fa6";
-import { useAccount, useConnect, useDisconnect } from 'wagmi';
+import { useAccount, useDisconnect } from 'wagmi';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import WalletModal from "./WalletModal";
 
 export default function CTA() {
   const { address, isConnected } = useAccount();
-  const { connect, connectors, isPending } = useConnect();
   const { disconnect } = useDisconnect();
-  const [showConnectors, setShowConnectors] = useState(false);
+  const [isWalletModalOpen, setIsWalletModalOpen] = useState(false);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const router = useRouter();
 
@@ -29,18 +29,7 @@ export default function CTA() {
     if (isConnected) {
       disconnect();
     } else {
-      setShowConnectors(!showConnectors);
-    }
-  };
-
-  const handleConnectorClick = async (connector: any) => {
-    try {
-      await connect({ connector });
-      setShowConnectors(false);
-      router.replace('/dashboard');
-    } catch (error) {
-      console.error('Connection failed:', error);
-      toast.error('Connection failed. Please try again.');
+      setIsWalletModalOpen(true);
     }
   };
 
@@ -53,22 +42,19 @@ export default function CTA() {
   };
 
   return (
-    <section className="mx-auto flex max-w-[980px] flex-col items-center gap-2 -py-0 md:-py-0 md:-pb-0 lg:py-0 lg:-pb-0">
+    <section className="mx-auto flex flex-col items-center gap-2 py-0 lg:py-0">
       <div className="space-y-1">
         <TextBlur
           className="text-center text-4xl font-medium tracking-tighter sm:text-6xl"
-          text="Live the Crypto Life"
+          text="Spend Crypto."
         />
 
         <div className="flex items-center justify-center text-4xl font-medium tracking-tighter sm:text-6xl">
-          <span>With</span>
-          <span className="ml-3">
-            <AnimatedShinyText>Bblip Card</AnimatedShinyText>
-          </span>
+          <AnimatedShinyText>Anywhere.</AnimatedShinyText>
         </div>
       </div>
       
-      <div className="min-h-[60px] text-center text-lg sm:text-xl mt-6 max-w-[30rem]">
+      <div className="min-h-[60px] text-center text-lg sm:text-xl mt-4 ">
         <TypeAnimation
           sequence={[
             'Instant spending direct from your crypto wallet, anywhere anytime',
@@ -94,8 +80,8 @@ export default function CTA() {
       </div>
 
       {/* Card Carousel */}
-      <div className="relative w-full max-w-[800px] -mt-10 mb-0">
-        <div className="relative h-[300px] flex items-center justify-center">
+      <div className="relative w-full -mt-10  mb-0">
+        <div className="relative h-[280px] sm:h-[300px] md:h-[340px] lg:h-[380px] flex items-center justify-center">
           {/* Cards Container */}
           <div className="relative w-full h-full flex items-center justify-center">
             {cardImages.map((card, index) => {
@@ -145,13 +131,13 @@ export default function CTA() {
                     perspective: "1000px"
                   }}
                 >
-                  <div className="w-[320px] hover:scale-105 transition-transform duration-200">
+                  <div className="w-[280px] sm:w-[320px] md:w-[380px] lg:w-[420px] hover:scale-105 transition-transform duration-200">
                     <Image
                       src={card.src}
                       alt={card.alt}
                       width={519}
                       height={376}
-                      className="w-full h-auto drop-shadow-2xl"
+                      className="w-full h-auto drop-shadow-xl"
                       priority={isCenter}
                     />
                   </div>
@@ -169,7 +155,7 @@ export default function CTA() {
               onClick={() => setCurrentCardIndex(index)}
               className={`h-2 rounded-full transition-all duration-300 ${
                 index === currentCardIndex
-                  ? "w-8 bg-yellow-400 shadow-lg"
+                  ? "w-8 bg-yellow-200 shadow-lg"
                   : "w-2 bg-zinc-600 hover:bg-zinc-500"
               }`}
               aria-label={`Go to card ${index + 1}`}
@@ -177,74 +163,30 @@ export default function CTA() {
           ))}
         </div>
 
+       
+
         {/* Connect Wallet Button */}
         <div className="mt-12 flex flex-col items-center gap-4">
-          <EnhancedButton onClick={handleWalletAction}>
-            <div className="flex items-center gap-2">
-              <Wallet className="w-4 h-4" />
-              <span>{isConnected ? 'Disconnect Wallet' : 'Connect Wallet'}</span>
+          <button
+            onClick={handleWalletAction}
+            className="group relative px-8 py-3 bg-yellow-200  text-black font-medium rounded-xl transition-all duration-200 min-w-[280px]"
+          >
+            <div className="flex items-center justify-center gap-2">
+              <span>{isConnected ? 'Disconnect Wallet' : 'Create your cards'}</span>
               {!isConnected && <FaArrowRightLong className="w-4 h-4" />}
             </div>
-          </EnhancedButton>
+          </button>
 
-          {/* Wallet Connectors */}
-          {showConnectors && !isConnected && (
-            <div className="flex flex-col gap-2 w-full max-w-[320px]">
-              {connectors.map((connector) => (
-                <button
-                  key={connector.id}
-                  onClick={() => handleConnectorClick(connector)}
-                  disabled={isPending}
-                  className={`
-                    w-full px-4 py-3 rounded-xl text-sm font-medium
-                    bg-black/60 backdrop-blur-xl border border-yellow-400/10
-                    hover:bg-black/40 hover:border-yellow-400/20
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    transition-all duration-300
-                  `}
-                >
-                  {connector.name}
-                  {isPending && ' (connecting)'}
-                </button>
-              ))}
-            </div>
+          {/* Microcopy under button */}
+          {!isWalletModalOpen && (
+            <p className="text-sm text-zinc-400 -mt-2">Start in 30&nbsp;seconds — no KYC required</p>
           )}
         </div>
+    
+       
 
-        {/* Features Grid */}
-        <div className="mt-16 grid grid-cols-2 gap-4">
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-black/60 backdrop-blur-xl border border-yellow-400/10">
-            <Shield className="w-5 h-5 text-yellow-400" />
-            <div>
-              <h3 className="font-medium text-white">Secure</h3>
-              <p className="text-sm text-gray-400">Non-custodial solution</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-black/60 backdrop-blur-xl border border-yellow-400/10">
-            <Clock className="w-5 h-5 text-yellow-400" />
-            <div>
-              <h3 className="font-medium text-white">Instant</h3>
-              <p className="text-sm text-gray-400">Real-time transactions</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-black/60 backdrop-blur-xl border border-yellow-400/10">
-            <Lock className="w-5 h-5 text-yellow-400" />
-            <div>
-              <h3 className="font-medium text-white">Private</h3>
-              <p className="text-sm text-gray-400">No KYC required</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3 p-4 rounded-xl bg-black/60 backdrop-blur-xl border border-yellow-400/10">
-            <Wallet className="w-5 h-5 text-yellow-400" />
-            <div>
-              <h3 className="font-medium text-white">Flexible</h3>
-              <p className="text-sm text-gray-400">Multi-wallet support</p>
-            </div>
-          </div>
-        </div>
+        {/* Wallet Modal */}
+        <WalletModal open={isWalletModalOpen} onClose={() => setIsWalletModalOpen(false)} />
       </div>
     </section>
   );
