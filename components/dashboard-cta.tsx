@@ -478,14 +478,14 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
 
   return (
     <motion.div
-      className="flex w-full max-w-2xl flex-col gap-2"
+      className="flex w-full max-w-2xl flex-col mt-10 gap-2"
       variants={containerVariants}
       initial="hidden"
       animate="visible">
 
       {/* Network Switch Button - Only show when on wrong network */}
       {!isOnBSCTestnet && (
-        <motion.div variants={itemVariants} className="mt-12 flex w-full justify-center">
+        <motion.div variants={itemVariants} className="mt-20 -mb-5 flex w-full justify-center">
           <div className="flex w-full max-w-[24rem] flex-col gap-2">
             <button
               onClick={handleNetworkSwitch}
@@ -493,7 +493,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
               className="w-full px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
               <FaTriangleExclamation className="w-4 h-4" />
-              {isSwitching ? "Switching Network..." : "🔄 Switch to BSC Testnet"}
+              {isSwitching ? "Switching Network..." : " Switch to BSC Testnet"}
             </button>
           </div>
         </motion.div>
@@ -543,11 +543,9 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
       {/* Network requirement notice */}
       {!isOnBSCTestnet && (
         <motion.div variants={itemVariants} className="mt-8 text-center">
-          <div className="p-4 bg-yellow-500/20 border border-yellow-500/30 rounded-lg">
-            <p className="text-yellow-300 text-sm">
-              🔐 Connect to BSC Testnet to view your exclusive cards and access all features.
+            <p className="text-red-600 text-sm">
+              Switch to BSC to view your cards and access all features.
             </p>
-          </div>
         </motion.div>
       )}
 

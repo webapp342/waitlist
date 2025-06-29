@@ -22,18 +22,13 @@ export default function Logos() {
       animate="visible">
       <motion.div variants={itemVariants}>
         <TextBlur
-          className="text-center text-2xl font-medium tracking-tight text-zinc-200 md:text-3xl"
-          text="Powered by"
+          className="text-center text-lg font-medium tracking-tight text-zinc-200 md:text-3xl"
+          text="Pay with crypto, earn rewards onchain and IRL"
         />
+        
       </motion.div>
 
-      <motion.div variants={itemVariants}>
-        <TextBlur
-          className="text-center text-base text-zinc-300 sm:text-lg"
-          text="Battle-tested infra behind Bblip."
-          duration={0.8}
-        />
-      </motion.div>
+
 
       <motion.div
         variants={itemVariants}
@@ -44,7 +39,7 @@ export default function Logos() {
             href={logo.href}
             rel="noopener noreferrer"
             target="_blank"
-            className="flex h-24 items-center justify-center rounded-lg border bg-zinc-900  transition-all duration-150 ease-in-out md:hover:border-zinc-700 md:hover:bg-accent">
+            className="flex h-24 items-center justify-center rounded-xl border   transition-all duration-150 ease-in-out md:hover:border-zinc-700 md:hover:bg-accent">
             {logo.src ? (
               <Image
                 src={logo.src}

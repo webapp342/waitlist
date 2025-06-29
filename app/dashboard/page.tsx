@@ -3,26 +3,26 @@
 import DashboardCTA from "@/components/dashboard-cta";
 import Particles from "@/components/ui/particles";
 import Header from "@/components/header";
-import Footer from "@/components/footer";
 import { useAccount, useBalance } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useWallet } from '@/hooks/useWallet';
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Wallet, RefreshCw, Plus, Send, Info } from 'lucide-react';
+import { TrendingUp, Wallet, RefreshCw, Plus, Send, Info, ArrowUpRight, ArrowDownLeft, Coins } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { cn } from "@/lib/utils";
 
 const USDT_ADDRESS = '0x690419A4f1B5320c914f41b44CE10EB0BAC70908';
 const BUSD_ADDRESS = '0xD7D767dB964C36B41EfAABC02669169eDF513eAb';
 const BBLIP_ADDRESS = '0xbB7Adc4303857A388ba3BFb52fe977f696A2Ca72';
 
 const ASSETS = [
-  { symbol: 'BNB', name: 'Binance Coin', icon: '/bnb.svg' },
-  { symbol: 'USDT', name: 'Tether USD', icon: '/usdt.svg' },
-  { symbol: 'BUSD', name: 'Binance USD', icon: '/busd.svg' },
-  { symbol: 'BBLIP', name: 'BBLIP Token', icon: '/logo.svg' }
+  { symbol: 'BBLIP', name: 'BBLIP Token', icon: '/logo.svg' },
+  { symbol: 'BNB', name: 'Binance Coin', icon: '/bnb.svg'  },
+  { symbol: 'USDT', name: 'Tether USD', icon: '/usdt.svg'  },
+  { symbol: 'BUSD', name: 'Binance USD', icon: '/busd.svg' }
 ];
 
 export default function Dashboard() {
@@ -94,31 +94,35 @@ export default function Dashboard() {
           balance: userData?.bnbBalance ? parseFloat(userData.bnbBalance) : 0,
           usdValue: bnbUsd,
           price: bnbPrice,
-          change: '+2.34%'
+          change: '+2.34%',
+          changeValue: 2.34
         };
       case 'USDT':
         return {
           balance: usdtBalance ? parseFloat(usdtBalance.formatted) : 0,
           usdValue: usdtUsd,
           price: 1.00,
-          change: '+0.01%'
+          change: '+0.01%',
+          changeValue: 0.01
         };
       case 'BUSD':
         return {
           balance: busdBalance ? parseFloat(busdBalance.formatted) : 0,
           usdValue: busdUsd,
           price: 1.00,
-          change: '0.00%'
+          change: '0.00%',
+          changeValue: 0
         };
       case 'BBLIP':
         return {
           balance: bblipBalance ? parseFloat(bblipBalance.formatted) : 0,
           usdValue: bblipUsd,
           price: 0.10,
-          change: '+15.67%'
+          change: '+15.67%',
+          changeValue: 15.67
         };
       default:
-        return { balance: 0, usdValue: 0, price: 0, change: '0.00%' };
+        return { balance: 0, usdValue: 0, price: 0, change: '0.00%', changeValue: 0 };
     }
   };
 
@@ -140,17 +144,20 @@ export default function Dashboard() {
         {/* Professional Warning Message */}
         {needsStaking && (
           <div className="w-full max-w-6xl mt-6">
-            <div className="bg-gradient-to-r from-orange-500/10 to-yellow-500/10 backdrop-blur-xl rounded-xl border border-orange-400/20 p-4 shadow-lg">
+            <div className="bg-gradient-to-r from-amber-500/5 to-orange-500/5 backdrop-blur-xl rounded-2xl border border-amber-500/20 p-4 shadow-lg">
               <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center  flex-shrink-0">
-                  <Info className="w-3 h-3 text-orange-400" />
+                <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
+                  <Info className="w-4 h-4 text-amber-400" />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="text-sm font-medium text-orange-200 ">Card Activation Required</h4>
-                 
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-amber-300 mb-1">Card Activation Required</h4>
+                  <p className="text-xs text-gray-400">Stake at least 1,000 BBLIP to activate your card benefits</p>
                 </div>
-               
-                
+                <Link href="/stake">
+                  <Button size="sm" variant="ghost" className="text-amber-300 hover:text-amber-200 hover:bg-amber-500/10">
+                    Stake Now
+                  </Button>
+                </Link>
               </div>
             </div>
           </div>
@@ -159,10 +166,10 @@ export default function Dashboard() {
         {/* Main Dashboard Content */}
         <div className="w-full max-w-6xl mt-8">
           {/* Dashboard Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6 md:mb-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
             <div>
-              <h1 className="text-xl md:text-3xl font-bold text-white mb-1 md:mb-2">Portfolio Overview</h1>
-              <p className="text-gray-400 text-sm md:text-base">Manage your crypto assets and track performance</p>
+              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Portfolio Overview</h1>
+              <p className="text-gray-500 text-sm">Track and manage your digital assets</p>
             </div>
             
             {/* Action Buttons */}
@@ -172,166 +179,97 @@ export default function Dashboard() {
                 disabled={isRefreshing}
                 variant="outline"
                 size="sm"
-                className="bg-black/50 border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:border-yellow-200/50 hover:text-yellow-200"
+                className="bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 transition-all"
               >
-                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
                 Refresh
               </Button>
               
               <Link href="/presale">
                 <Button
                   size="sm"
-                  className="bg-yellow-200 hover:bg-yellow-300 text-black"
+                  className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold shadow-lg transition-all"
                 >
                   <Plus className="w-4 h-4 mr-2" />
-                  Buy More
+                  Buy 
+                </Button>
+              </Link>
+
+              <Link href="/stake">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20 hover:border-blue-500/50 font-semibold transition-all"
+                >
+                  <Coins className="w-4 h-4 mr-2" />
+                  Stake
                 </Button>
               </Link>
             </div>
           </div>
 
-          {/* Portfolio Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 mb-6 md:mb-8">
-            {/* Total Portfolio Value */}
-            <div className="bg-gradient-to-br from-[#0A0A0A]/90 to-black/60 backdrop-blur-xl rounded-2xl border border-yellow-400/20 p-4 md:p-6 shadow-lg shadow-yellow-400/5">
-              <div className="flex items-center gap-3 mb-3 md:mb-4">
-                <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-yellow-400/20 border border-yellow-400/30 flex items-center justify-center">
-                  <Wallet className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" />
-                </div>
-                <div>
-                  <h3 className="text-xs md:text-sm font-medium text-gray-400">Total Portfolio</h3>
-                  <p className="text-lg md:text-2xl font-bold text-white">
-                    ${totalUsd.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 text-sm">
-                <TrendingUp className="w-4 h-4 text-green-400" />
-                <span className="text-green-400 font-medium">+12.34%</span>
-                <span className="text-gray-400">24h</span>
-              </div>
-            </div>
+                     
+  
+          {/* Assets Table - Clean Professional Design */}
+          <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 shadow-xl overflow-hidden">
+            {/* Table Header with Total Assets Value */}
+           
 
-            {/* Quick Actions */}
-            <div className="bg-gradient-to-br from-[#0A0A0A]/90 to-black/60 backdrop-blur-xl rounded-2xl border border-blue-400/20 p-4 md:p-6 shadow-lg">
-              <h3 className="text-xs md:text-sm font-medium text-gray-400 mb-3 md:mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <Link href="/presale" className="flex items-center justify-center gap-2 p-3 rounded-lg bg-yellow-400/10 hover:bg-yellow-400/20 border border-yellow-400/20 text-yellow-200 hover:text-yellow-100 transition-all duration-200">
-                  <Plus className="w-4 h-4" />
-                  <span className="text-sm font-medium">Buy</span>
-                </Link>
-                <Link href="/stake" className="flex items-center justify-center gap-2 p-3 rounded-lg bg-blue-400/10 hover:bg-blue-400/20 border border-blue-400/20 text-blue-200 hover:text-blue-100 transition-all duration-200">
-                  <TrendingUp className="w-4 h-4" />
-                  <span className="text-sm font-medium">Stake</span>
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {/* Navigation Tabs */}
-          <div className="border-b border-zinc-800 mb-6">
-            <nav className="-mb-px flex" aria-label="Tabs">
-              <button
-                onClick={() => setActiveTab('portfolio')}
-                className={`flex-1 py-3 md:py-4 px-1 text-center border-b-2 text-sm font-medium transition-colors duration-200 ${
-                  activeTab === 'portfolio'
-                    ? 'border-yellow-200 text-yellow-200'
-                    : 'border-transparent text-zinc-400 hover:text-zinc-300 hover:border-zinc-300'
-                }`}
-              >
-                Portfolio Assets
-              </button>
-              <button
-                onClick={() => setActiveTab('transactions')}
-                className={`flex-1 py-3 md:py-4 px-1 text-center border-b-2 text-sm font-medium transition-colors duration-200 ${
-                  activeTab === 'transactions'
-                    ? 'border-yellow-200 text-yellow-200'
-                    : 'border-transparent text-zinc-400 hover:text-zinc-300 hover:border-zinc-300'
-                }`}
-              >
-                Transaction History
-              </button>
-            </nav>
-          </div>
-
-          {/* Tab Content */}
-          <div className="pb-8">
-            {activeTab === 'portfolio' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
-                {ASSETS.map((asset) => {
-                  const data = getAssetData(asset.symbol);
-                  const isPositive = data.change.startsWith('+');
-                  
-                  return (
-                    <div
-                      key={asset.symbol}
-                      className="bg-gradient-to-br from-[#0A0A0A]/90 to-black/60 backdrop-blur-xl rounded-2xl border border-yellow-400/10 p-4 md:p-6 shadow-lg hover:border-yellow-400/20 transition-all duration-300"
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-black/60 border border-yellow-400/10 flex items-center justify-center">
-                            <Image src={asset.icon} alt={asset.symbol} width={24} height={24} className="md:w-6 md:h-6" />
-                          </div>
-                          <div>
-                            <h3 className="text-base md:text-lg font-semibold text-white">{asset.symbol}</h3>
-                            <p className="text-xs md:text-sm text-gray-400">{asset.name}</p>
-                          </div>
+            {/* Assets List - Simplified */}
+            <div className="divide-y divide-zinc-800">
+              {ASSETS.map((asset) => {
+                const data = getAssetData(asset.symbol);
+                const isPositive = data.changeValue > 0;
+                
+                return (
+                  <div
+                    key={asset.symbol}
+                    className="px-6 py-4 hover:bg-zinc-800/50 transition-colors cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between">
+                      {/* Asset Info */}
+                      <div className="flex items-center gap-4">
+                        <div className={cn(
+                          "w-12 h-12 rounded-xl flex items-center justify-center ",
+                      
+                        )}>
+                          <Image src={asset.icon} alt={asset.symbol} width={24} height={24} />
                         </div>
-                        
-                        <div className="text-right">
-                          <p className="text-lg md:text-xl font-bold text-white">
-                            ${data.usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                          </p>
-                          <div className="flex items-center gap-1">
-                            <span className={`text-sm font-medium ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
-                              {data.change}
-                            </span>
-                          </div>
+                        <div>
+                          <h3 className="font-semibold text-white">{asset.symbol}</h3>
+                          <p className="text-sm text-gray-500">{data.balance.toFixed(4)} {asset.symbol}</p>
                         </div>
                       </div>
-                      
-                      <div className="flex items-center justify-between pt-4 border-t border-zinc-800/50">
-                        <div>
-                          <p className="text-xs md:text-sm text-gray-400">Balance</p>
-                          <p className="text-sm md:text-base font-semibold text-white">
-                            {data.balance.toFixed(asset.symbol === 'BNB' ? 4 : 2)} {asset.symbol}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs md:text-sm text-gray-400">Price</p>
-                          <p className="text-sm md:text-base font-semibold text-white">
-                            ${data.price.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                          </p>
-                        </div>
+
+                      {/* Balance & Change */}
+                      <div className="text-right">
+                        <p className="font-semibold text-lg text-white">
+                          ${data.usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                        </p>
+                     
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="bg-gradient-to-br from-[#0A0A0A]/90 to-black/60 backdrop-blur-xl rounded-2xl border border-yellow-400/10 p-6 md:p-8 shadow-lg text-center">
-                <div className="w-12 h-12 md:w-16 md:h-16 rounded-full bg-zinc-800/50 flex items-center justify-center mx-auto mb-4">
-                  <Send className="w-6 h-6 md:w-8 md:h-8 text-zinc-400" />
-                </div>
-                <h3 className="text-base md:text-lg font-semibold text-white mb-2">No Transactions Yet</h3>
-                <p className="text-sm md:text-base text-gray-400 mb-6">Your transaction history will appear here once you start trading</p>
-                <Link href="/presale">
-                  <Button className="bg-yellow-200 hover:bg-yellow-300 text-black">
-                    <Plus className="w-4 h-4 mr-2" />
-                    Make Your First Purchase
-                  </Button>
-                </Link>
-              </div>
-            )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Transaction History - Placeholder */}
+          <div className="mt-8 mb-10 bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 p-8 shadow-xl text-center">
+            <div className="w-16 h-16 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+              <Send className="w-8 h-8 text-zinc-600" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">No Recent Transactions</h3>
+            <p className="text-sm text-gray-500 mb-6">Your transaction history will appear here</p>
+          
           </div>
         </div>
       </section>
 
-      <Footer />
-
       <Particles
-        quantityDesktop={150}
-        quantityMobile={50}
+        quantityDesktop={100}
+        quantityMobile={30}
         ease={120}
         color={"#F7FF9B"}
         refresh

@@ -5,7 +5,6 @@ import { useAccount } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Particles from "@/components/ui/particles";
-import Footer from "@/components/footer";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -37,6 +36,7 @@ function PresalePageInner() {
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [hasAllowance, setHasAllowance] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
   
   const { 
     presaleInfo, 
@@ -90,18 +90,23 @@ function PresalePageInner() {
         // Check allowance for the calculated payment amount
         if (selectedToken !== TOKEN_IDS.bnb) {
           try {
+            setIsCheckingAllowance(true);
             const allowance = await checkAllowance(selectedToken, formatUnits(amount, 18));
             setHasAllowance(BigInt(allowance) >= BigInt(amount));
           } catch (err) {
             console.error('Error checking allowance:', err);
             setHasAllowance(false);
+          } finally {
+            setIsCheckingAllowance(false);
           }
         } else {
           setHasAllowance(true);
+          setIsCheckingAllowance(false);
         }
       } else {
         setPaymentAmount('0');
         setHasAllowance(false);
+        setIsCheckingAllowance(false);
       }
     };
 
@@ -167,10 +172,29 @@ function PresalePageInner() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-black via-zinc-950 to-black">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-200"></div>
-          <p className="mt-4 text-gray-400">Loading presale information...</p>
+          <div className="relative">
+            {/* Professional loading spinner */}
+            <div className="w-16 h-16 relative mx-auto mb-6">
+              <div className="absolute inset-0 rounded-full border-4 border-zinc-800"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-yellow-400 animate-spin"></div>
+              <div className="absolute inset-2 rounded-full border-2 border-transparent border-t-yellow-300 animate-spin animation-delay-75"></div>
+            </div>
+            
+            {/* Loading text with animation */}
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-white">Loading Presale</h3>
+              <div className="flex items-center justify-center gap-1">
+                <span className="text-gray-400">Preparing your experience</span>
+                <div className="flex gap-1">
+                  <div className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce animation-delay-0"></div>
+                  <div className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce animation-delay-150"></div>
+                  <div className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce animation-delay-300"></div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -178,6 +202,20 @@ function PresalePageInner() {
 
   return (
     <>
+      <style jsx>{`
+        .animation-delay-0 {
+          animation-delay: 0ms;
+        }
+        .animation-delay-75 {
+          animation-delay: 75ms;
+        }
+        .animation-delay-150 {
+          animation-delay: 150ms;
+        }
+        .animation-delay-300 {
+          animation-delay: 300ms;
+        }
+      `}</style>
       <Header />
       <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-32 md:pt-32">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
@@ -193,47 +231,55 @@ function PresalePageInner() {
 
           {/* Presale Progress Stepper */}
           <div className="mb-8">
-            <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-2xl border border-yellow-400/10 p-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10">
+            <div className="bg-black backdrop-blur-xl rounded-2xl border border-zinc-800 p-6 shadow-xl">
               <div className="flex items-center justify-between relative">
-                {/* Progress Line */}
-                <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-zinc-800 -translate-y-1/2 z-0"></div>
-                <div className="absolute top-1/2 left-0 w-2/3 h-0.5 bg-yellow-400 -translate-y-1/2 z-0"></div>
+                {/* Enhanced Progress Line */}
+                <div className="absolute top-1/2 left-12 right-12 h-1 bg-zinc-800 rounded-full -translate-y-1/2 z-0"></div>
+                <div className="absolute top-1/2 left-12 w-1/2 h-1 bg-gradient-to-r from-green-400 to-yellow-400 rounded-full -translate-y-1/2 z-0"></div>
 
                 {/* Stage 1 - Seed Sale (Completed) */}
-                <div className="flex flex-col items-center relative z-10 bg-[#0A0A0A] px-4">
-                  <div className="w-12 h-12 rounded-full bg-green-500/20 border-2 border-green-500 flex items-center justify-center mb-3">
-                    <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex flex-col items-center relative z-10 bg-black rounded-xl px-2 py-2">
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500/20 to-green-600/20 border-2 border-green-500 flex items-center justify-center mb-3 shadow-lg shadow-green-500/20">
+                    <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
                   <div className="text-center">
-                    <h3 className="text-sm font-semibold text-white mb-1">Seed Sale</h3>
-                    <p className="text-xs text-gray-400 mb-2">Completed</p>
+                    <h3 className="text-sm font-semibold text-green-300 mb-1">Seed Sale</h3>
+                    <p className="text-xs text-green-400/70 mb-2">Completed</p>
                     <p className="text-lg font-bold text-white">$0.07</p>
                   </div>
                 </div>
 
                 {/* Stage 2 - Presale (Active) */}
-                <div className="flex flex-col items-center relative z-10 bg-[#0A0A0A] px-4">
-                  <div className="w-12 h-12 rounded-full bg-yellow-400 border-2 border-yellow-300 flex items-center justify-center mb-3 shadow-lg shadow-yellow-400/25">
-                    <span className="text-black font-bold text-sm">02</span>
+                <div className="flex flex-col items-center relative z-10 bg-black rounded-xl -px-10 py-2">
+                  <div className="relative">
+                    {/* Pulsing outer ring */}
+                    <div className="absolute inset-0 w-12 h-12 rounded-full  bg-yellow-400/30 animate-ping"></div>
+                    {/* Main circle with blinking animation */}
+                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-yellow-400 to-yellow-500 border-2 border-yellow-300 flex items-center justify-center mb-3 shadow-lg shadow-yellow-400/50 animate-pulse">
+                      <span className="text-black font-bold text-sm animate-pulse">02</span>
+                    </div>
                   </div>
                   <div className="text-center">
                     <h3 className="text-sm font-semibold text-yellow-400 mb-1">Presale</h3>
-                    <p className="text-xs text-yellow-300 mb-2">Active Now</p>
+                    <div className="flex items-center justify-center gap-1 mb-2">
+                      <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+                      <p className="text-xs text-yellow-300">Active Now</p>
+                    </div>
                     <p className="text-lg font-bold text-yellow-400">$0.10</p>
                   </div>
                 </div>
 
                 {/* Stage 3 - Public Launch */}
-                <div className="flex flex-col items-center relative z-10 bg-[#0A0A0A] px-4">
-                  <div className="w-12 h-12 rounded-full bg-zinc-700/50 border-2 border-zinc-600 flex items-center justify-center mb-3">
-                    <span className="text-zinc-400 font-bold text-sm">03</span>
+                <div className="flex flex-col items-center relative z-10 bg-black rounded-xl px-2 py-2">
+                  <div className="w-12 h-12 rounded-full bg-zinc-800/50 border-2 border-zinc-700 flex items-center justify-center mb-3">
+                    <span className="text-zinc-500 font-bold text-sm">03</span>
                   </div>
                   <div className="text-center">
-                    <h3 className="text-sm font-semibold text-zinc-300 mb-1">Public Launch</h3>
-                    <p className="text-xs text-zinc-400 mb-2">Coming Soon</p>
-                    <p className="text-lg font-bold text-zinc-300">$0.14</p>
+                    <h3 className="text-sm font-semibold text-zinc-400 mb-1">Public Launch</h3>
+                    <p className="text-xs text-zinc-500 mb-2">Coming Soon</p>
+                    <p className="text-lg font-bold text-zinc-400">$0.14</p>
                   </div>
                 </div>
               </div>
@@ -303,63 +349,64 @@ function PresalePageInner() {
               </div>
             </div>
 
-            {/* Payment Summary - Compact Design */}
+            {/* Payment Summary - Clean Design */}
             {desiredTokens && paymentAmount !== '0' && (
-              <div className="p-4 rounded-xl bg-black/60 border border-yellow-400/10 mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <DollarSign className="w-4 h-4 text-yellow-200" />
+              <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 border border-zinc-800 mb-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <DollarSign className="w-4 h-4 text-yellow-400" />
                   <h3 className="text-sm font-medium text-white">Payment Summary</h3>
                 </div>
-                <div className="grid grid-cols-3 gap-4 text-center">
-                  <div>
-                    <p className="text-sm text-gray-400">Amount</p>
-                    <p className="font-semibold text-white">{desiredTokens} BBLIP</p>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="text-center p-3 bg-black/30 rounded-lg border border-zinc-800">
+                    <p className="text-xs text-gray-500 mb-1">Amount</p>
+                    <p className="text-lg font-bold text-white">{desiredTokens}</p>
+                    <p className="text-xs text-gray-400">BBLIP Tokens</p>
                   </div>
-                  <div>
-                    <p className="text-sm text-gray-400">Cost</p>
-                    <p className="font-semibold text-white">{Number(formatUnits(paymentAmount, 18)).toFixed(6)} {selectedTokenName}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-400">Rate</p>
-                    <p className="text-sm text-gray-400">$0.10 per token</p>
+                  <div className="text-center p-3 bg-black/30 rounded-lg border border-zinc-800">
+                    <p className="text-xs text-gray-500 mb-1">Total Cost</p>
+                    <p className="text-lg font-bold text-white">{Number(formatUnits(paymentAmount, 18)).toFixed(6)}</p>
+                    <p className="text-xs text-gray-400">{selectedTokenName}</p>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Error/Status Messages */}
-            {(error || statusMessage) && (
+            {/* Status Messages */}
+            {(error || statusMessage || isCheckingAllowance) && (
               <div className={cn(
                 "w-full mb-4 p-3 rounded-xl text-center font-medium border flex items-center justify-center gap-2",
                 error 
                   ? 'bg-red-500/10 text-red-300 border-red-500/20' 
+                  : isCheckingAllowance
+                  ? 'bg-blue-500/10 text-blue-300 border-blue-500/20'
                   : 'bg-green-500/10 text-green-300 border-green-500/20'
               )}>
                 {error ? (
                   <Info className="w-4 h-4" />
                 ) : (
-                  <div className="w-4 h-4 border-2 border-green-300/30 border-t-green-300 rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin"></div>
                 )}
-                {error || statusMessage}
+                {error || (isCheckingAllowance ? 'Checking allowance...' : statusMessage)}
               </div>
             )}
 
-            {/* Action Buttons */}
+            {/* Action Buttons - Smart Visibility */}
             <div className="space-y-3">
-              {selectedToken !== TOKEN_IDS.bnb && !hasAllowance && paymentAmount !== '0' && (
+              {/* Approve Button - Only show when token is not BNB, has no allowance, and not currently approving/buying */}
+              {selectedToken !== TOKEN_IDS.bnb && !hasAllowance && paymentAmount !== '0' && !isBuying && (
                 <Button
                   className={cn(
-                    "w-full bg-yellow-200 hover:bg-yellow-300 text-black font-medium shadow-lg h-12 md:h-14",
+                    "w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold shadow-lg h-12 md:h-14",
                     "transition-all duration-300"
                   )}
                   size="lg"
-                  disabled={isApproving || !desiredTokens}
+                  disabled={isApproving || !desiredTokens || isCheckingAllowance}
                   onClick={handleApprove}
                 >
                   {isApproving ? (
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                      Approving...
+                      Approving {selectedTokenName}...
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
@@ -370,78 +417,103 @@ function PresalePageInner() {
                 </Button>
               )}
 
-              <Button
-                className={cn(
-                  "w-full bg-yellow-200 hover:bg-yellow-300 text-black font-medium shadow-lg h-12 md:h-14",
-                  "transition-all duration-300"
-                )}
-                size="lg"
-                disabled={
-                  isBuying || 
-                  !desiredTokens || 
-                  paymentAmount === '0' || 
-                  (selectedToken !== TOKEN_IDS.bnb && !hasAllowance)
-                }
-                onClick={handleBuy}
-              >
-                {isBuying ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                    Processing...
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    Buy with {selectedTokenName}
-                  </div>
-                )}
-              </Button>
+              {/* Buy Button - Only show when approved or BNB, and not currently approving */}
+              {(selectedToken === TOKEN_IDS.bnb || hasAllowance) && paymentAmount !== '0' && !isApproving && (
+                <Button
+                  className={cn(
+                    "w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold shadow-lg h-12 md:h-14",
+                    "transition-all duration-300"
+                  )}
+                  size="lg"
+                  disabled={
+                    isBuying || 
+                    !desiredTokens || 
+                    paymentAmount === '0' ||
+                    isCheckingAllowance
+                  }
+                  onClick={handleBuy}
+                >
+                  {isBuying ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Processing Purchase...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Zap className="w-4 h-4" />
+                      Buy with {selectedTokenName}
+                    </div>
+                  )}
+                </Button>
+              )}
+
+              {/* Helper Text when checking allowance */}
+              {isCheckingAllowance && paymentAmount !== '0' && (
+                <div className="text-center p-3 bg-zinc-900/50 rounded-lg border border-zinc-800">
+                  <p className="text-sm text-gray-400">
+                    Verifying your {selectedTokenName} allowance...
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Presale Details Accordion - Compact */}
-          <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-xl border border-yellow-400/10 overflow-hidden mb-6">
+          {/* Presale Details Accordion - Professional */}
+          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-xl border border-zinc-800 overflow-hidden mb-6">
             <button
               onClick={() => setShowDetails(!showDetails)}
-              className="w-full px-4 py-3 flex items-center justify-between text-left"
+              className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-zinc-800/30 transition-colors"
             >
               <div className="flex items-center gap-3">
-                <Info className="w-4 h-4 text-yellow-200" />
+                <div className="p-2 rounded-lg bg-yellow-400/10 border border-yellow-400/20">
+                  <Info className="w-4 h-4 text-yellow-400" />
+                </div>
                 <div>
-                  <h3 className="text-sm font-medium text-white">Presale Details</h3>
-                  <p className="text-xs text-gray-400">Terms and information</p>
+                  <h3 className="text-sm font-semibold text-white">Presale Details</h3>
+                  <p className="text-xs text-gray-500">Terms and information</p>
                 </div>
               </div>
-              {showDetails ? (
-                <ChevronUp className="w-4 h-4 text-gray-400" />
-              ) : (
-                <ChevronDown className="w-4 h-4 text-gray-400" />
-              )}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-gray-500">
+                  {showDetails ? 'Hide' : 'Show'}
+                </span>
+                {showDetails ? (
+                  <ChevronUp className="w-4 h-4 text-gray-400" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-gray-400" />
+                )}
+              </div>
             </button>
             
             {showDetails && (
-              <div className="px-4 pb-4 border-t border-yellow-400/10">
-                <div className="space-y-3 pt-4">
-                  <div className="flex items-center gap-3">
-                    <TrendingUp className="w-4 h-4 text-yellow-200" />
+              <div className="px-6 pb-4 border-t border-zinc-800">
+                <div className="space-y-4 pt-4">
+                  <div className="flex items-start gap-3 p-3 bg-black/20 rounded-lg">
+                    <div className="p-1.5 rounded-lg bg-yellow-400/10 border border-yellow-400/20">
+                      <TrendingUp className="w-4 h-4 text-yellow-400" />
+                    </div>
                     <div>
-                      <h4 className="text-sm font-medium text-white">Current Price</h4>
+                      <h4 className="text-sm font-semibold text-white mb-1">Current Price</h4>
                       <p className="text-xs text-gray-400">$0.10 per BBLIP token (Presale Round 2)</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3">
-                    <Shield className="w-4 h-4 text-yellow-200" />
+                  <div className="flex items-start gap-3 p-3 bg-black/20 rounded-lg">
+                    <div className="p-1.5 rounded-lg bg-green-500/10 border border-green-500/20">
+                      <Shield className="w-4 h-4 text-green-400" />
+                    </div>
                     <div>
-                      <h4 className="text-sm font-medium text-white">Secure Purchase</h4>
+                      <h4 className="text-sm font-semibold text-white mb-1">Secure Purchase</h4>
                       <p className="text-xs text-gray-400">Multiple payment options with smart contract security</p>
                     </div>
                   </div>
                   
-                  <div className="flex items-center gap-3">
-                    <Clock className="w-4 h-4 text-yellow-200" />
+                  <div className="flex items-start gap-3 p-3 bg-black/20 rounded-lg">
+                    <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                      <Clock className="w-4 h-4 text-blue-400" />
+                    </div>
                     <div>
-                      <h4 className="text-sm font-medium text-white">Early Bird Pricing</h4>
+                      <h4 className="text-sm font-semibold text-white mb-1">Early Bird Pricing</h4>
                       <p className="text-xs text-gray-400">Available during presale period only</p>
                     </div>
                   </div>
@@ -450,8 +522,6 @@ function PresalePageInner() {
             )}
           </div>
         </div>
-
-        <Footer />
 
         <Particles
           quantityDesktop={150}

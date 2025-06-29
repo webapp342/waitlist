@@ -61,13 +61,13 @@ export default function CTA() {
 
   return (
     <section className="mx-auto flex flex-col items-center gap-2 py-0 lg:py-0">
-      <div className="space-y-1">
+      <div className="space-y-1 mt-10 -mb-10">
         <TextBlur
-          className="text-center text-4xl font-medium tracking-tighter sm:text-6xl"
+          className="text-center text-5xl font-medium tracking-tighter sm:text-6xl"
           text="Spend Crypto."
         />
 
-        <div className="flex items-center justify-center text-4xl font-medium tracking-tighter sm:text-6xl">
+        <div className="flex items-center justify-center text-5xl font-medium tracking-tighter sm:text-6xl">
           <AnimatedShinyText>Anywhere.</AnimatedShinyText>
         </div>
       </div>
@@ -75,7 +75,7 @@ export default function CTA() {
      
 
       {/* Card Carousel */}
-      <div className="relative w-full -mt-10  mb-0">
+      <div className="relative w-full mt-10  mb-0">
         <div className="relative h-[280px] sm:h-[300px] md:h-[340px] lg:h-[380px] flex items-center justify-center">
           {/* Cards Container */}
           <motion.div 

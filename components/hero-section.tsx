@@ -8,7 +8,7 @@ import Container from './container'
 
 export default function HeroSection() {
   return (
-    <section className="w-full pt-20 pb-0">
+    <section className="w-full pt-20 ">
       <Container size="lg">
         {/* Trust Badges */}
         <motion.div 

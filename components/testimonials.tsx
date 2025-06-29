@@ -1,121 +1,99 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { ChevronRight } from 'lucide-react'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import Container from './container'
-import { useRef, useState, useEffect } from 'react'
+import { useRef } from 'react'
 
 interface Testimonial {
   name: string
-  quote: string
-  role?: string
+  role: string
+  content: string
+  seed: number
+}
+
+// Daha açık ve canlı pastel renkler
+const colorPalettes = [
+  ['#FFE082', '#81D4FA', '#FFAB91'],  // Açık sarı, açık mavi, açık turuncu
+  ['#B2EBF2', '#FFCCBC', '#C5CAE9'],  // Açık turkuaz, açık somon, açık mor
+  ['#F8BBD0', '#B2DFDB', '#FFE0B2'],  // Açık pembe, açık yeşil, açık amber
+  ['#DCEDC8', '#B3E5FC', '#F8BBD0'],  // Açık lime, açık mavi, açık pembe
+  ['#B3E5FC', '#FFE0B2', '#C5CAE9'],  // Açık mavi, açık amber, açık mor
+  ['#FFCCBC', '#DCEDC8', '#B2EBF2'],  // Açık somon, açık lime, açık turkuaz
+]
+
+const getRandomAngle = () => Math.floor(Math.random() * 360)
+const getRandomColors = () => {
+  const palette = colorPalettes[Math.floor(Math.random() * colorPalettes.length)]
+  return palette.sort(() => Math.random() - 0.5).slice(0, 2)
+}
+
+const SplitColorAvatar = ({ seed }: { seed: number }) => {
+  const style = {
+    background: `
+      linear-gradient(${getRandomAngle()}deg, ${getRandomColors()[0]} 25%, transparent 65%),
+      linear-gradient(${getRandomAngle()}deg, ${getRandomColors()[1]} 50%, transparent 90%)
+    `,
+    transform: `rotate(${seed * 45}deg)`,
+  }
+
+  return (
+    <div className="w-12 h-12 rounded-full border-2 border-black relative overflow-hidden backdrop-blur-sm">
+      <div
+        className="absolute inset-0 mix-blend-soft-light"
+        style={style}
+      />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+    </div>
+  )
 }
 
 const testimonials: Testimonial[] = [
   {
-    name: 'Alex R.',
-    role: 'DeFi Researcher',
-    quote:
-      'With Bblip Card, I can finally spend my crypto in the real world without swapping to fiat first. The onboarding was seamless and totally private.'
+    name: "Alex Thompson",
+    role: "Early Adopter",
+    content: "The instant approval process is a game-changer. Got my card within minutes and the rewards are incredible!",
+    seed: Math.random()
   },
   {
-    name: 'Maria T.',
-    role: 'Early Adopter',
-    quote:
-      'I love the staking-to-card concept. My BBLIP tokens keep working for me while I pay for coffee. Genius!'
+    name: "Sarah Chen",
+    role: "Crypto Enthusiast",
+    content: "Finally, a card that understands crypto users. The staking rewards make this an absolute no-brainer.",
+    seed: Math.random()
   },
   {
-    name: 'Kenji S.',
-    role: 'Crypto Nomad',
-    quote:
-      'Zero-KYC and instant approval? This is how crypto payments should be. I have recommended Bblip to all my friends.'
+    name: "Marcus Rodriguez",
+    role: "DeFi Trader",
+    content: "The security features are top-notch. I feel confident using this card for all my crypto transactions.",
+    seed: Math.random()
   },
   {
-    name: 'Luca P.',
-    role: 'DeFi Farmer',
-    quote: 'Finally a card that doesn\'t force fiat ramps. Tap & pay straight from my wallet.'
+    name: "Emma Wilson",
+    role: "Tech Professional",
+    content: "Love how seamlessly it integrates with my existing crypto portfolio. The rewards program is exceptional.",
+    seed: Math.random()
   },
   {
-    name: 'Sofia G.',
-    role: 'NFT Artist',
-    quote: 'Royalties in, lattes out. Bblip fits perfectly into my daily flow.'
-  },
-  {
-    name: 'Omar H.',
-    role: 'Liquidity Provider',
-    quote: 'The privacy-first approach is what sold me. No forms, just freedom.'
-  },
-  {
-    name: 'Chen W.',
-    role: 'DAO Treasurer',
-    quote: 'Corporate cards for on-chain orgs? Yes please.'
-  },
-  {
-    name: 'Isabella F.',
-    role: 'Web3 Dev',
-    quote: 'Staking while spending feels like cheating the system—in a good way.'
-  },
-  {
-    name: 'Diego S.',
-    role: 'Arb Trader',
-    quote: 'Zero FX markup saved me hundreds during Devcon week.'
-  },
-  {
-    name: 'Priya K.',
-    role: 'Yield Chaser',
-    quote: 'Card activation took less than a minute. Unreal.'
-  },
-  {
-    name: 'Tom J.',
-    role: 'Bitcoin Maximalist',
-    quote: 'Didn\'t think I\'d ever use a card again, Bblip changed my mind.'
-  },
-  {
-    name: 'Elena V.',
-    role: 'Content Creator',
-    quote: 'Cashback in tokens? That\'s alpha.'
-  },
-  {
-    name: 'Ravi D.',
-    role: 'Validator Operator',
-    quote: 'Runs flawlessly on every chain I\'ve tried.'
-  },
-  {
-    name: 'Maya L.',
-    role: 'Digital Nomad',
-    quote: 'ATM withdrawals in Bali with my own keys was magical.'
+    name: "David Park",
+    role: "Blockchain Developer",
+    content: "The multi-chain support is impressive. This is exactly what the crypto community has been waiting for.",
+    seed: Math.random()
   }
 ]
 
 export default function Testimonials() {
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-  const handleScroll = (direction: 'left' | 'right') => {
-    if (!scrollContainerRef.current) return;
-    
-    const scrollAmount = direction === 'left' ? -320 : 320;
-    scrollContainerRef.current.scrollBy({
-      left: scrollAmount,
-      behavior: 'smooth'
-    });
-  };
-
-  // Update active index based on scroll position
-  useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-
-    const handleScrollEnd = () => {
-      const scrollLeft = container.scrollLeft;
-      const cardWidth = 320; // min-w-[320px] from our card class
-      const newIndex = Math.round(scrollLeft / cardWidth);
-      setActiveIndex(newIndex);
-    };
-
-    container.addEventListener('scrollend', handleScrollEnd);
-    return () => container.removeEventListener('scrollend', handleScrollEnd);
-  }, []);
+  const scroll = (direction: 'left' | 'right') => {
+    if (scrollContainerRef.current) {
+      const container = scrollContainerRef.current
+      const scrollAmount = container.clientWidth
+      container.scrollBy({
+        left: direction === 'left' ? -scrollAmount : scrollAmount,
+        behavior: 'smooth'
+      })
+    }
+  }
 
   return (
     <section className="w-full py-20">
@@ -139,61 +117,42 @@ export default function Testimonials() {
             ref={scrollContainerRef}
             className="flex gap-6 overflow-x-scroll overflow-y-hidden pb-4 scroll-smooth snap-x snap-mandatory no-scrollbar touch-pan-x"
           >
-            {testimonials.map((item, idx) => (
+            {testimonials.map((testimonial, index) => (
               <motion.div
-                key={idx}
+                key={index}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: idx * 0.05 }}
-                className="relative min-w-[280px] md:min-w-[320px] lg:min-w-[380px] bg-black/40 backdrop-blur-sm border border-zinc-800 rounded-2xl p-6 lg:p-8 flex flex-col hover:border-yellow-400/20 transition-colors duration-300 snap-start"
+                transition={{ delay: index * 0.1 }}
+                className="flex-none w-[300px] sm:w-[350px] bg-zinc-900/50 backdrop-blur-sm border border-zinc-800/50 rounded-2xl p-6 snap-center"
               >
-                <p className="text-zinc-300 leading-relaxed flex-grow text-lg mb-6">
-                  &quot;{item.quote}&quot;
-                </p>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-yellow-200" />
+                <div className="flex items-center gap-4 mb-4">
+                  <SplitColorAvatar seed={testimonial.seed} />
                   <div>
-                    <span className="font-semibold text-white block">{item.name}</span>
-                    {item.role && (
-                      <span className="text-sm text-zinc-400">{item.role}</span>
-                    )}
+                    <h3 className="font-semibold text-white">{testimonial.name}</h3>
+                    <p className="text-sm text-zinc-400">{testimonial.role}</p>
                   </div>
                 </div>
-                {idx === 0 && (
-                  <button
-                    onClick={() => handleScroll('right')}
-                    className="absolute bottom-6 right-6 w-10 h-10 rounded-full bg-yellow-400/20 hover:bg-yellow-400/30 flex items-center justify-center transition-colors duration-300"
-                    aria-label="Next testimonial"
-                  >
-                    <ChevronRight className="w-6 h-6 text-yellow-200" />
-                  </button>
-                )}
+                <p className="text-zinc-300 leading-relaxed">
+                  {testimonial.content}
+                </p>
               </motion.div>
             ))}
           </div>
-
-          {/* Navigation Dots */}
-          <div className="flex justify-center gap-2 mt-4">
-            {testimonials.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => {
-                  if (!scrollContainerRef.current) return;
-                  scrollContainerRef.current.scrollTo({
-                    left: idx * (window.innerWidth >= 1024 ? 380 : 320),
-                    behavior: 'smooth'
-                  });
-                }}
-                className={`h-2 rounded-full transition-all duration-300 ${
-                  idx === activeIndex
-                    ? "w-8 bg-yellow-200"
-                    : "w-2 bg-zinc-600 hover:bg-zinc-500"
-                }`}
-                aria-label={`Go to testimonial ${idx + 1}`}
-              />
-            ))}
-          </div>
+          
+          <button
+            onClick={() => scroll('left')}
+            className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-12 hidden lg:flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5 text-zinc-400" />
+          </button>
+          
+          <button
+            onClick={() => scroll('right')}
+            className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-12 hidden lg:flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 hover:bg-zinc-700 transition-colors"
+          >
+            <ChevronRight className="w-5 h-5 text-zinc-400" />
+          </button>
         </div>
       </Container>
     </section>

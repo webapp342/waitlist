@@ -2,10 +2,10 @@
 
 import { motion } from 'framer-motion'
 import { 
-  Fingerprint, 
-  Rocket,
-  Shield,
-  Clock,
+  Wallet,
+  Lock,
+  Coins,
+  Zap,
   ChevronRight,
   LucideIcon
 } from 'lucide-react'
@@ -19,35 +19,71 @@ interface Feature {
   isMainCard?: boolean;
 }
 
-const secondSectionFeatures: Feature[] = [
+const thirdSectionFeatures: Feature[] = [
   {
-    title: 'All-in-one cards.',
-    description: 'Zero compromises.',
+    title: 'DeFi Powered.',
+    description: 'Next-gen financial freedom.',
     isMainCard: true
   },
   {
-    icon: Fingerprint,
-    title: '100% Private',
-    description: 'No KYC, no personal data required. Your keys, your crypto, your freedom'
+    icon: Wallet,
+    title: 'Self-Custodial',
+    description: 'Your keys, your funds. Full control over your assets with non-custodial wallet integration'
   },
   {
-    icon: Rocket,
-    title: 'Instant Approval',
-    description: 'Get your card in under 60 seconds. No credit checks, no waiting periods'
+    icon: Lock,
+    title: 'Smart Contract Security',
+    description: 'Audited smart contracts with multi-signature governance and time-locks'
   },
   {
-    icon: Shield,
-    title: 'Military-Grade Security',
-    description: '256-bit encryption, biometric authentication, and fraud protection'
+    icon: Coins,
+    title: 'Staking Rewards',
+    description: 'Earn passive income through staking. Up to 12% APY with flexible lock periods'
   },
   {
-    icon: Clock,
-    title: 'Real-Time Rewards',
-    description: 'Earn up to 8% cashback in BBLIP tokens on every transaction'
+    icon: Zap,
+    title: 'Lightning Fast',
+    description: 'Instant transactions and card issuance powered by BSC network speed'
   }
 ]
 
-export default function FeaturesGridSecond() {
+const cardTiers = [
+  {
+    title: "Bronze",
+    features: [
+      "Basic fraud protection",
+      "Up to $1,000 daily limit",
+      "Standard support",
+      "1% cashback on all purchases"
+    ],
+    cashback: "1% Cashback",
+    isSpecial: false
+  },
+  {
+    title: "Silver",
+    features: [
+      "Advanced fraud protection",
+      "Up to $5,000 daily limit",
+      "Priority support",
+      "2% cashback on all purchases"
+    ],
+    cashback: "1.5% Cashback",
+    isSpecial: false
+  },
+  {
+    title: "Black",
+    features: [
+      "Military-grade security",
+      "Unlimited daily transactions",
+      "24/7 concierge service",
+      "3% cashback on all purchases"
+    ],
+    cashback: "2% Cashback",
+    isSpecial: true
+  }
+]
+
+export default function FeaturesGridThird() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -80,20 +116,18 @@ export default function FeaturesGridSecond() {
   return (
     <section className="w-full py-20 bg-gradient-to-b from-transparent via-zinc-950/20 to-transparent">
       <Container size="lg">
-     
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {/* Desktop view - Small cards on left */}
-          <div className="order-3 hidden lg:block col-span-2 lg:order-1">
-            <div className="grid grid-cols-2 gap-6 h-full">
-              {secondSectionFeatures.slice(1).map((feature, index) => (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8 lg:min-h-[500px]">
+          {/* Desktop view - Right side cards */}
+          <div className="order-3 lg:order-1 hidden lg:block col-span-2">
+            <div className="grid grid-cols-2 gap-6">
+              {thirdSectionFeatures.slice(1).map((feature, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.05 }}
-                  className="group relative p-6 lg:p-8 bg-black/40 backdrop-blur-sm border border-zinc-800 rounded-2xl hover:border-yellow-400/30 transition-all duration-300 h-full flex flex-col"
+                  className="group relative p-6 lg:p-8 bg-black/40 backdrop-blur-sm border border-zinc-800 rounded-2xl hover:border-yellow-400/30 transition-all duration-300"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-yellow-400/5 to-transparent opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity duration-300" />
                   
@@ -111,7 +145,7 @@ export default function FeaturesGridSecond() {
             </div>
           </div>
 
-          {/* Feature cards - Swipeable on mobile and Tall card on desktop */}
+          {/* Feature cards - Swipeable on mobile */}
           <div className="order-2 lg:order-2">
             <div className="block lg:hidden">
               <div className="relative">
@@ -119,7 +153,7 @@ export default function FeaturesGridSecond() {
                   ref={scrollContainerRef}
                   className="flex gap-6 overflow-x-scroll overflow-y-hidden pb-4 scroll-smooth snap-x snap-mandatory no-scrollbar touch-pan-x"
                 >
-                  {secondSectionFeatures.map((feature, idx) => (
+                  {thirdSectionFeatures.map((feature, idx) => (
                     <motion.div
                       key={idx}
                       initial={{ opacity: 0, y: 20 }}
@@ -174,7 +208,7 @@ export default function FeaturesGridSecond() {
 
                 {/* Navigation Dots */}
                 <div className="flex justify-center gap-2 mt-4">
-                  {secondSectionFeatures.map((_, idx) => (
+                  {thirdSectionFeatures.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => {
@@ -195,26 +229,26 @@ export default function FeaturesGridSecond() {
                 </div>
               </div>
             </div>
-
-            {/* Desktop view - Tall card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="hidden lg:flex items-center justify-center bg-gradient-to-br from-yellow-400/10 to-yellow-600/5 backdrop-blur-sm border border-yellow-400/20 rounded-2xl p-8 lg:p-12 h-full"
-            >
-              <div className="text-center">
-                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
-                  All-in-one cards.
-                </h2>
-                <p className="text-lg sm:text-xl text-zinc-300 mb-4">
-                  Zero compromises.
-                </p>
-                <div className="w-16 h-1 bg-gradient-to-r from-yellow-400 to-yellow-600 mx-auto rounded-full" />
-              </div>
-            </motion.div>
           </div>
+
+          {/* Desktop view - Tall card */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="hidden lg:flex items-center justify-center bg-gradient-to-br from-yellow-400/10 to-yellow-600/5 backdrop-blur-sm border border-yellow-400/20 rounded-2xl p-8 lg:p-12 h-full"
+          >
+            <div className="text-center">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white mb-2">
+                DeFi Powered.
+              </h2>
+              <p className="text-lg sm:text-xl text-zinc-300 mb-4">
+                Next-gen financial freedom.
+              </p>
+              <div className="w-16 h-1 bg-gradient-to-r from-yellow-400 to-yellow-600 mx-auto rounded-full" />
+            </div>
+          </motion.div>
         </div>
       </Container>
     </section>

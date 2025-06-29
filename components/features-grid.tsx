@@ -78,7 +78,8 @@ export default function FeaturesGrid() {
 
   return (
     <section className="w-full py-20 bg-gradient-to-b from-transparent via-zinc-950/20 to-transparent">
-      <Container size="lg">
+      <Container size="lg" >
+      
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
           {/* Feature cards - Swipeable on mobile */}
           <div className="order-2 lg:order-1">

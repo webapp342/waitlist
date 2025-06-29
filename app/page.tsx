@@ -16,6 +16,9 @@ import { useAccount } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import FeaturesGridSecond from "@/components/features-grid-second";
+import FeaturesGridThird from "@/components/features-grid-third";
+import RewardsMarket from '@/components/rewards-market';
+import SecurityFeatures from '@/components/security-features';
 
 export default function Home() {
   const { isConnected } = useAccount();
@@ -44,19 +47,30 @@ export default function Home() {
       </section>
       
       {/* Partner Logos */}
-    
-      
-      {/* Features Grid */}
-      <FeaturesGrid />
+     
+
+      {/* DeFi Features Grid */}
+      <FeaturesGridThird />
 
       <section className="w-full py-12">
         <Container size="lg">
           <Logos />
         </Container>
       </section>
+      
+      {/* Features Grid */}
+      <FeaturesGrid />
+
+
+      <SecurityFeatures />
 
 
       <FeaturesGridSecond />
+
+
+
+
+      <RewardsMarket />
 
       
       {/* Testimonials */}

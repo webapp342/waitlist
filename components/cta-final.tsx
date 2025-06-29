@@ -7,12 +7,65 @@ import { useAccount } from 'wagmi'
 import { useRouter } from 'next/navigation'
 import Container from './container'
 import WalletModal from './WalletModal'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import Image from 'next/image'
+
+// Daha açık ve canlı pastel renkler
+const colorPalettes = [
+  ['#FFE082', '#81D4FA', '#FFAB91'],  // Açık sarı, açık mavi, açık turuncu
+  ['#B2EBF2', '#FFCCBC', '#C5CAE9'],  // Açık turkuaz, açık somon, açık mor
+  ['#F8BBD0', '#B2DFDB', '#FFE0B2'],  // Açık pembe, açık yeşil, açık amber
+  ['#DCEDC8', '#B3E5FC', '#F8BBD0'],  // Açık lime, açık mavi, açık pembe
+  ['#B3E5FC', '#FFE0B2', '#C5CAE9'],  // Açık mavi, açık amber, açık mor
+  ['#FFCCBC', '#DCEDC8', '#B2EBF2'],  // Açık somon, açık lime, açık turkuaz
+]
+
+const getRandomAngle = () => Math.floor(Math.random() * 360)
+const getRandomColors = () => {
+  const palette = colorPalettes[Math.floor(Math.random() * colorPalettes.length)]
+  return palette.sort(() => Math.random() - 0.5).slice(0, 2)
+}
+
+const SplitColorAvatar = ({ seed }: { seed: number }) => {
+  const style = useMemo(() => {
+    const angle1 = getRandomAngle()
+    const angle2 = getRandomAngle()
+    const [color1, color2] = getRandomColors()
+    
+    return {
+      background: `
+        linear-gradient(${angle1}deg, ${color1} 25%, transparent 65%),
+        linear-gradient(${angle2}deg, ${color2} 50%, transparent 90%)
+      `,
+      transform: `rotate(${seed * 45}deg)`,
+    }
+  }, [seed])
+
+  return (
+    <div className="w-8 h-8 rounded-full border-2 border-black relative overflow-hidden backdrop-blur-sm">
+      <div
+        className="absolute inset-0 mix-blend-soft-light"
+        style={style}
+      />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
+    </div>
+  )
+}
+
+function generateShortAddress() {
+  const chars = '0123456789abcdef'
+  let address = '0x'
+  for (let i = 0; i < 4; i++) {
+    address += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return address
+}
 
 export default function CTAFinal() {
   const { isConnected } = useAccount()
   const router = useRouter()
   const [openModal, setOpenModal] = useState(false)
+  const avatarSeeds = useMemo(() => Array(5).fill(0).map(() => Math.random()), [])
 
   const handleConnect = () => {
     if (isConnected) {
@@ -23,75 +76,81 @@ export default function CTAFinal() {
   }
 
   return (
-    <section className="w-full py-20">
-      <Container size="lg">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          className="relative overflow-hidden bg-gradient-to-br from-yellow-400/10 via-black/40 to-yellow-400/5 backdrop-blur-xl border border-yellow-400/20 rounded-3xl p-8 lg:p-16"
-        >
-          {/* Background decoration */}
-          <div className="absolute top-0 right-0 w-64 h-64 bg-yellow-400/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-yellow-400/5 rounded-full blur-3xl" />
+    <section className="relative w-full py-20">
+      <Container>
+        <div className="relative rounded-3xl bg-[#0A0A0A] border border-zinc-800/50 p-8 md:p-12 lg:p-16 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-yellow-400/5 via-transparent to-transparent" />
           
-          <div className="relative z-10 text-center max-w-4xl mx-auto">
+          <div className="relative flex flex-col items-center text-center">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-4 py-2 mb-8 bg-green-400/10 border border-green-400/30 rounded-full"
+              className="bg-[#1B3129] text-[#4ADE80] text-sm font-medium px-4 py-2 rounded-full mb-8"
             >
-              <span className="text-sm text-green-400 font-medium">
               2x Staking Rewards at Early Access
+            </motion.div>
+
+            <motion.h2
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4"
+            >
+              Join the Revolution.
+            </motion.h2>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="text-zinc-400 text-lg mb-8"
+            >
+              Get your card in under a minute.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="flex items-center gap-2 mb-6"
+            >
+              <div className="flex -space-x-3">
+                {avatarSeeds.map((seed, index) => (
+                  <SplitColorAvatar key={index} seed={seed} />
+                ))}
+                <div className="w-8 h-8 rounded-full bg-zinc-800 border-2 border-black flex items-center justify-center text-xs">
+                  +
+                </div>
+              </div>
+              <span className="text-zinc-400">
+                <strong className="text-white">2,847</strong> joined today
               </span>
             </motion.div>
 
-            <h2 className="text-3xl sm:text-4xl lg:text-6xl font-bold text-white mb-6">
-              Join the Revolution.
-            </h2>
-            
-            <p className="text-lg sm:text-xl text-zinc-300 mb-12 max-w-3xl mx-auto leading-relaxed">
-              Get your card in under a minute.
-            </p>
-
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 mb-12">
-              <div className="flex items-center gap-2">
-                <Users className="w-5 h-5 text-yellow-200" />
-                <span className="text-sm sm:text-base text-zinc-300">
-                  <span className="font-semibold text-white">2,847</span> joined today
-                </span>
-              </div>
-              
-              <div className="flex -space-x-2">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-10 h-10 rounded-full bg-yellow-200 border-2 border-black"
-                  />
-                ))}
-                <div className="w-10 h-10 rounded-full bg-zinc-800 border-2 border-black flex items-center justify-center">
-                  <span className="text-sm text-zinc-400">+</span>
-                </div>
-              </div>
-            </div>
-
-            <button
-              onClick={handleConnect}
-              className="group px-8 py-3 bg-yellow-200 hover:bg-yellow-300 text-black font-medium rounded-xl transition-all duration-200 mb-8"
+            <motion.button
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="bg-yellow-200 text-black px-8 py-4 rounded-xl font-medium hover:bg-yellow-300 transition-colors"
             >
-              <span className="flex items-center gap-2">
-                Get Your Card Now
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </span>
-            </button>
+              Get Your Card Now →
+            </motion.button>
 
-            <p className="text-sm sm:text-base text-zinc-500">
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4 }}
+              className="text-zinc-500 text-sm mt-6"
+            >
               Average processing time: 47 seconds
-            </p>
+            </motion.p>
           </div>
-        </motion.div>
+        </div>
         <WalletModal open={openModal} onClose={() => setOpenModal(false)} />
       </Container>
     </section>
