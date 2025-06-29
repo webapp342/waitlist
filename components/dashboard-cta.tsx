@@ -7,6 +7,7 @@ import { EnhancedButton } from "@/components/ui/enhanced-btn";
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
 import { useAccount, useChainId, useSwitchChain, useChains, useBalance } from 'wagmi';
 import { FaTriangleExclamation, FaCreditCard, FaRegCopy, FaCheck } from "react-icons/fa6";
+import { Info, CheckCircle, Settings } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from 'react';
 import { userService, cardService, Card } from '@/lib/supabase';
@@ -520,20 +521,57 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
 
       {/* Staking CTA for current active card */}
       {isOnBSCTestnet && userCards.length > 0 && (
-        <motion.div variants={itemVariants} className="mt-4 text-center">
-          <EnhancedButton
-            onClick={isCardReserved(userCards[currentCardIndex]?.card_type) ? 
-              () => window.location.href = '/asset-priorities' : 
-              handleStakeClick}
-            className="text-center w-full bg-yellow-200 text-black bg-yellow-300 border-yellow-200">
-            {!isCardReserved(userCards[currentCardIndex]?.card_type) ? (
-              <>
-                {userCards[currentCardIndex]?.card_type === 'bronze' && `Stake ${getRequiredStakeAmount().toLocaleString()} BBLIP to Activate`}
-                {userCards[currentCardIndex]?.card_type === 'silver' && `Stake ${getRequiredStakeAmount().toLocaleString()} BBLIP to Activate`}
-                {userCards[currentCardIndex]?.card_type === 'black' && `Stake ${getRequiredStakeAmount().toLocaleString()} BBLIP to Activate`}
-              </>
-            ) : 'Set Your Asset Spending Priorities'}
-          </EnhancedButton>
+        <motion.div variants={itemVariants} className="mt-4">
+          {!isCardReserved(userCards[currentCardIndex]?.card_type) ? (
+            // Card Not Activated - Yellow Theme
+            <div className="bg-gradient-to-r from-yellow-500/5 to-orange-500/5 backdrop-blur-xl rounded-2xl border border-yellow-500/20 p-4 shadow-lg">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                  <Info className="w-4 h-4 text-yellow-400" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-yellow-300 mb-1">Card Activation Required</h4>
+                  <p className="text-xs text-gray-400">
+                    Stake {getRequiredStakeAmount().toLocaleString()} BBLIP to activate your {userCards[currentCardIndex]?.card_type} card
+                  </p>
+                </div>
+                <EnhancedButton
+                  onClick={handleStakeClick}
+                  size="sm" variant="ghost" className="text-yellow-300 hover:text-yellow-200 hover:bg-yellow-500/10"
+                >
+                  Activate Now
+                </EnhancedButton>
+              </div>
+            </div>
+          ) : (
+            // Card Activated - Green Theme
+            <div className="bg-gradient-to-r from-green-500/5 to-emerald-500/5 backdrop-blur-xl rounded-2xl border border-green-500/20 p-4 shadow-lg">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-green-500/10 border border-green-500/20">
+                  <CheckCircle className="w-4 h-4 text-green-400" />
+                </div>
+                                 <div className="flex-1">
+                   <h4 className="text-sm font-semibold text-green-300 mb-2"> <span className="text-green-200 font-medium capitalize">{userCards[currentCardIndex]?.card_type}</span> card is now reserved</h4>
+                   <div className="space-y-1">
+                    
+                     <p className="text-xs text-gray-400">
+                       Earning <span className="text-yellow-300 font-medium">2x staking rewards</span> during development
+                     </p>
+                     <p className="text-xs text-gray-400">
+                      Full card access launches soon — stay tuned!
+                     </p>
+                   </div>
+                 </div>
+                <EnhancedButton
+                  onClick={() => window.location.href = '/asset-priorities'}
+                  size="sm" variant="ghost" className="text-green-300 hover:text-green-200 hover:bg-green-500/10"
+                >
+                  <Settings className="w-3 h-3 mr-1" />
+                  Set Priorities
+                </EnhancedButton>
+              </div>
+            </div>
+          )}
         </motion.div>
       )}
 

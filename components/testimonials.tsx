@@ -50,31 +50,31 @@ const SplitColorAvatar = ({ seed }: { seed: number }) => {
 
 const testimonials: Testimonial[] = [
   {
-    name: "Alex Thompson",
+    name: "Alex T.",
     role: "Early Adopter",
     content: "The instant approval process is a game-changer. Got my card within minutes and the rewards are incredible!",
     seed: Math.random()
   },
   {
-    name: "Sarah Chen",
+    name: "Sarah C.",
     role: "Crypto Enthusiast",
     content: "Finally, a card that understands crypto users. The staking rewards make this an absolute no-brainer.",
     seed: Math.random()
   },
   {
-    name: "Marcus Rodriguez",
+    name: "Marcus R.",
     role: "DeFi Trader",
     content: "The security features are top-notch. I feel confident using this card for all my crypto transactions.",
     seed: Math.random()
   },
   {
-    name: "Emma Wilson",
+    name: "Emma W.",
     role: "Tech Professional",
     content: "Love how seamlessly it integrates with my existing crypto portfolio. The rewards program is exceptional.",
     seed: Math.random()
   },
   {
-    name: "David Park",
+    name: "David P.",
     role: "Blockchain Developer",
     content: "The multi-chain support is impressive. This is exactly what the crypto community has been waiting for.",
     seed: Math.random()

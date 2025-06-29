@@ -141,27 +141,7 @@ export default function Dashboard() {
 
         <DashboardCTA userData={userData} totalUsd={totalUsd} />
 
-        {/* Professional Warning Message */}
-        {needsStaking && (
-          <div className="w-full max-w-6xl mt-6">
-            <div className="bg-gradient-to-r from-amber-500/5 to-orange-500/5 backdrop-blur-xl rounded-2xl border border-amber-500/20 p-4 shadow-lg">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-amber-500/10 border border-amber-500/20">
-                  <Info className="w-4 h-4 text-amber-400" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="text-sm font-semibold text-amber-300 mb-1">Card Activation Required</h4>
-                  <p className="text-xs text-gray-400">Stake at least 1,000 BBLIP to activate your card benefits</p>
-                </div>
-                <Link href="/stake">
-                  <Button size="sm" variant="ghost" className="text-amber-300 hover:text-amber-200 hover:bg-amber-500/10">
-                    Stake Now
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </div>
-        )}
+     
 
         {/* Main Dashboard Content */}
         <div className="w-full max-w-6xl mt-8">
