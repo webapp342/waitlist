@@ -503,7 +503,7 @@ export default function Dashboard() {
           {isConnected && stakeLogs.length === 0 && (
             <div className="animate-fade-in-up">
               <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-12 shadow-2xl text-center">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center mx-auto mb-6 animate-bounce">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center mx-auto mb-6 ">
                   <History className="w-10 h-10 text-zinc-600" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3">No Staking Activity Yet</h3>
@@ -522,8 +522,8 @@ export default function Dashboard() {
 
           {/* Referral Section - Better Desktop Layout */}
           {isConnected && referralCode && (
-            <div className="animate-fade-in-up">
-              <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-6 lg:p-8 shadow-lg">
+            <div >
+              <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl pb-10 rounded-2xl border border-zinc-800 mb-20 p-6 lg:p-8 shadow-lg">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
                   {/* Left Side - Info */}
                   <div className="flex-1">

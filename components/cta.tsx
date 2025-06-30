@@ -64,7 +64,7 @@ export default function CTA() {
       <div className="space-y-1 mt-10 -mb-10">
         <TextBlur
           className="text-center text-5xl font-medium tracking-tighter sm:text-6xl"
-          text="Spend Crypto."
+          text="Spend Any Crypto."
         />
 
         <div className="flex items-center justify-center text-yellow-200 text-5xl font-medium tracking-tighter sm:text-6xl">
