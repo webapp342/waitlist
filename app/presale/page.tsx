@@ -494,7 +494,7 @@ function PresalePageInner() {
           </div>
 
           {/* Presale Details Accordion - Professional */}
-          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-xl border border-zinc-800 overflow-hidden mb-6">
+          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-xl border border-zinc-800 overflow-hidden mb-20">
             <button
               onClick={() => setShowDetails(!showDetails)}
               className="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-zinc-800/30 transition-colors"
