@@ -14,7 +14,7 @@ import CTAFinal from "@/components/cta-final";
 import Container from "@/components/container";
 import { useAccount } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import FeaturesGridSecond from "@/components/features-grid-second";
 import FeaturesGridThird from "@/components/features-grid-third";
 import RewardsMarket from '@/components/rewards-market';
@@ -22,20 +22,12 @@ import SecurityFeatures from '@/components/security-features';
 import { userService, referralService } from '@/lib/supabase';
 import { toast } from 'sonner';
 
-export default function Home() {
+// Create a separate component for the referral processing logic
+function ReferralProcessor() {
   const { isConnected, address } = useAccount();
-  const router = useRouter();
   const searchParams = useSearchParams();
   const [referralProcessed, setReferralProcessed] = useState(false);
 
-  useEffect(() => {
-    // If already connected when page loads, redirect to dashboard
-    if (isConnected) {
-      router.replace('/dashboard');
-    }
-  }, [isConnected, router]);
-
-  // Process referral code when user connects wallet
   useEffect(() => {
     const processReferralCode = async () => {
       if (isConnected && address && !referralProcessed) {
@@ -72,14 +64,6 @@ export default function Home() {
             toast.error('Failed to process referral');
             setReferralProcessed(true);
           }
-        } else {
-          // No referral code, just save the user
-          try {
-            await userService.addUser(address);
-            console.log('User saved without referral');
-          } catch (error) {
-            console.error('Error saving user:', error);
-          }
         }
       }
     };
@@ -87,72 +71,91 @@ export default function Home() {
     processReferralCode();
   }, [isConnected, address, searchParams, referralProcessed]);
 
+  return null;
+}
+
+export default function Home() {
+  const { isConnected } = useAccount();
+  const router = useRouter();
+
+  useEffect(() => {
+    // If already connected when page loads, redirect to dashboard
+    if (isConnected) {
+      router.replace('/dashboard');
+    }
+  }, [isConnected, router]);
+
   return (
-    <main className="flex min-h-screen flex-col items-center overflow-x-clip">
-      {/* Header */}
-      <Header />
+    <>
+      <Suspense fallback={null}>
+        <ReferralProcessor />
+      </Suspense>
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip">
+        {/* Header */}
+        <Header />
+        
+        {/* Hero Section with Trust Badges */}
+        <HeroSection />
+        
+        {/* Main CTA with Cards */}
+        <section className="w-full py-12">
+          <Container size="lg">
+            <CTA />
+          </Container>
+        </section>
+        
+        {/* Partner Logos */}
+       
+
+        {/* DeFi Features Grid */}
+        <FeaturesGridThird />
+
+        <section className="w-full py-12">
+          <Container size="lg">
+            <Logos />
+          </Container>
+        </section>
+        
+        {/* Features Grid */}
+        <FeaturesGrid />
+
+
+        <SecurityFeatures />
+
+
+        <FeaturesGridSecond />
+
+
+
+
+        <RewardsMarket />
+
+        
+        {/* Testimonials */}
+        <Testimonials />
+
+
+        
+        {/* FAQ Section */}
+        <FAQSection />
+        
+        {/* Final CTA */}
       
-      {/* Hero Section with Trust Badges */}
-      <HeroSection />
+            <CTAFinal />
       
-      {/* Main CTA with Cards */}
-      <section className="w-full py-12">
-        <Container size="lg">
-          <CTA />
-        </Container>
-      </section>
-      
-      {/* Partner Logos */}
-     
 
-      {/* DeFi Features Grid */}
-      <FeaturesGridThird />
+        {/* Footer */}
+        <Footer />
 
-      <section className="w-full py-12">
-        <Container size="lg">
-          <Logos />
-        </Container>
-      </section>
-      
-      {/* Features Grid */}
-      <FeaturesGrid />
-
-
-      <SecurityFeatures />
-
-
-      <FeaturesGridSecond />
-
-
-
-
-      <RewardsMarket />
-
-      
-      {/* Testimonials */}
-      <Testimonials />
-
-
-      
-      {/* FAQ Section */}
-      <FAQSection />
-      
-      {/* Final CTA */}
-    
-          <CTAFinal />
-    
-
-      {/* Footer */}
-      <Footer />
-
-      {/* Background Particles */}
-      <Particles
-        quantityDesktop={120}
-        quantityMobile={40}
-        ease={120}
-        color={"#F7FF9B"}
-        refresh
-      />
-    </main>
+        {/* Background Particles */}
+        <Particles
+          quantityDesktop={120}
+          quantityMobile={40}
+          ease={120}
+          color={"#F7FF9B"}
+          refresh
+        />
+      </main>
+    </>
   );
 }
