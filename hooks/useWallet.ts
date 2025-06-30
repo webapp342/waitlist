@@ -6,6 +6,7 @@ import { CONTRACTS, getContractsForNetwork, STAKING_ABI, TOKEN_ABI, BSC_TESTNET_
 import { UserData, WalletState, BNBFeeInfo } from '@/types';
 import { useAccount, useConnect, useDisconnect, useWalletClient } from 'wagmi';
 import { walletConnect } from 'wagmi/connectors';
+import { userService, stakeLogsService } from '@/lib/supabase';
 
 // Types
 interface Stake {
@@ -316,7 +317,8 @@ export const useWallet = () => {
       setWalletState(prev => ({
         ...prev,
         isConnected: false,
-        address: ''
+        address: '',
+        loading: false  // Set loading to false when wallet is not connected
       }));
     }
   }, [isConnected, address, walletClient]);
@@ -365,11 +367,48 @@ export const useWallet = () => {
       const tx = await contracts.staking.stake(ethers.parseEther(amount), {
         value: stakingFee
       });
-      await tx.wait();
+      
+      console.log('📤 Stake transaction sent:', tx.hash);
+      
+      // Save stake log to database immediately after transaction is sent
+      try {
+        const user = await userService.getUserByWallet(walletState.address);
+        if (user) {
+          await stakeLogsService.addStakeLog({
+            user_id: user.id,
+            transaction_hash: tx.hash,
+            amount: amount,
+            action_type: 'stake',
+            status: 'pending'
+          });
+          console.log('✅ Stake log saved to database');
+        }
+      } catch (dbError) {
+        console.error('❌ Error saving stake log to database:', dbError);
+        // Don't fail the stake operation if database save fails
+      }
+      
+      const receipt = await tx.wait();
+      console.log('✅ Stake transaction confirmed:', receipt.hash);
+      
+      // Update stake log status to confirmed
+      try {
+        await stakeLogsService.updateStakeLogStatus(
+          tx.hash,
+          'confirmed',
+          receipt.blockNumber || undefined,
+          receipt.gasUsed?.toString(),
+          receipt.gasPrice?.toString()
+        );
+        console.log('✅ Stake log status updated to confirmed');
+      } catch (dbError) {
+        console.error('❌ Error updating stake log status:', dbError);
+      }
       
       await loadUserData(contracts.staking!, contracts.token!, walletState.address);
       return true;
     } catch (error: any) {
+      console.error('❌ Stake error:', error);
       setError('Stake işlemi başarısız: ' + error.message);
       return false;
     } finally {
@@ -388,11 +427,46 @@ export const useWallet = () => {
       setLoading(true);
       
       const tx = await contracts.staking.claimRewards();
-      await tx.wait();
+      console.log('📤 Claim rewards transaction sent:', tx.hash);
+      
+      // Save claim log to database immediately after transaction is sent
+      try {
+        const user = await userService.getUserByWallet(walletState.address);
+        if (user) {
+          await stakeLogsService.addStakeLog({
+            user_id: user.id,
+            transaction_hash: tx.hash,
+            amount: '0', // Claim rewards doesn't have a specific amount
+            action_type: 'claim_rewards',
+            status: 'pending'
+          });
+          console.log('✅ Claim rewards log saved to database');
+        }
+      } catch (dbError) {
+        console.error('❌ Error saving claim rewards log to database:', dbError);
+      }
+      
+      const receipt = await tx.wait();
+      console.log('✅ Claim rewards transaction confirmed:', receipt.hash);
+      
+      // Update claim log status to confirmed
+      try {
+        await stakeLogsService.updateStakeLogStatus(
+          tx.hash,
+          'confirmed',
+          receipt.blockNumber || undefined,
+          receipt.gasUsed?.toString(),
+          receipt.gasPrice?.toString()
+        );
+        console.log('✅ Claim rewards log status updated to confirmed');
+      } catch (dbError) {
+        console.error('❌ Error updating claim rewards log status:', dbError);
+      }
       
       await loadUserData(contracts.staking!, contracts.token!, walletState.address);
       return true;
     } catch (error: any) {
+      console.error('❌ Claim rewards error:', error);
       setError('Ödül talep etme başarısız: ' + error.message);
       return false;
     } finally {
@@ -446,8 +520,43 @@ export const useWallet = () => {
       console.log('⏳ Transaction sent, waiting for confirmation...');
       console.log('🔗 Transaction hash:', tx.hash);
       
+      // Save unstake log to database immediately after transaction is sent
+      try {
+        const user = await userService.getUserByWallet(walletState.address);
+        if (user) {
+          // Get the stake amount from userData for this specific stake
+          const stake = userData.stakes.find(s => s.stakeId.toString() === stakeId);
+          const stakeAmount = stake ? ethers.formatEther(stake.amount) : '0';
+          
+          await stakeLogsService.addStakeLog({
+            user_id: user.id,
+            transaction_hash: tx.hash,
+            amount: stakeAmount,
+            action_type: 'unstake',
+            status: 'pending'
+          });
+          console.log('✅ Unstake log saved to database');
+        }
+      } catch (dbError) {
+        console.error('❌ Error saving unstake log to database:', dbError);
+      }
+      
       const receipt = await tx.wait();
       console.log('✅ Transaction confirmed:', receipt.hash);
+      
+      // Update unstake log status to confirmed
+      try {
+        await stakeLogsService.updateStakeLogStatus(
+          tx.hash,
+          'confirmed',
+          receipt.blockNumber || undefined,
+          receipt.gasUsed?.toString(),
+          receipt.gasPrice?.toString()
+        );
+        console.log('✅ Unstake log status updated to confirmed');
+      } catch (dbError) {
+        console.error('❌ Error updating unstake log status:', dbError);
+      }
       
       await loadUserData(contracts.staking!, contracts.token!, walletState.address);
       return true;
@@ -499,8 +608,43 @@ export const useWallet = () => {
       console.log('⏳ Emergency withdraw transaction sent...');
       console.log('🔗 Transaction hash:', tx.hash);
       
+      // Save emergency withdraw log to database immediately after transaction is sent
+      try {
+        const user = await userService.getUserByWallet(walletState.address);
+        if (user) {
+          // Get the stake amount from userData for this specific stake
+          const stake = userData.stakes.find(s => s.stakeId.toString() === stakeId);
+          const stakeAmount = stake ? ethers.formatEther(stake.amount) : '0';
+          
+          await stakeLogsService.addStakeLog({
+            user_id: user.id,
+            transaction_hash: tx.hash,
+            amount: stakeAmount,
+            action_type: 'emergency_withdraw',
+            status: 'pending'
+          });
+          console.log('✅ Emergency withdraw log saved to database');
+        }
+      } catch (dbError) {
+        console.error('❌ Error saving emergency withdraw log to database:', dbError);
+      }
+      
       const receipt = await tx.wait();
       console.log('✅ Emergency withdraw confirmed:', receipt.hash);
+      
+      // Update emergency withdraw log status to confirmed
+      try {
+        await stakeLogsService.updateStakeLogStatus(
+          tx.hash,
+          'confirmed',
+          receipt.blockNumber || undefined,
+          receipt.gasUsed?.toString(),
+          receipt.gasPrice?.toString()
+        );
+        console.log('✅ Emergency withdraw log status updated to confirmed');
+      } catch (dbError) {
+        console.error('❌ Error updating emergency withdraw log status:', dbError);
+      }
       
       await loadUserData(contracts.staking!, contracts.token!, walletState.address);
       return true;

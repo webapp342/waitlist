@@ -11,7 +11,11 @@ import { cn } from "@/lib/utils";
 import Link from 'next/link';
 import { useWallet } from '@/hooks/useWallet';
 import { ethers } from 'ethers';
-import { ArrowLeft, ChevronDown, ChevronUp, Info, Zap, TrendingUp, Shield, Clock, DollarSign } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Info, Zap, TrendingUp, Shield, Clock, DollarSign, History, ExternalLink } from 'lucide-react';
+import WalletModal from '@/components/WalletModal';
+import { userService, cardService, stakeLogsService } from '@/lib/supabase';
+import { useChainId } from 'wagmi';
+import { StakeLog } from '@/lib/supabase';
 
 // Card stake requirements
 const CARD_REQUIREMENTS = {
@@ -89,12 +93,16 @@ const metallicTextStyles = `
 `;
 
 function StakeContent() {
-  const { isConnected, address } = useAccount();
+  const { isConnected, address, chain } = useAccount();
+  const chainId = useChainId();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [stakeAmount, setStakeAmount] = useState('');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [stakeLogs, setStakeLogs] = useState<StakeLog[]>([]);
+  const [showStakeLogs, setShowStakeLogs] = useState(false);
   
   const { 
     walletState, 
@@ -115,16 +123,44 @@ function StakeContent() {
     }
   }, [searchParams]);
 
-  // Redirect to home if wallet is not connected
-  useEffect(() => {
-    if (!isConnected) {
-      router.push('/');
-    }
-  }, [isConnected, router]);
+  // Check if user is on the correct network (BSC Testnet - Chain ID 97)
+  const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
+  const isOnBSCTestnet = actualChainId === 97;
 
-  if (!isConnected) {
-    return null;
-  }
+  // Save user to database when wallet is connected to correct network
+  useEffect(() => {
+    const saveUserToDatabase = async () => {
+      if (isConnected && address && isOnBSCTestnet) {
+        try {
+          await userService.addUser(address);
+          console.log('User saved successfully from stake page');
+        } catch (error) {
+          console.error('Error saving user to database:', error);
+        }
+      }
+    };
+
+    saveUserToDatabase();
+  }, [isConnected, address, isOnBSCTestnet]);
+
+  // Load stake logs when wallet is connected
+  useEffect(() => {
+    const loadStakeLogs = async () => {
+      if (isConnected && address) {
+        try {
+          const logs = await stakeLogsService.getUserStakeLogs(address);
+          setStakeLogs(logs);
+          console.log('Stake logs loaded:', logs);
+        } catch (error) {
+          console.error('Error loading stake logs:', error);
+        }
+      }
+    };
+
+    loadStakeLogs();
+  }, [isConnected, address, userData.stakes]); // Reload when stakes change
+
+  // Remove wallet connection redirect - allow access without wallet
 
   // Format token amounts from wei to ether
   const formatTokenAmount = (amount: string) => {
@@ -181,7 +217,7 @@ function StakeContent() {
 
   // Check if user has enough balance
   const hasEnoughBalance = () => {
-    if (!stakeAmount || !userData.tokenBalance) return true;
+    if (!isConnected || !stakeAmount || !userData.tokenBalance) return true;
     const stakeAmountNum = parseFloat(stakeAmount);
     const balanceNum = parseFloat(formatTokenAmount(userData.tokenBalance));
     return balanceNum >= stakeAmountNum;
@@ -373,8 +409,8 @@ function StakeContent() {
                 </div>
               </div>
 
-              {/* Professional Insufficient Balance Design */}
-              {stakeAmount && !hasEnoughBalance() && (
+              {/* Professional Insufficient Balance Design - Only show when wallet is connected */}
+              {isConnected && stakeAmount && !hasEnoughBalance() && (
                 <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-400/20">
                   <div className="flex items-start gap-3">
                     <div className="w-6 h-6 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center mt-0.5 flex-shrink-0">
@@ -382,21 +418,14 @@ function StakeContent() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4 className="text-sm font-medium text-orange-200 mb-2">Insufficient Balance</h4>
-                      <p className="text-xs text-orange-300/80 mb-3 leading-relaxed">
-                        You need <span className="font-semibold text-orange-200">{(parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))).toFixed(2)} more BBLIP</span> to complete this stake.
-                        {getCardTypeForAmount(parseFloat(stakeAmount)) && (
-                          <span className="block mt-1">
-                            This will activate your <span className="font-semibold text-yellow-200">{getCardTypeForAmount(parseFloat(stakeAmount))}</span> card tier.
-                          </span>
-                        )}
-                      </p>
+                   
                       
                       <Link 
                         href={`/presale?amount=${parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))}`}
                         className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 border border-orange-400/30 text-orange-200 hover:text-orange-100 transition-all duration-200 text-sm font-medium"
                       >
                         <DollarSign className="w-4 h-4" />
-                        Buy {(parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))).toFixed(2)} BBLIP
+                        Purchase {(parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))).toFixed(2)} BBLIP
                       </Link>
                     </div>
                   </div>
@@ -404,7 +433,7 @@ function StakeContent() {
               )}
             </div>
 
-            {/* Estimated Rewards Section */}
+            {/* Estimated Rewards Section - Show always for information */}
             <div className="p-4 md:p-6 rounded-2xl bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-700 mb-6 shadow-lg">
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-green-400/10 border border-green-400/20">
@@ -435,36 +464,55 @@ function StakeContent() {
               </div>
             </div>
 
-            {/* Stake Button */}
-            <Button
-              className={cn(
-                "w-full h-12 md:h-14 font-semibold text-black",
-                "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400",
-                "hover:from-yellow-300 hover:via-yellow-200 hover:to-yellow-300",
-                "shadow-lg shadow-yellow-400/25 hover:shadow-yellow-400/40",
-                "transition-all duration-300 transform hover:scale-[1.02]",
-                "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-              )}
-              size="lg"
-              disabled={!hasEnoughBalance() || walletState.loading}
-              onClick={handleApproveAndStake}
-            >
-              {walletState.loading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                  <span className="text-sm md:text-base">Processing...</span>
-                </div>
-              ) : (
+            {/* Stake Button - Conditional Based on Wallet Connection */}
+            {!isConnected ? (
+              <Button
+                className={cn(
+                  "w-full h-12 md:h-14 font-semibold text-black",
+                  "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400",
+                  "hover:from-yellow-300 hover:via-yellow-200 hover:to-yellow-300",
+                  "shadow-lg shadow-yellow-400/25 hover:shadow-yellow-400/40",
+                  "transition-all duration-300 transform hover:scale-[1.02]"
+                )}
+                size="lg"
+                onClick={() => setShowWalletModal(true)}
+              >
                 <div className="flex items-center gap-2">
                   <Zap className="w-4 h-4" />
-                  <span className="text-sm md:text-base">Approve & Stake</span>
+                  <span className="text-sm md:text-base">Connect Wallet to Stake</span>
                 </div>
-              )}
-            </Button>
+              </Button>
+            ) : (
+              <Button
+                className={cn(
+                  "w-full h-12 md:h-14 font-semibold text-black",
+                  "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400",
+                  "hover:from-yellow-300 hover:via-yellow-200 hover:to-yellow-300",
+                  "shadow-lg shadow-yellow-400/25 hover:shadow-yellow-400/40",
+                  "transition-all duration-300 transform hover:scale-[1.02]",
+                  "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                )}
+                size="lg"
+                disabled={!hasEnoughBalance() || walletState.loading}
+                onClick={handleApproveAndStake}
+              >
+                {walletState.loading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                    <span className="text-sm md:text-base">Processing...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    <span className="text-sm md:text-base">Approve & Stake</span>
+                  </div>
+                )}
+              </Button>
+            )}
           </div>
 
-          {/* Rewards Available */}
-          {userData.pendingRewards && parseFloat(formatTokenAmount(userData.pendingRewards)) > 0 && (
+          {/* Rewards Available - Only show when wallet is connected */}
+          {isConnected && userData.pendingRewards && parseFloat(formatTokenAmount(userData.pendingRewards)) > 0 && (
             <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-green-500/30 p-4 md:p-6 mb-6 shadow-xl shadow-green-500/10">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -587,8 +635,8 @@ function StakeContent() {
             )}
           </div>
 
-          {/* Active Stakes List */}
-          {userData.stakes && userData.stakes.length > 0 && (
+          {/* Active Stakes List - Only show when wallet is connected */}
+          {isConnected && userData.stakes && userData.stakes.length > 0 && (
             <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-3xl border border-zinc-800 p-6 md:p-8 shadow-xl">
               {/* Active Stakes Header */}
               <div className="flex items-center gap-3 mb-6">
@@ -708,6 +756,139 @@ function StakeContent() {
               </div>
             </div>
           )}
+
+          {/* Stake Logs - Only show when wallet is connected */}
+          {isConnected && stakeLogs.length > 0 && (
+            <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-3xl border border-zinc-800 p-6 md:p-8 shadow-xl">
+              {/* Stake Logs Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-blue-400/10 border border-blue-400/20">
+                    <History className="w-4 h-4 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Transaction History</h3>
+                    <p className="text-xs text-gray-500">Your staking activity logs</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => setShowStakeLogs(!showStakeLogs)}
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-400 hover:text-white"
+                >
+                  {showStakeLogs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </Button>
+              </div>
+
+              {/* Stake Logs List */}
+              {showStakeLogs && (
+                <div className="space-y-3">
+                  {stakeLogs.map((log, index) => {
+                    const logDate = new Date(log.created_at || '');
+                    const isConfirmed = log.status === 'confirmed';
+                    const isPending = log.status === 'pending';
+                    const isFailed = log.status === 'failed';
+
+                    const getActionIcon = (actionType: string) => {
+                      switch (actionType) {
+                        case 'stake': return <Zap className="w-4 h-4 text-green-400" />;
+                        case 'unstake': return <ArrowLeft className="w-4 h-4 text-yellow-400" />;
+                        case 'claim_rewards': return <TrendingUp className="w-4 h-4 text-blue-400" />;
+                        case 'emergency_withdraw': return <Shield className="w-4 h-4 text-red-400" />;
+                        default: return <History className="w-4 h-4 text-gray-400" />;
+                      }
+                    };
+
+                    const getActionColor = (actionType: string) => {
+                      switch (actionType) {
+                        case 'stake': return 'text-green-400';
+                        case 'unstake': return 'text-yellow-400';
+                        case 'claim_rewards': return 'text-blue-400';
+                        case 'emergency_withdraw': return 'text-red-400';
+                        default: return 'text-gray-400';
+                      }
+                    };
+
+                    const getStatusColor = (status: string) => {
+                      switch (status) {
+                        case 'confirmed': return 'bg-green-400';
+                        case 'pending': return 'bg-yellow-400';
+                        case 'failed': return 'bg-red-400';
+                        default: return 'bg-gray-400';
+                      }
+                    };
+
+                    return (
+                      <div key={index} className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-4 rounded-xl border border-zinc-800 shadow-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-zinc-800 border border-zinc-700">
+                              {getActionIcon(log.action_type)}
+                            </div>
+                            <div>
+                              <p className={`font-semibold capitalize ${getActionColor(log.action_type)}`}>
+                                {log.action_type.replace('_', ' ')}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {logDate.toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${getStatusColor(log.status)}`}></div>
+                            <span className="text-xs text-gray-400 capitalize">{log.status}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-4">
+                            {log.amount !== '0' && (
+                              <div>
+                                <p className="text-gray-400">Amount</p>
+                                <p className="font-semibold text-white">{parseFloat(log.amount).toFixed(2)} BBLIP</p>
+                              </div>
+                            )}
+                            {log.block_number && (
+                              <div>
+                                <p className="text-gray-400">Block</p>
+                                <p className="font-semibold text-white">#{log.block_number}</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <a
+                            href={`https://testnet.bscscan.com/tx/${log.transaction_hash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                          >
+                            <span>View on BSCScan</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+
+                        {log.gas_used && log.gas_price && (
+                          <div className="mt-3 pt-3 border-t border-zinc-700">
+                            <div className="flex items-center justify-between text-xs text-gray-400">
+                              <span>Gas Used: {log.gas_used.toLocaleString()}</span>
+                              <span>Gas Price: {ethers.formatUnits(log.gas_price, 'gwei')} Gwei</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <Particles
@@ -718,6 +899,12 @@ function StakeContent() {
           refresh
         />
       </main>
+      
+      {/* Wallet Connection Modal */}
+      <WalletModal 
+        open={showWalletModal} 
+        onClose={() => setShowWalletModal(false)} 
+      />
     </>
   );
 }

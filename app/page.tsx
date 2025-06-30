@@ -13,16 +13,20 @@ import FAQSection from "@/components/faq-section";
 import CTAFinal from "@/components/cta-final";
 import Container from "@/components/container";
 import { useAccount } from 'wagmi';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import FeaturesGridSecond from "@/components/features-grid-second";
 import FeaturesGridThird from "@/components/features-grid-third";
 import RewardsMarket from '@/components/rewards-market';
 import SecurityFeatures from '@/components/security-features';
+import { userService, referralService } from '@/lib/supabase';
+import { toast } from 'sonner';
 
 export default function Home() {
-  const { isConnected } = useAccount();
+  const { isConnected, address } = useAccount();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [referralProcessed, setReferralProcessed] = useState(false);
 
   useEffect(() => {
     // If already connected when page loads, redirect to dashboard
@@ -30,6 +34,58 @@ export default function Home() {
       router.replace('/dashboard');
     }
   }, [isConnected, router]);
+
+  // Process referral code when user connects wallet
+  useEffect(() => {
+    const processReferralCode = async () => {
+      if (isConnected && address && !referralProcessed) {
+        const referralCode = searchParams.get('ref');
+        
+        if (referralCode) {
+          try {
+            console.log('Processing referral code:', referralCode);
+            
+            // First save the user to database
+            const user = await userService.addUser(address);
+            
+            if (user) {
+              console.log('User saved, processing referral...');
+              
+              // Small delay to ensure user is properly saved
+              await new Promise(resolve => setTimeout(resolve, 1000));
+              
+              // Process the referral
+              const success = await referralService.processReferral(referralCode, address);
+              
+              if (success) {
+                toast.success('Referral bonus applied! 🎉');
+                console.log('Referral processed successfully');
+              } else {
+                console.log('Referral processing failed or invalid code');
+                toast.error('Invalid referral code or already used');
+              }
+            }
+            
+            setReferralProcessed(true);
+          } catch (error) {
+            console.error('Error processing referral:', error);
+            toast.error('Failed to process referral');
+            setReferralProcessed(true);
+          }
+        } else {
+          // No referral code, just save the user
+          try {
+            await userService.addUser(address);
+            console.log('User saved without referral');
+          } catch (error) {
+            console.error('Error saving user:', error);
+          }
+        }
+      }
+    };
+
+    processReferralCode();
+  }, [isConnected, address, searchParams, referralProcessed]);
 
   return (
     <main className="flex min-h-screen flex-col items-center overflow-x-clip">

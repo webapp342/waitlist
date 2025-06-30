@@ -9,10 +9,13 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useWallet } from '@/hooks/useWallet';
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Wallet, RefreshCw, Plus, Send, Info, ArrowUpRight, ArrowDownLeft, Coins } from 'lucide-react';
+import { TrendingUp, Wallet, RefreshCw, Plus, Send, Info, ArrowUpRight, ArrowDownLeft, Coins, History, ExternalLink, ChevronDown, ChevronUp, Copy, Share2, Users, Gift } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
+import { stakeLogsService, StakeLog, referralService, ReferralCode } from '@/lib/supabase';
+import { ethers } from 'ethers';
+import { userService } from '@/lib/supabase';
 
 const USDT_ADDRESS = '0x690419A4f1B5320c914f41b44CE10EB0BAC70908';
 const BUSD_ADDRESS = '0xD7D767dB964C36B41EfAABC02669169eDF513eAb';
@@ -32,6 +35,11 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<'portfolio' | 'transactions'>('portfolio');
   const [bnbPrice, setBnbPrice] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [stakeLogs, setStakeLogs] = useState<StakeLog[]>([]);
+  const [showStakeLogs, setShowStakeLogs] = useState(false);
+  const [referralCode, setReferralCode] = useState<ReferralCode | null>(null);
+  const [referralStats, setReferralStats] = useState({ totalReferrals: 0, totalRewards: '0' });
+  const [showReferralSection, setShowReferralSection] = useState(false);
 
   // Fetch token balances for the connected wallet
   const { data: usdtBalance, refetch: refetchUSDT } = useBalance(address ? { address, token: USDT_ADDRESS } : { address: undefined });
@@ -63,6 +71,57 @@ export default function Dashboard() {
     };
     fetchBNBPrice();
   }, []);
+
+  // Load stake logs when wallet is connected
+  useEffect(() => {
+    const loadStakeLogs = async () => {
+      if (isConnected && address) {
+        try {
+          const logs = await stakeLogsService.getUserStakeLogs(address);
+          setStakeLogs(logs);
+          console.log('Stake logs loaded in dashboard:', logs);
+        } catch (error) {
+          console.error('Error loading stake logs in dashboard:', error);
+        }
+      }
+    };
+
+    loadStakeLogs();
+  }, [isConnected, address]);
+
+  // Load referral data when wallet is connected
+  useEffect(() => {
+    const loadReferralData = async () => {
+      if (isConnected && address) {
+        try {
+          // Get user first
+          const user = await userService.getUserByWallet(address);
+          if (user) {
+            // Get or generate referral code
+            let code = await referralService.getReferralCodeByUserId(user.id);
+            if (!code) {
+              // Only generate if user doesn't have a code
+              code = await referralService.generateReferralCode(address);
+            }
+            setReferralCode(code);
+
+            // Get referral stats
+            const stats = await referralService.getUserReferralStats(address);
+            setReferralStats({
+              totalReferrals: stats.totalReferrals,
+              totalRewards: stats.totalRewards
+            });
+            
+            console.log('Referral data loaded:', { code: code?.code, stats });
+          }
+        } catch (error) {
+          console.error('Error loading referral data:', error);
+        }
+      }
+    };
+
+    loadReferralData();
+  }, [isConnected, address]);
 
   // Calculate total USD value for all assets
   const bnbUsd = userData?.bnbBalance && bnbPrice ? parseFloat(userData.bnbBalance) * bnbPrice : 0;
@@ -235,15 +294,296 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Transaction History - Placeholder */}
-          <div className="mt-8 mb-10 bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 p-8 shadow-xl text-center">
-            <div className="w-16 h-16 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-              <Send className="w-8 h-8 text-zinc-600" />
+          {/* Stake Logs - Only show when wallet is connected */}
+          {isConnected && stakeLogs.length > 0 && (
+            <div className="mt-8 mb-10 bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 p-8 shadow-xl">
+              {/* Stake Logs Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
+                    <History className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Staking Activity</h3>
+                    <p className="text-sm text-gray-500">Your recent staking transactions</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => setShowStakeLogs(!showStakeLogs)}
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-400 hover:text-white"
+                >
+                  {showStakeLogs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </Button>
+              </div>
+
+              {/* Stake Logs List */}
+              {showStakeLogs && (
+                <div className="space-y-3">
+                  {stakeLogs.slice(0, 5).map((log, index) => {
+                    const logDate = new Date(log.created_at || '');
+                    const isConfirmed = log.status === 'confirmed';
+                    const isPending = log.status === 'pending';
+                    const isFailed = log.status === 'failed';
+
+                    const getActionIcon = (actionType: string) => {
+                      switch (actionType) {
+                        case 'stake': return <TrendingUp className="w-4 h-4 text-green-400" />;
+                        case 'unstake': return <ArrowDownLeft className="w-4 h-4 text-yellow-400" />;
+                        case 'claim_rewards': return <Coins className="w-4 h-4 text-blue-400" />;
+                        case 'emergency_withdraw': return <Info className="w-4 h-4 text-red-400" />;
+                        default: return <History className="w-4 h-4 text-gray-400" />;
+                      }
+                    };
+
+                    const getActionColor = (actionType: string) => {
+                      switch (actionType) {
+                        case 'stake': return 'text-green-400';
+                        case 'unstake': return 'text-yellow-400';
+                        case 'claim_rewards': return 'text-blue-400';
+                        case 'emergency_withdraw': return 'text-red-400';
+                        default: return 'text-gray-400';
+                      }
+                    };
+
+                    const getStatusColor = (status: string) => {
+                      switch (status) {
+                        case 'confirmed': return 'bg-green-400';
+                        case 'pending': return 'bg-yellow-400';
+                        case 'failed': return 'bg-red-400';
+                        default: return 'bg-gray-400';
+                      }
+                    };
+
+                    return (
+                      <div key={index} className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-4 rounded-xl border border-zinc-800 shadow-lg">
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 rounded-lg bg-zinc-800 border border-zinc-700">
+                              {getActionIcon(log.action_type)}
+                            </div>
+                            <div>
+                              <p className={`font-semibold capitalize ${getActionColor(log.action_type)}`}>
+                                {log.action_type.replace('_', ' ')}
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                {logDate.toLocaleDateString('en-US', { 
+                                  year: 'numeric', 
+                                  month: 'short', 
+                                  day: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${getStatusColor(log.status)}`}></div>
+                            <span className="text-xs text-gray-400 capitalize">{log.status}</span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex items-center gap-4">
+                            {log.amount !== '0' && (
+                              <div>
+                                <p className="text-gray-400">Amount</p>
+                                <p className="font-semibold text-white">{parseFloat(log.amount).toFixed(2)} BBLIP</p>
+                              </div>
+                            )}
+                            {log.block_number && (
+                              <div>
+                                <p className="text-gray-400">Block</p>
+                                <p className="font-semibold text-white">#{log.block_number}</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          <a
+                            href={`https://testnet.bscscan.com/tx/${log.transaction_hash}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
+                          >
+                            <span>View</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </a>
+                        </div>
+
+                        {log.gas_used && log.gas_price && (
+                          <div className="mt-3 pt-3 border-t border-zinc-700">
+                            <div className="flex items-center justify-between text-xs text-gray-400">
+                              <span>Gas: {log.gas_used.toLocaleString()}</span>
+                              <span>Price: {ethers.formatUnits(log.gas_price, 'gwei')} Gwei</span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Show more link if there are more logs */}
+              {stakeLogs.length > 5 && (
+                <div className="mt-6 text-center">
+                  <Link href="/stake">
+                    <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300">
+                      View All Transactions
+                    </Button>
+                  </Link>
+                </div>
+              )}
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">No Recent Transactions</h3>
-            <p className="text-sm text-gray-500 mb-6">Your transaction history will appear here</p>
-          
-          </div>
+          )}
+
+          {/* No Transactions Message */}
+          {isConnected && stakeLogs.length === 0 && (
+            <div className="mt-8 mb-10 bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 p-8 shadow-xl text-center">
+              <div className="w-16 h-16 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+                <History className="w-8 h-8 text-zinc-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-white mb-2">No Staking Activity</h3>
+              <p className="text-sm text-gray-500 mb-6">Start staking to see your transaction history</p>
+              <Link href="/stake">
+                <Button className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold">
+                  Start Staking
+                </Button>
+              </Link>
+            </div>
+          )}
+
+          {/* Referral System - Only show when wallet is connected */}
+          {isConnected && referralCode && (
+            <div className="mt-8 mb-10 bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 p-8 shadow-xl">
+              {/* Referral Header */}
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                    <Gift className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Referral Program</h3>
+                    <p className="text-sm text-gray-500">Earn rewards by inviting friends</p>
+                  </div>
+                </div>
+                <Button
+                  onClick={() => setShowReferralSection(!showReferralSection)}
+                  variant="ghost"
+                  size="sm"
+                  className="text-gray-400 hover:text-white"
+                >
+                  {showReferralSection ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </Button>
+              </div>
+
+              {/* Referral Stats */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Users className="w-4 h-4 text-blue-400" />
+                    <span className="text-sm text-gray-400">Total Referrals</span>
+                  </div>
+                  <p className="text-2xl font-bold text-white">{referralStats.totalReferrals}</p>
+                </div>
+                
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Gift className="w-4 h-4 text-green-400" />
+                    <span className="text-sm text-gray-400">Total Rewards</span>
+                  </div>
+                  <p className="text-2xl font-bold text-white">{parseFloat(referralStats.totalRewards).toFixed(2)} BBLIP</p>
+                </div>
+                
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Share2 className="w-4 h-4 text-purple-400" />
+                    <span className="text-sm text-gray-400">Your Code</span>
+                  </div>
+                  <p className="text-lg font-mono text-white">{referralCode.code}</p>
+                </div>
+              </div>
+
+              {/* Referral Details */}
+              {showReferralSection && (
+                <div className="space-y-4">
+                  {/* Referral Link */}
+                  <div className="bg-zinc-800/30 rounded-xl p-4 border border-zinc-700">
+                    <h4 className="text-sm font-semibold text-white mb-3">Your Referral Link</h4>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={`${window.location.origin}?ref=${referralCode.code}`}
+                        readOnly
+                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white font-mono"
+                      />
+                      <Button
+                        onClick={() => {
+                          navigator.clipboard.writeText(`${window.location.origin}?ref=${referralCode.code}`);
+                          toast.success('Referral link copied!');
+                        }}
+                        size="sm"
+                        variant="outline"
+                        className="bg-zinc-800 border-zinc-700 text-gray-300 hover:bg-zinc-700"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        onClick={() => {
+                          const url = `${window.location.origin}?ref=${referralCode.code}`;
+                          if (navigator.share) {
+                            navigator.share({
+                              title: 'Join BBLIP Card Program',
+                              text: 'Get your exclusive crypto cards with my referral link!',
+                              url: url
+                            });
+                          } else {
+                            navigator.clipboard.writeText(url);
+                            toast.success('Referral link copied!');
+                          }
+                        }}
+                        size="sm"
+                        variant="outline"
+                        className="bg-zinc-800 border-zinc-700 text-gray-300 hover:bg-zinc-700"
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* How it works */}
+                  <div className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl p-4 border border-purple-500/20">
+                    <h4 className="text-sm font-semibold text-white mb-3">How Referral Rewards Work</h4>
+                    <div className="space-y-2 text-sm text-gray-300">
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
+                        <p>Share your referral link with friends</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
+                        <p>When they sign up and connect their wallet, you both get rewards</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
+                        <p>Rewards are automatically added to your account</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* View All Referrals Button */}
+                  <div className="text-center pt-4">
+                    <Link href="/referral">
+                      <Button className="bg-purple-600 hover:bg-purple-700 text-white">
+                        <Users className="w-4 h-4 mr-2" />
+                        View All Referrals
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </section>
 

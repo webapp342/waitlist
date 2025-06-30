@@ -135,9 +135,10 @@ export default function CTAFinal() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.3 }}
+              onClick={handleConnect}
               className="bg-yellow-200 text-black px-8 py-4 rounded-xl font-medium hover:bg-yellow-300 transition-colors"
             >
-              Get Your Card Now →
+              {isConnected ? 'Go to Dashboard →' : 'Get Your Card Now →'}
             </motion.button>
 
             <motion.p

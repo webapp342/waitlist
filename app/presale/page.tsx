@@ -16,6 +16,9 @@ import { TOKEN_IDS } from '@/config/presale';
 import { formatUnits } from 'ethers';
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
 import { Info, ChevronDown, ChevronUp, TrendingUp, Shield, Clock, DollarSign, Zap } from 'lucide-react';
+import WalletModal from '@/components/WalletModal';
+import { userService, cardService } from '@/lib/supabase';
+import { useChainId } from 'wagmi';
 
 const PAYMENT_TOKENS = [
   { id: TOKEN_IDS.bnb, name: 'BNB', icon: '/bnb.svg', color: 'from-yellow-600 to-yellow-400' },
@@ -24,7 +27,8 @@ const PAYMENT_TOKENS = [
 ];
 
 function PresalePageInner() {
-  const { isConnected } = useAccount();
+  const { isConnected, address, chain } = useAccount();
+  const chainId = useChainId();
   const router = useRouter();
   const searchParams = useSearchParams();
   const [desiredTokens, setDesiredTokens] = useState('');
@@ -37,6 +41,7 @@ function PresalePageInner() {
   const [hasAllowance, setHasAllowance] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
   
   const { 
     presaleInfo, 
@@ -57,12 +62,27 @@ function PresalePageInner() {
     }
   }, [searchParams]);
 
-  // Redirect to home if wallet is not connected
+  // Check if user is on the correct network (BSC Testnet - Chain ID 97)
+  const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
+  const isOnBSCTestnet = actualChainId === 97;
+
+  // Save user to database when wallet is connected to correct network
   useEffect(() => {
-    if (!isConnected) {
-      router.push('/');
-    }
-  }, [isConnected, router]);
+    const saveUserToDatabase = async () => {
+      if (isConnected && address && isOnBSCTestnet) {
+        try {
+          await userService.addUser(address);
+          console.log('User saved successfully from presale page');
+        } catch (error) {
+          console.error('Error saving user to database:', error);
+        }
+      }
+    };
+
+    saveUserToDatabase();
+  }, [isConnected, address, isOnBSCTestnet]);
+
+  // Remove wallet connection redirect - allow access without wallet
 
   // Clear error after 5 seconds
   useEffect(() => {
@@ -113,9 +133,7 @@ function PresalePageInner() {
     updatePaymentAmount();
   }, [desiredTokens, selectedToken, calculatePaymentAmount, checkAllowance]);
 
-  if (!isConnected) {
-    return null; // Don't render anything while redirecting
-  }
+  // Don't redirect if wallet is not connected - show the page with connect wallet option
 
   const handleApprove = async () => {
     if (!paymentAmount || paymentAmount === '0') return;
@@ -392,68 +410,86 @@ function PresalePageInner() {
 
             {/* Action Buttons - Smart Visibility */}
             <div className="space-y-3">
-              {/* Approve Button - Only show when token is not BNB, has no allowance, and not currently approving/buying */}
-              {selectedToken !== TOKEN_IDS.bnb && !hasAllowance && paymentAmount !== '0' && !isBuying && (
+              {!isConnected ? (
+                /* Connect Wallet Button - Show when wallet is not connected */
                 <Button
                   className={cn(
                     "w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold shadow-lg h-12 md:h-14",
                     "transition-all duration-300"
                   )}
                   size="lg"
-                  disabled={isApproving || !desiredTokens || isCheckingAllowance}
-                  onClick={handleApprove}
+                  onClick={() => setShowWalletModal(true)}
                 >
-                  {isApproving ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                      Approving {selectedTokenName}...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4" />
-                      Approve {selectedTokenName}
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2">
+                    Connect Wallet 
+                  </div>
                 </Button>
-              )}
-
-              {/* Buy Button - Only show when approved or BNB, and not currently approving */}
-              {(selectedToken === TOKEN_IDS.bnb || hasAllowance) && paymentAmount !== '0' && !isApproving && (
-                <Button
-                  className={cn(
-                    "w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold shadow-lg h-12 md:h-14",
-                    "transition-all duration-300"
+              ) : (
+                <>
+                  {/* Approve Button - Only show when token is not BNB, has no allowance, and not currently approving/buying */}
+                  {selectedToken !== TOKEN_IDS.bnb && !hasAllowance && paymentAmount !== '0' && !isBuying && (
+                    <Button
+                      className={cn(
+                        "w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold shadow-lg h-12 md:h-14",
+                        "transition-all duration-300"
+                      )}
+                      size="lg"
+                      disabled={isApproving || !desiredTokens || isCheckingAllowance}
+                      onClick={handleApprove}
+                    >
+                      {isApproving ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                          Approving {selectedTokenName}...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Shield className="w-4 h-4" />
+                          Approve {selectedTokenName}
+                        </div>
+                      )}
+                    </Button>
                   )}
-                  size="lg"
-                  disabled={
-                    isBuying || 
-                    !desiredTokens || 
-                    paymentAmount === '0' ||
-                    isCheckingAllowance
-                  }
-                  onClick={handleBuy}
-                >
-                  {isBuying ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Processing Purchase...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Zap className="w-4 h-4" />
-                      Buy with {selectedTokenName}
+
+                  {/* Buy Button - Only show when approved or BNB, and not currently approving */}
+                  {(selectedToken === TOKEN_IDS.bnb || hasAllowance) && paymentAmount !== '0' && !isApproving && (
+                    <Button
+                      className={cn(
+                        "w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold shadow-lg h-12 md:h-14",
+                        "transition-all duration-300"
+                      )}
+                      size="lg"
+                      disabled={
+                        isBuying || 
+                        !desiredTokens || 
+                        paymentAmount === '0' ||
+                        isCheckingAllowance
+                      }
+                      onClick={handleBuy}
+                    >
+                      {isBuying ? (
+                        <div className="flex items-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                          Processing Purchase...
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Zap className="w-4 h-4" />
+                          Buy with {selectedTokenName}
+                        </div>
+                      )}
+                    </Button>
+                  )}
+
+                  {/* Helper Text when checking allowance */}
+                  {isCheckingAllowance && paymentAmount !== '0' && (
+                    <div className="text-center p-3 bg-zinc-900/50 rounded-lg border border-zinc-800">
+                      <p className="text-sm text-gray-400">
+                        Verifying your {selectedTokenName} allowance...
+                      </p>
                     </div>
                   )}
-                </Button>
-              )}
-
-              {/* Helper Text when checking allowance */}
-              {isCheckingAllowance && paymentAmount !== '0' && (
-                <div className="text-center p-3 bg-zinc-900/50 rounded-lg border border-zinc-800">
-                  <p className="text-sm text-gray-400">
-                    Verifying your {selectedTokenName} allowance...
-                  </p>
-                </div>
+                </>
               )}
             </div>
           </div>
@@ -531,6 +567,12 @@ function PresalePageInner() {
           refresh
         />
       </main>
+      
+      {/* Wallet Connection Modal */}
+      <WalletModal 
+        open={showWalletModal} 
+        onClose={() => setShowWalletModal(false)} 
+      />
     </>
   );
 }

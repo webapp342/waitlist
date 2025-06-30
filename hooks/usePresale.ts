@@ -36,7 +36,8 @@ export const usePresale = () => {
 
   const loadPresaleInfo = useCallback(async () => {
     if (!walletClient || !isConnected || !address) {
-      setError('Please connect your wallet');
+      // Don't set error, just stop loading to allow page access without wallet
+      setLoading(false);
       return;
     }
 
@@ -208,6 +209,9 @@ export const usePresale = () => {
   useEffect(() => {
     if (isConnected && address && walletClient) {
       loadPresaleInfo();
+    } else {
+      // Set loading to false if wallet is not connected to allow page access
+      setLoading(false);
     }
   }, [isConnected, address, walletClient, loadPresaleInfo]);
 

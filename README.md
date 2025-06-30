@@ -1,6 +1,6 @@
 # Next.js + Notion — Waitlist Template with BSC Testnet Integration
 
-A modern and beautiful waitlist template built with **Next.js**, featuring wallet connectivity specifically for **BSC Testnet (Chain ID: 97)**, user management with **Supabase**, and automatic card generation for registered users.
+A modern and beautiful waitlist template built with **Next.js**, featuring wallet connectivity specifically for **BSC Testnet (Chain ID: 97)**, user management with **Supabase**, automatic card generation, **staking system**, and **referral program** for registered users.
 
 ## ✨ **Features**
 
@@ -11,6 +11,9 @@ A modern and beautiful waitlist template built with **Next.js**, featuring walle
 - 🔄 **Real-time Network Validation** and switching prompts
 - 📱 **Responsive Design** optimized for all devices
 - ⚡ **Performance Optimized** with reduced particles and smooth animations
+- 🎯 **Staking System** with transaction logging and rewards
+- 👥 **Referral Program** with unique codes and reward tracking
+- 📊 **Dashboard Analytics** with portfolio overview and transaction history
 
 ## 🚀 **Tech Stack**
 
@@ -61,9 +64,11 @@ bun install
 
 1. Create a new project at [supabase.com](https://supabase.com)
 2. Go to the SQL editor in your Supabase dashboard
-3. Copy and paste the contents of `database-migration.sql` file
-4. Run the SQL to create the users and cards tables with all triggers
+3. Copy and paste the contents of `database_setup.sql` file
+4. Run the SQL to create all tables, sequences, and policies
 5. Get your project URL and anon key from Settings > API
+
+**Important**: Make sure to run the `database_setup.sql` file in Supabase SQL Editor, not the `schema.sql` file.
 
 ### 3. Environment Variables
 
@@ -94,6 +99,8 @@ Visit `http://localhost:3000` and connect your wallet with BSC Testnet!
 ```sql
 - id (BIGSERIAL PRIMARY KEY)
 - wallet_address (VARCHAR(42) UNIQUE)
+- referred_by (BIGINT, Foreign Key to users.id)
+- referral_code_used (VARCHAR)
 - created_at (TIMESTAMP)
 ```
 
@@ -101,15 +108,52 @@ Visit `http://localhost:3000` and connect your wallet with BSC Testnet!
 ```sql
 - id (BIGSERIAL PRIMARY KEY)
 - user_id (BIGINT, Foreign Key)
-- card_number (VARCHAR(16), 16-digit number)
-- cvv (VARCHAR(3), 3-digit code)
-- expiration_date (DATE, calculated from user creation)
-- card_type (VARCHAR(10): 'bronze', 'silver', 'gold')
+- card_number_bronze/silver/gold (VARCHAR(16))
+- cvv_bronze/silver/gold (VARCHAR(3))
+- expiration_date_bronze/silver/gold (DATE)
 - created_at (TIMESTAMP)
+```
+
+### Stake Logs Table
+```sql
+- id (UUID PRIMARY KEY)
+- user_id (BIGINT, Foreign Key)
+- transaction_hash (VARCHAR UNIQUE)
+- amount (VARCHAR)
+- action_type (ENUM: stake, unstake, claim_rewards, emergency_withdraw)
+- block_number (BIGINT)
+- gas_used (BIGINT)
+- gas_price (VARCHAR)
+- status (ENUM: pending, confirmed, failed)
+- created_at, updated_at (TIMESTAMP)
+```
+
+### Referral Codes Table
+```sql
+- id (UUID PRIMARY KEY)
+- user_id (BIGINT, Foreign Key)
+- code (VARCHAR UNIQUE)
+- is_active (BOOLEAN)
+- total_referrals (INTEGER)
+- total_rewards_earned (VARCHAR)
+- created_at, updated_at (TIMESTAMP)
+```
+
+### Referrals Table
+```sql
+- id (UUID PRIMARY KEY)
+- referrer_id (BIGINT, Foreign Key)
+- referred_id (BIGINT, Foreign Key UNIQUE)
+- referral_code_id (UUID, Foreign Key)
+- status (ENUM: pending, completed, cancelled)
+- reward_amount (VARCHAR)
+- reward_paid (BOOLEAN)
+- created_at, updated_at (TIMESTAMP)
 ```
 
 ## 🎮 **How It Works**
 
+### User Registration
 1. **Connect Wallet**: User connects their wallet (MetaMask, WalletConnect, etc.)
 2. **Network Check**: App checks if user is on BSC Testnet (Chain ID: 97)
 3. **Auto Switch**: If on wrong network, prompts automatic switching
@@ -119,6 +163,20 @@ Visit `http://localhost:3000` and connect your wallet with BSC Testnet!
    - 🥈 **Silver Card**: Expires in 3 years  
    - 🥇 **Gold Card**: Expires in 4 years
 6. **Dashboard Access**: User can view cards and interact with the platform
+
+### Staking System
+1. **Stake Tokens**: Users can stake BBLIP tokens for rewards
+2. **Transaction Logging**: All stake transactions are logged with blockchain data
+3. **Reward Tracking**: Pending and confirmed rewards are tracked
+4. **Unstaking**: Users can unstake after minimum lock period
+5. **Emergency Withdraw**: Available for urgent situations
+
+### Referral Program
+1. **Unique Codes**: Each user gets a unique 8-character referral code
+2. **Link Sharing**: Users can share referral links with friends
+3. **Automatic Tracking**: When new users sign up via referral link, it's automatically tracked
+4. **Reward System**: Both referrer and referred user earn rewards
+5. **Analytics**: Dashboard shows referral statistics and history
 
 ## 🔧 **Customization**
 
@@ -140,11 +198,19 @@ export const TARGET_CHAIN_CONFIG = {
 
 ### Modify Card Generation
 
-Edit the database trigger in `database-migration.sql`:
+Edit the database trigger in `database_setup.sql`:
 ```sql
 -- Modify expiration dates, card types, or generation logic
 CREATE OR REPLACE FUNCTION create_user_cards(p_user_id BIGINT)
 -- ... customize as needed
+```
+
+### Customize Referral Rewards
+
+Update the referral reward logic in `lib/supabase.ts`:
+```typescript
+// In referralService.processReferral function
+// Add your custom reward calculation logic
 ```
 
 ## 📱 **Responsive Features**
@@ -186,6 +252,8 @@ Enable it in development by keeping the `<DebugChain />` component.
 - ✅ Network validation before any operations
 - ✅ SQL injection protection via Supabase
 - ✅ Environment variable validation
+- ✅ Referral fraud prevention (self-referral blocking)
+- ✅ Transaction hash uniqueness validation
 
 ## 🤝 **Contributing**
 
