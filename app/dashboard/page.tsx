@@ -266,7 +266,7 @@ export default function Dashboard() {
         <DashboardCTA userData={userData} totalUsd={totalUsd} />
 
         {/* Main Dashboard Content */}
-        <div className="w-full max-w-5xl mt-8 space-y-8">
+        <div className="w-full max-w-5xl mt-8 space-y-4">
           {/* Dashboard Header - Simplified */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
             <div className="animate-fade-in">
@@ -275,7 +275,7 @@ export default function Dashboard() {
             </div>
             
             {/* Action Buttons - Enhanced with Psychological Triggers */}
-            <div className="flex items-center gap-3 mt-4 lg:mt-0 animate-slide-in">
+            <div className="flex items-center gap-3 mt-4 -mb-5 lg:mt-0 animate-slide-in">
 
             <Link href="/stake">
                 <Button
@@ -345,7 +345,7 @@ export default function Dashboard() {
           </div>
 
           {/* Assets Table - Enhanced for Desktop */}
-          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden animate-fade-in-up">
+          <div className="bg-gradient-to-br from-zinc-900/90  to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden animate-fade-in-up">
             {/* Assets List - Enhanced */}
             <div className="divide-y divide-zinc-800/50">
               {ASSETS.map((asset, index) => {
@@ -501,9 +501,9 @@ export default function Dashboard() {
 
           {/* No Transactions State - Enhanced */}
           {isConnected && stakeLogs.length === 0 && (
-            <div className="animate-fade-in-up">
+            <div >
               <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-12 shadow-2xl text-center">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center mx-auto mb-6 ">
+                <div className="w-20 h-20  flex items-center justify-center mx-auto mb-6 ">
                   <History className="w-10 h-10 text-zinc-600" />
                 </div>
                 <h3 className="text-xl font-bold text-white mb-3">No Staking Activity Yet</h3>
