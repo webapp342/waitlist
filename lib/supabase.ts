@@ -344,7 +344,8 @@ export const stakeLogsService = {
 
       if (error) {
         console.error('Error adding stake log:', error)
-        throw error
+        // Don't throw error here, just return null
+        return null
       }
 
       console.log('Stake log added successfully:', result)
@@ -352,9 +353,15 @@ export const stakeLogsService = {
     } catch (error: any) {
       if (error.code === '23505') { // Unique constraint violation
         console.log('Stake log already exists (duplicate transaction hash)')
-        return await this.getStakeLogByTxHash(logData.transaction_hash)
+        try {
+          return await this.getStakeLogByTxHash(logData.transaction_hash)
+        } catch (fetchError) {
+          console.error('Error fetching existing stake log:', fetchError)
+          return null
+        }
       }
-      throw error
+      console.error('Error in addStakeLog:', error)
+      return null
     }
   },
 
@@ -366,18 +373,23 @@ export const stakeLogsService = {
       return null
     }
 
-    const { data, error } = await supabase
-      .from('stake_logs')
-      .select('*')
-      .eq('transaction_hash', transactionHash)
-      .single()
+    try {
+      const { data, error } = await supabase
+        .from('stake_logs')
+        .select('*')
+        .eq('transaction_hash', transactionHash)
+        .single()
 
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching stake log:', error)
-      throw error
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching stake log:', error)
+        return null
+      }
+
+      return data || null
+    } catch (error) {
+      console.error('Error in getStakeLogByTxHash:', error)
+      return null
     }
-
-    return data || null
   },
 
   // Get all stake logs for a user
@@ -404,7 +416,7 @@ export const stakeLogsService = {
 
       if (error) {
         console.error('Error fetching user stake logs:', error)
-        throw error
+        return []
       }
 
       return data || []
@@ -432,22 +444,27 @@ export const stakeLogsService = {
       if (gasUsed) updateData.gas_used = gasUsed
       if (gasPrice) updateData.gas_price = gasPrice
 
+      console.log('Updating stake log status:', { transactionHash, updateData })
+
       const { data: result, error } = await supabase
         .from('stake_logs')
         .update(updateData)
         .eq('transaction_hash', transactionHash)
         .select()
-        .single()
 
       if (error) {
-        console.error('Error updating stake log:', error)
+        console.error('CRITICAL ERROR - Failed to update stake log status:', error)
+        console.error('Transaction hash:', transactionHash)
+        console.error('Update data:', updateData)
+        // This is critical for tier system - we need to throw this error
         throw error
       }
 
-      console.log('Stake log updated successfully:', result)
+      console.log('✅ Stake log status updated successfully:', result)
       return result
     } catch (error) {
-      console.error('Error in updateStakeLogStatus:', error)
+      console.error('CRITICAL ERROR in updateStakeLogStatus:', error)
+      // This is critical - we need to throw this error so the frontend knows
       throw error
     }
   },
@@ -755,9 +772,113 @@ export const referralService = {
 
       const referralCode = await this.getReferralCodeByUserId(user.id)
       
+      // Get actual referral count from referrals table
+      const { count: actualReferralCount, error: countError } = await supabase
+        .from('referrals')
+        .select('*', { count: 'exact', head: true })
+        .eq('referrer_id', user.id)
+
+      if (countError) {
+        console.error('Error counting referrals:', countError)
+      }
+      
+      // Calculate total rewards from referral_rewards table with tier support
+      // Get rewards where user is the referrer (davet eden)
+      const { data: referrerRewards, error: referrerError } = await supabase
+        .from('referral_rewards')
+        .select('referrer_reward_amount, reward_tier')
+        .eq('referrer_id', user.id)
+
+      if (referrerError) {
+        console.error('Error fetching referrer rewards:', referrerError)
+      }
+
+      // Get rewards where user is the referred (davet edilen)
+      const { data: referredRewards, error: referredError } = await supabase
+        .from('referral_rewards')
+        .select('referred_reward_amount, reward_tier')
+        .eq('referred_id', user.id)
+
+      if (referredError) {
+        console.error('Error fetching referred rewards:', referredError)
+      }
+
+      // Calculate total rewards with tier breakdown
+      let totalRewardAmount = 0
+      let tier1Rewards = 0
+      let tier2Rewards = 0
+      let tier3Rewards = 0
+      let tier4Rewards = 0
+      let tier5Rewards = 0
+
+      // Sum referrer rewards
+      if (referrerRewards && referrerRewards.length > 0) {
+        referrerRewards.forEach(reward => {
+          if (reward.referrer_reward_amount) {
+            const amount = parseFloat(reward.referrer_reward_amount)
+            totalRewardAmount += amount
+            
+            if (reward.reward_tier === 'tier1') {
+              tier1Rewards += amount
+            } else if (reward.reward_tier === 'tier2') {
+              tier2Rewards += amount
+            } else if (reward.reward_tier === 'tier3') {
+              tier3Rewards += amount
+            } else if (reward.reward_tier === 'tier4') {
+              tier4Rewards += amount
+            } else if (reward.reward_tier === 'tier5') {
+              tier5Rewards += amount
+            }
+          }
+        })
+      }
+
+      // Sum referred rewards
+      if (referredRewards && referredRewards.length > 0) {
+        referredRewards.forEach(reward => {
+          if (reward.referred_reward_amount) {
+            const amount = parseFloat(reward.referred_reward_amount)
+            totalRewardAmount += amount
+            
+            if (reward.reward_tier === 'tier1') {
+              tier1Rewards += amount
+            } else if (reward.reward_tier === 'tier2') {
+              tier2Rewards += amount
+            } else if (reward.reward_tier === 'tier3') {
+              tier3Rewards += amount
+            } else if (reward.reward_tier === 'tier4') {
+              tier4Rewards += amount
+            } else if (reward.reward_tier === 'tier5') {
+              tier5Rewards += amount
+            }
+          }
+        })
+      }
+
+      // If no specific columns exist, try the general reward_amount column (backward compatibility)
+      if (totalRewardAmount === 0) {
+        const { data: allRewards, error: allRewardsError } = await supabase
+          .from('referral_rewards')
+          .select('reward_amount')
+          .or(`referrer_id.eq.${user.id},referred_id.eq.${user.id}`)
+
+        if (!allRewardsError && allRewards) {
+          allRewards.forEach(reward => {
+            if (reward.reward_amount) {
+              totalRewardAmount += parseFloat(reward.reward_amount)
+            }
+          })
+        }
+      }
+      
       return {
-        totalReferrals: referralCode?.total_referrals || 0,
-        totalRewards: referralCode?.total_rewards_earned || '0',
+        totalReferrals: actualReferralCount || referralCode?.total_referrals || 0,
+        totalRewards: totalRewardAmount.toString(),
+        tier1Rewards: tier1Rewards.toString(),
+        tier2Rewards: tier2Rewards.toString(),
+        tier3Rewards: tier3Rewards.toString(),
+        tier4Rewards: tier4Rewards.toString(),
+        tier5Rewards: tier5Rewards.toString(),
         referralCode: referralCode
       }
     } catch (error) {
@@ -809,5 +930,32 @@ export const referralService = {
       result += chars.charAt(Math.floor(Math.random() * chars.length))
     }
     return result
+  },
+
+  // Update referral code statistics
+  async updateReferralCodeStats(userId: number) {
+    try {
+      // Get the user's referral stats
+      const user = await userService.getUserById(userId)
+      if (!user) return
+      
+      const stats = await this.getUserReferralStats(user.wallet_address)
+      
+      // Update the referral_codes table with the latest stats
+      const { error } = await supabase
+        .from('referral_codes')
+        .update({
+          total_referrals: stats.totalReferrals,
+          total_rewards_earned: stats.totalRewards,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', userId)
+
+      if (error) {
+        console.error('Error updating referral code stats:', error)
+      }
+    } catch (error) {
+      console.error('Error in updateReferralCodeStats:', error)
+    }
   }
 } 

@@ -105,13 +105,37 @@ CREATE TABLE IF NOT EXISTS public.referrals (
 CREATE TABLE IF NOT EXISTS public.referral_rewards (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   referrer_id bigint NOT NULL,
-  referred_id bigint NOT NULL UNIQUE,
+  referred_id bigint NOT NULL,
   reward_amount character varying DEFAULT '0',
+  referrer_reward_amount character varying DEFAULT '10',
+  referred_reward_amount character varying DEFAULT '5',
+  reward_tier character varying DEFAULT 'tier1' CHECK (reward_tier IN ('tier1', 'tier2', 'tier3', 'tier4', 'tier5')),
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   CONSTRAINT referral_rewards_pkey PRIMARY KEY (id),
   CONSTRAINT referral_rewards_referrer_id_fkey FOREIGN KEY (referrer_id) REFERENCES public.users(id),
   CONSTRAINT referral_rewards_referred_id_fkey FOREIGN KEY (referred_id) REFERENCES public.users(id)
 );
+
+-- Add columns to existing table if they don't exist
+DO $$ 
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'referral_rewards' AND column_name = 'referrer_reward_amount') THEN
+    ALTER TABLE public.referral_rewards ADD COLUMN referrer_reward_amount character varying DEFAULT '10';
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'referral_rewards' AND column_name = 'referred_reward_amount') THEN
+    ALTER TABLE public.referral_rewards ADD COLUMN referred_reward_amount character varying DEFAULT '5';
+  END IF;
+  
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'referral_rewards' AND column_name = 'reward_tier') THEN
+    ALTER TABLE public.referral_rewards ADD COLUMN reward_tier character varying DEFAULT 'tier1' CHECK (reward_tier IN ('tier1', 'tier2', 'tier3', 'tier4', 'tier5'));
+  END IF;
+  
+  -- Remove UNIQUE constraint from referred_id to allow multiple rewards per user
+  IF EXISTS (SELECT 1 FROM information_schema.table_constraints WHERE constraint_name = 'referral_rewards_referred_id_key' AND table_name = 'referral_rewards') THEN
+    ALTER TABLE public.referral_rewards DROP CONSTRAINT referral_rewards_referred_id_key;
+  END IF;
+END $$;
 
 -- Create indexes for better performance
 CREATE INDEX IF NOT EXISTS idx_users_wallet_address ON public.users(wallet_address);
@@ -269,39 +293,93 @@ WHERE NOT EXISTS (
     SELECT 1 FROM public.cards c WHERE c.user_id = u.id
 );
 
--- Create function to check stake amount and award referral reward
+-- Create function to check stake amount and award referral reward with tier system
 CREATE OR REPLACE FUNCTION check_stake_and_award_referral_reward(p_referred_id bigint) RETURNS void AS $$
 DECLARE
-  v_total_stake numeric := 0;
   v_referrer_id bigint;
-  v_reward_exists boolean;
+  v_tier1_reward_exists boolean;
+  v_tier2_reward_exists boolean;
+  v_running_balance numeric := 0;
+  v_max_balance numeric := 0;
+  v_stake_record RECORD;
 BEGIN
-  -- Check if a reward already exists for this referred user
+  -- Check if Tier 1 and Tier 2 rewards already exist for this referred user
   SELECT EXISTS (
     SELECT 1 FROM public.referral_rewards 
-    WHERE referred_id = p_referred_id
-  ) INTO v_reward_exists;
+    WHERE referred_id = p_referred_id AND reward_tier = 'tier1'
+  ) INTO v_tier1_reward_exists;
   
-  IF v_reward_exists THEN
-    RETURN;
-  END IF;
-  
-  -- Get the total stake amount for the referred user
-  SELECT COALESCE(SUM(amount::numeric), 0) INTO v_total_stake
-  FROM public.stake_logs
-  WHERE user_id = p_referred_id AND action_type = 'stake' AND status = 'confirmed';
-  
-  -- Check if total stake is >= 100
-  IF v_total_stake >= 100 THEN
-    -- Get the referrer ID from users table
-    SELECT referred_by INTO v_referrer_id
-    FROM public.users
-    WHERE id = p_referred_id;
+  SELECT EXISTS (
+    SELECT 1 FROM public.referral_rewards 
+    WHERE referred_id = p_referred_id AND reward_tier = 'tier2'
+  ) INTO v_tier2_reward_exists;
+
+  -- Process all stake/unstake transactions in chronological order
+  -- and track the maximum balance ever reached
+  FOR v_stake_record IN (
+    SELECT 
+      amount::numeric as amount,
+      action_type,
+      created_at
+    FROM public.stake_logs
+    WHERE user_id = p_referred_id 
+    AND status = 'confirmed'
+    AND action_type IN ('stake', 'unstake')
+    ORDER BY created_at ASC
+  ) LOOP
+    -- Update running balance
+    IF v_stake_record.action_type = 'stake' THEN
+      v_running_balance := v_running_balance + v_stake_record.amount;
+    ELSE -- unstake
+      v_running_balance := v_running_balance - v_stake_record.amount;
+    END IF;
     
-    -- If there is a referrer, insert a reward
-    IF v_referrer_id IS NOT NULL THEN
-      INSERT INTO public.referral_rewards (referrer_id, referred_id, reward_amount)
-      VALUES (v_referrer_id, p_referred_id, '10');
+    -- Update maximum balance reached
+    IF v_running_balance > v_max_balance THEN
+      v_max_balance := v_running_balance;
+    END IF;
+  END LOOP;
+
+  -- Get the referrer ID
+  SELECT referred_by INTO v_referrer_id
+  FROM public.users
+  WHERE id = p_referred_id;
+
+  IF v_referrer_id IS NOT NULL THEN
+    -- Award Tier 2 reward if max balance >= 500 and not already awarded
+    IF v_max_balance >= 500 AND NOT v_tier2_reward_exists THEN
+      INSERT INTO public.referral_rewards (
+        referrer_id, 
+        referred_id, 
+        referrer_reward_amount,
+        referred_reward_amount,
+        reward_tier
+      )
+      VALUES (
+        v_referrer_id, 
+        p_referred_id, 
+        '50',
+        '25',
+        'tier2'
+      );
+    END IF;
+    
+    -- Award Tier 1 reward if max balance >= 100 and not already awarded
+    IF v_max_balance >= 100 AND NOT v_tier1_reward_exists THEN
+      INSERT INTO public.referral_rewards (
+        referrer_id, 
+        referred_id, 
+        referrer_reward_amount,
+        referred_reward_amount,
+        reward_tier
+      )
+      VALUES (
+        v_referrer_id, 
+        p_referred_id, 
+        '10',
+        '5',
+        'tier1'
+      );
     END IF;
   END IF;
 END;
@@ -318,16 +396,16 @@ $$ LANGUAGE plpgsql;
 -- Drop existing trigger first to avoid conflicts
 DROP TRIGGER IF EXISTS trigger_check_referral_reward ON public.stake_logs;
 
--- Create trigger to check referral reward after stake log insert or update
+-- Create trigger to check referral reward after stake/unstake log insert or update
 CREATE TRIGGER trigger_check_referral_reward_insert
   AFTER INSERT ON public.stake_logs
   FOR EACH ROW
-  WHEN (NEW.action_type = 'stake' AND NEW.status = 'confirmed')
+  WHEN (NEW.action_type IN ('stake', 'unstake') AND NEW.status = 'confirmed')
   EXECUTE FUNCTION trigger_check_stake_and_award_referral_reward();
 
 -- Create trigger for UPDATE operations
 CREATE TRIGGER trigger_check_referral_reward_update
   AFTER UPDATE ON public.stake_logs
   FOR EACH ROW
-  WHEN (NEW.action_type = 'stake' AND NEW.status = 'confirmed' AND OLD.status = 'pending')
+  WHEN (NEW.action_type IN ('stake', 'unstake') AND NEW.status = 'confirmed' AND OLD.status = 'pending')
   EXECUTE FUNCTION trigger_check_stake_and_award_referral_reward(); 

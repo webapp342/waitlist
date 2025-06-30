@@ -38,7 +38,15 @@ export default function Dashboard() {
   const [stakeLogs, setStakeLogs] = useState<StakeLog[]>([]);
   const [showStakeLogs, setShowStakeLogs] = useState(false);
   const [referralCode, setReferralCode] = useState<ReferralCode | null>(null);
-  const [referralStats, setReferralStats] = useState({ totalReferrals: 0, totalRewards: '0' });
+  const [referralStats, setReferralStats] = useState({ 
+    totalReferrals: 0, 
+    totalRewards: '0', 
+    tier1Rewards: '0', 
+    tier2Rewards: '0',
+    tier3Rewards: '0',
+    tier4Rewards: '0',
+    tier5Rewards: '0'
+  });
   const [showReferralSection, setShowReferralSection] = useState(false);
 
   // Fetch token balances for the connected wallet
@@ -109,7 +117,12 @@ export default function Dashboard() {
             const stats = await referralService.getUserReferralStats(address);
             setReferralStats({
               totalReferrals: stats.totalReferrals,
-              totalRewards: stats.totalRewards
+              totalRewards: stats.totalRewards,
+              tier1Rewards: stats.tier1Rewards || '0',
+              tier2Rewards: stats.tier2Rewards || '0',
+              tier3Rewards: stats.tier3Rewards || '0',
+              tier4Rewards: stats.tier4Rewards || '0',
+              tier5Rewards: stats.tier5Rewards || '0'
             });
             
             console.log('Referral data loaded:', { code: code?.code, stats });
@@ -479,7 +492,7 @@ export default function Dashboard() {
               </div>
 
               {/* Referral Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
                 <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
                   <div className="flex items-center gap-2 mb-2">
                     <Users className="w-4 h-4 text-blue-400" />
@@ -491,17 +504,55 @@ export default function Dashboard() {
                 <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
                   <div className="flex items-center gap-2 mb-2">
                     <Gift className="w-4 h-4 text-green-400" />
-                    <span className="text-sm text-gray-400">Total Rewards</span>
+                    <span className="text-sm text-gray-400">Tier 1 Rewards</span>
                   </div>
-                  <p className="text-2xl font-bold text-white">{parseFloat(referralStats.totalRewards).toFixed(2)} BBLIP</p>
+                  <p className="text-2xl font-bold text-green-400">{parseFloat(referralStats.tier1Rewards).toFixed(2)} BBLIP</p>
+                  <p className="text-xs text-gray-500">100+ BBLIP stakes</p>
+                </div>
+                
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Gift className="w-4 h-4 text-yellow-400" />
+                    <span className="text-sm text-gray-400">Tier 2 Rewards</span>
+                  </div>
+                  <p className="text-2xl font-bold text-yellow-400">{parseFloat(referralStats.tier2Rewards).toFixed(2)} BBLIP</p>
+                  <p className="text-xs text-gray-500">500+ BBLIP stakes</p>
+                </div>
+                
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Gift className="w-4 h-4 text-orange-400" />
+                    <span className="text-sm text-gray-400">Tier 3 Rewards</span>
+                  </div>
+                  <p className="text-2xl font-bold text-orange-400">{parseFloat(referralStats.tier3Rewards).toFixed(2)} BBLIP</p>
+                  <p className="text-xs text-gray-500">1000+ BBLIP stakes</p>
+                </div>
+                
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Gift className="w-4 h-4 text-red-400" />
+                    <span className="text-sm text-gray-400">Tier 4 Rewards</span>
+                  </div>
+                  <p className="text-2xl font-bold text-red-400">{parseFloat(referralStats.tier4Rewards).toFixed(2)} BBLIP</p>
+                  <p className="text-xs text-gray-500">2500+ BBLIP stakes</p>
+                </div>
+                
+                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Gift className="w-4 h-4 text-pink-400" />
+                    <span className="text-sm text-gray-400">Tier 5 Rewards</span>
+                  </div>
+                  <p className="text-2xl font-bold text-pink-400">{parseFloat(referralStats.tier5Rewards).toFixed(2)} BBLIP</p>
+                  <p className="text-xs text-gray-500">3500+ BBLIP stakes</p>
                 </div>
                 
                 <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
                   <div className="flex items-center gap-2 mb-2">
                     <Share2 className="w-4 h-4 text-purple-400" />
-                    <span className="text-sm text-gray-400">Your Code</span>
+                    <span className="text-sm text-gray-400">Total Rewards</span>
                   </div>
-                  <p className="text-lg font-mono text-white">{referralCode.code}</p>
+                  <p className="text-2xl font-bold text-white">{parseFloat(referralStats.totalRewards).toFixed(2)} BBLIP</p>
+                  <p className="text-xs text-gray-500 font-mono">{referralCode.code}</p>
                 </div>
               </div>
 
@@ -554,7 +605,58 @@ export default function Dashboard() {
 
                   {/* How it works */}
                   <div className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl p-4 border border-purple-500/20">
-                    <h4 className="text-sm font-semibold text-white mb-3">How Referral Rewards Work</h4>
+                    <h4 className="text-sm font-semibold text-white mb-4">Tiered Referral Reward System</h4>
+                    
+                    {/* Tier 1 */}
+                    <div className="mb-4 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                        <h5 className="text-sm font-semibold text-green-400">Tier 1 (100+ BBLIP Stake)</h5>
+                      </div>
+                      <p className="text-xs text-gray-300 mb-1">Referrer gets: <span className="text-green-400 font-semibold">10 BBLIP</span></p>
+                      <p className="text-xs text-gray-300">Referred gets: <span className="text-green-400 font-semibold">5 BBLIP</span></p>
+                    </div>
+
+                    {/* Tier 2 */}
+                    <div className="mb-4 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                        <h5 className="text-sm font-semibold text-yellow-400">Tier 2 (500+ BBLIP Stake)</h5>
+                      </div>
+                      <p className="text-xs text-gray-300 mb-1">Referrer gets: <span className="text-yellow-400 font-semibold">+50 BBLIP</span></p>
+                      <p className="text-xs text-gray-300">Referred gets: <span className="text-yellow-400 font-semibold">+25 BBLIP</span></p>
+                    </div>
+
+                    {/* Tier 3 */}
+                    <div className="mb-4 p-3 bg-orange-500/10 rounded-lg border border-orange-500/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-3 h-3 rounded-full bg-orange-400"></div>
+                        <h5 className="text-sm font-semibold text-orange-400">Tier 3 (1000+ BBLIP Stake)</h5>
+                      </div>
+                      <p className="text-xs text-gray-300 mb-1">Referrer gets: <span className="text-orange-400 font-semibold">+100 BBLIP</span></p>
+                      <p className="text-xs text-gray-300">Referred gets: <span className="text-orange-400 font-semibold">+50 BBLIP</span></p>
+                    </div>
+
+                    {/* Tier 4 */}
+                    <div className="mb-4 p-3 bg-red-500/10 rounded-lg border border-red-500/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                        <h5 className="text-sm font-semibold text-red-400">Tier 4 (2500+ BBLIP Stake)</h5>
+                      </div>
+                      <p className="text-xs text-gray-300 mb-1">Referrer gets: <span className="text-red-400 font-semibold">+250 BBLIP</span></p>
+                      <p className="text-xs text-gray-300">Referred gets: <span className="text-red-400 font-semibold">+125 BBLIP</span></p>
+                    </div>
+
+                    {/* Tier 5 */}
+                    <div className="mb-4 p-3 bg-pink-500/10 rounded-lg border border-pink-500/20">
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-3 h-3 rounded-full bg-pink-400"></div>
+                        <h5 className="text-sm font-semibold text-pink-400">Tier 5 (3500+ BBLIP Stake)</h5>
+                      </div>
+                      <p className="text-xs text-gray-300 mb-1">Referrer gets: <span className="text-pink-400 font-semibold">+350 BBLIP</span></p>
+                      <p className="text-xs text-gray-300">Referred gets: <span className="text-pink-400 font-semibold">+175 BBLIP</span></p>
+                    </div>
+
                     <div className="space-y-2 text-sm text-gray-300">
                       <div className="flex items-start gap-2">
                         <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
@@ -562,11 +664,19 @@ export default function Dashboard() {
                       </div>
                       <div className="flex items-start gap-2">
                         <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
-                        <p>When they sign up and connect their wallet, you both get rewards</p>
+                        <p>When they stake 100+ BBLIP, both earn Tier 1 rewards</p>
                       </div>
                       <div className="flex items-start gap-2">
                         <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
-                        <p>Rewards are automatically added to your account</p>
+                        <p>Higher stake amounts unlock higher tier rewards (up to Tier 5)</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
+                        <p>Each tier adds to the previous rewards (cumulative)</p>
+                      </div>
+                      <div className="flex items-start gap-2">
+                        <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
+                        <p>Rewards are based on their highest stake balance ever reached</p>
                       </div>
                     </div>
                   </div>

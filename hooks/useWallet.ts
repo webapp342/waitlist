@@ -393,16 +393,27 @@ export const useWallet = () => {
       
       // Update stake log status to confirmed
       try {
-        await stakeLogsService.updateStakeLogStatus(
+        console.log('🔄 STAKE - Attempting to update log status:', {
+          transactionHash: tx.hash,
+          status: 'confirmed',
+          blockNumber: receipt.blockNumber,
+          gasUsed: receipt.gasUsed?.toString(),
+          gasPrice: receipt.gasPrice?.toString()
+        });
+        
+        const updateResult = await stakeLogsService.updateStakeLogStatus(
           tx.hash,
           'confirmed',
           receipt.blockNumber || undefined,
           receipt.gasUsed?.toString(),
           receipt.gasPrice?.toString()
         );
-        console.log('✅ Stake log status updated to confirmed');
+        
+        console.log('✅ STAKE - Log status update result:', updateResult);
       } catch (dbError) {
-        console.error('❌ Error updating stake log status:', dbError);
+        console.error('❌ STAKE - CRITICAL ERROR updating stake log status:', dbError);
+        console.error('❌ STAKE - Transaction hash:', tx.hash);
+        console.error('❌ STAKE - Receipt:', receipt);
       }
       
       await loadUserData(contracts.staking!, contracts.token!, walletState.address);
@@ -546,16 +557,27 @@ export const useWallet = () => {
       
       // Update unstake log status to confirmed
       try {
-        await stakeLogsService.updateStakeLogStatus(
+        console.log('🔄 UNSTAKE - Attempting to update log status:', {
+          transactionHash: tx.hash,
+          status: 'confirmed',
+          blockNumber: receipt.blockNumber,
+          gasUsed: receipt.gasUsed?.toString(),
+          gasPrice: receipt.gasPrice?.toString()
+        });
+        
+        const updateResult = await stakeLogsService.updateStakeLogStatus(
           tx.hash,
           'confirmed',
           receipt.blockNumber || undefined,
           receipt.gasUsed?.toString(),
           receipt.gasPrice?.toString()
         );
-        console.log('✅ Unstake log status updated to confirmed');
+        
+        console.log('✅ UNSTAKE - Log status update result:', updateResult);
       } catch (dbError) {
-        console.error('❌ Error updating unstake log status:', dbError);
+        console.error('❌ UNSTAKE - CRITICAL ERROR updating unstake log status:', dbError);
+        console.error('❌ UNSTAKE - Transaction hash:', tx.hash);
+        console.error('❌ UNSTAKE - Receipt:', receipt);
       }
       
       await loadUserData(contracts.staking!, contracts.token!, walletState.address);
