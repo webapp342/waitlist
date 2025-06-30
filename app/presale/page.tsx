@@ -190,31 +190,30 @@ function PresalePageInner() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-black via-zinc-950 to-black">
-        <div className="text-center">
-          <div className="relative">
-            {/* Professional loading spinner */}
-            <div className="w-16 h-16 relative mx-auto mb-6">
-              <div className="absolute inset-0 rounded-full border-4 border-zinc-800"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-yellow-400 animate-spin"></div>
-              <div className="absolute inset-2 rounded-full border-2 border-transparent border-t-yellow-300 animate-spin animation-delay-75"></div>
-            </div>
-            
-            {/* Loading text with animation */}
-            <div className="space-y-2">
-              <h3 className="text-lg font-semibold text-white">Loading Presale</h3>
-              <div className="flex items-center justify-center gap-1">
-                <span className="text-gray-400">Preparing your experience</span>
-                <div className="flex gap-1">
-                  <div className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce animation-delay-0"></div>
-                  <div className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce animation-delay-150"></div>
-                  <div className="w-1 h-1 bg-yellow-400 rounded-full animate-bounce animation-delay-300"></div>
-                </div>
-              </div>
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2">
+        <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
+          <Header />
+          <div className="flex items-center justify-center py-20 mt-20">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
+              <Image 
+                src="/logo.svg" 
+                alt="BBLIP" 
+                width={32} 
+                height={32} 
+                className="absolute inset-0 m-auto animate-pulse" 
+              />
             </div>
           </div>
-        </div>
-      </div>
+        </section>
+        <Particles
+          quantityDesktop={80}
+          quantityMobile={30}
+          ease={120}
+          color={"#F7FF9B"}
+          refresh
+        />
+      </main>
     );
   }
 

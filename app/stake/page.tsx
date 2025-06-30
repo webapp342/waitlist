@@ -16,6 +16,7 @@ import WalletModal from '@/components/WalletModal';
 import { userService, cardService, stakeLogsService } from '@/lib/supabase';
 import { useChainId } from 'wagmi';
 import { StakeLog } from '@/lib/supabase';
+import Image from 'next/image';
 
 // Card stake requirements
 const CARD_REQUIREMENTS = {
@@ -103,6 +104,7 @@ function StakeContent() {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [stakeLogs, setStakeLogs] = useState<StakeLog[]>([]);
   const [showStakeLogs, setShowStakeLogs] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   const { 
     walletState, 
@@ -126,6 +128,14 @@ function StakeContent() {
   // Check if user is on the correct network (BSC Testnet - Chain ID 97)
   const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
   const isOnBSCTestnet = actualChainId === 97;
+
+  // Initial loading state
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Save user to database when wallet is connected to correct network
   useEffect(() => {
@@ -318,6 +328,35 @@ function StakeContent() {
     
     return `Insufficient balance. You need ${difference.toFixed(2)} more BBLIP.`;
   };
+
+  if (loading) {
+    return (
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2">
+        <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
+          <Header />
+          <div className="flex items-center justify-center py-20 mt-20">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
+              <Image 
+                src="/logo.svg" 
+                alt="BBLIP" 
+                width={32} 
+                height={32} 
+                className="absolute inset-0 m-auto animate-pulse" 
+              />
+            </div>
+          </div>
+        </section>
+        <Particles
+          quantityDesktop={80}
+          quantityMobile={30}
+          ease={120}
+          color={"#F7FF9B"}
+          refresh
+        />
+      </main>
+    );
+  }
 
   return (
     <>
@@ -606,7 +645,7 @@ function StakeContent() {
                       </div>
                       <div>
                         <h4 className="text-sm font-semibold text-white mb-1">Minimum Stake</h4>
-                        <p className="text-xs text-gray-400 leading-relaxed">1,000 BBLIP minimum required for Bronze card activation</p>
+                        <p className="text-xs text-gray-400 leading-relaxed">No minimum stake, stake how much you want</p>
                       </div>
                     </div>
                     
@@ -626,7 +665,7 @@ function StakeContent() {
                       </div>
                       <div>
                         <h4 className="text-sm font-semibold text-white mb-1">Staking Fee</h4>
-                        <p className="text-xs text-gray-400 leading-relaxed">No fees for staking or unstaking</p>
+                        <p className="text-xs text-gray-400 leading-relaxed">No hidden fees</p>
                       </div>
                     </div>
                   </div>
@@ -637,12 +676,10 @@ function StakeContent() {
 
           {/* Active Stakes List - Only show when wallet is connected */}
           {isConnected && userData.stakes && userData.stakes.length > 0 && (
-            <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-3xl border border-zinc-800 p-6 md:p-8 shadow-xl">
+            <div className=" py-5 rounded-3xl  p-0  shadow-xl">
               {/* Active Stakes Header */}
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 rounded-lg bg-purple-400/10 border border-purple-400/20">
-                  <Shield className="w-4 h-4 text-purple-400" />
-                </div>
+            
                 <div>
                   <h3 className="text-lg font-semibold text-white">Active Stakes</h3>
                   <p className="text-xs text-gray-500">Manage your staking positions</p>
@@ -650,7 +687,7 @@ function StakeContent() {
               </div>
 
               {/* Stakes List */}
-              <div className="space-y-4">
+              <div className="space-y-2">
                 {userData.stakes.map((stake: any, index: number) => {
                   const stakeAmount = formatTokenAmount(stake.amount);
                   const stakeDate = new Date(Number(stake.timestamp) * 1000);
@@ -759,13 +796,11 @@ function StakeContent() {
 
           {/* Stake Logs - Only show when wallet is connected */}
           {isConnected && stakeLogs.length > 0 && (
-            <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-3xl border border-zinc-800 p-6 md:p-8 shadow-xl">
+            <div className=" py-10 rounded-3xl  p-0  shadow-xl">
               {/* Stake Logs Header */}
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-blue-400/10 border border-blue-400/20">
-                    <History className="w-4 h-4 text-blue-400" />
-                  </div>
+                  
                   <div>
                     <h3 className="text-lg font-semibold text-white">Transaction History</h3>
                     <p className="text-xs text-gray-500">Your staking activity logs</p>

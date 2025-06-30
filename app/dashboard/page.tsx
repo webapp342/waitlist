@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useWallet } from '@/hooks/useWallet';
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Wallet, RefreshCw, Plus, Send, Info, ArrowUpRight, ArrowDownLeft, Coins, History, ExternalLink, ChevronDown, ChevronUp, Copy, Share2, Users, Gift } from 'lucide-react';
+import { TrendingUp, Wallet, RefreshCw, Plus, Send, Info, ArrowUpRight, ArrowDownLeft, Coins, History, ExternalLink, ChevronDown, ChevronUp, Copy, Share2, Users, Gift, Sparkles, Trophy, Crown, ArrowRight, Activity } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
@@ -23,6 +23,7 @@ const BBLIP_ADDRESS = '0xbB7Adc4303857A388ba3BFb52fe977f696A2Ca72';
 
 const ASSETS = [
   { symbol: 'BBLIP', name: 'BBLIP Token', icon: '/logo.svg' },
+  { symbol: 'rBBLIP', name: 'Referral BBLIP', icon: '/logo.svg' },
   { symbol: 'BNB', name: 'Binance Coin', icon: '/bnb.svg'  },
   { symbol: 'USDT', name: 'Tether USD', icon: '/usdt.svg'  },
   { symbol: 'BUSD', name: 'Binance USD', icon: '/busd.svg' }
@@ -36,7 +37,7 @@ export default function Dashboard() {
   const [bnbPrice, setBnbPrice] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [stakeLogs, setStakeLogs] = useState<StakeLog[]>([]);
-  const [showStakeLogs, setShowStakeLogs] = useState(false);
+  const [showAllStakeLogs, setShowAllStakeLogs] = useState(false);
   const [referralCode, setReferralCode] = useState<ReferralCode | null>(null);
   const [referralStats, setReferralStats] = useState({ 
     totalReferrals: 0, 
@@ -47,7 +48,8 @@ export default function Dashboard() {
     tier4Rewards: '0',
     tier5Rewards: '0'
   });
-  const [showReferralSection, setShowReferralSection] = useState(false);
+  const [showReferralDetails, setShowReferralDetails] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Fetch token balances for the connected wallet
   const { data: usdtBalance, refetch: refetchUSDT } = useBalance(address ? { address, token: USDT_ADDRESS } : { address: undefined });
@@ -65,6 +67,18 @@ export default function Dashboard() {
       router.push('/');
     }
   }, [isConnected, router]);
+
+  // Initial loading state
+  useEffect(() => {
+    if (isConnected) {
+      const timer = setTimeout(() => {
+        setLoading(false);
+      }, 1500);
+      return () => clearTimeout(timer);
+    } else {
+      setLoading(false);
+    }
+  }, [isConnected]);
 
   // Fetch BNB price from CoinGecko
   useEffect(() => {
@@ -141,7 +155,8 @@ export default function Dashboard() {
   const usdtUsd = usdtBalance ? parseFloat(usdtBalance.formatted) * 1 : 0;
   const busdUsd = busdBalance ? parseFloat(busdBalance.formatted) * 1 : 0;
   const bblipUsd = bblipBalance ? parseFloat(bblipBalance.formatted) * 0.10 : 0;
-  const totalUsd = bnbUsd + usdtUsd + busdUsd + bblipUsd;
+  const rBblipUsd = referralStats ? parseFloat(referralStats.totalRewards) * 0.10 : 0;
+  const totalUsd = bnbUsd + usdtUsd + busdUsd + bblipUsd + rBblipUsd;
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -193,6 +208,14 @@ export default function Dashboard() {
           change: '+15.67%',
           changeValue: 15.67
         };
+      case 'rBBLIP':
+        return {
+          balance: referralStats ? parseFloat(referralStats.totalRewards) : 0,
+          usdValue: rBblipUsd,
+          price: 0.10,
+          change: '+15.67%',
+          changeValue: 15.67
+        };
       default:
         return { balance: 0, usdValue: 0, price: 0, change: '0.00%', changeValue: 0 };
     }
@@ -206,99 +229,159 @@ export default function Dashboard() {
     return null;
   }
 
+  if (loading) {
+    return (
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2">
+        <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
+          <Header />
+          <div className="flex items-center justify-center py-20 mt-20">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
+              <Image 
+                src="/logo.svg" 
+                alt="BBLIP" 
+                width={32} 
+                height={32} 
+                className="absolute inset-0 m-auto animate-pulse" 
+              />
+            </div>
+          </div>
+        </section>
+        <Particles
+          quantityDesktop={80}
+          quantityMobile={30}
+          ease={120}
+          color={"#F7FF9B"}
+          refresh
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2">
-      <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
+      <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full max-w-7xl mx-auto">
         <Header />
 
         <DashboardCTA userData={userData} totalUsd={totalUsd} />
 
-     
-
         {/* Main Dashboard Content */}
-        <div className="w-full max-w-6xl mt-8">
-          {/* Dashboard Header */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-white mb-2">Portfolio Overview</h1>
-              <p className="text-gray-500 text-sm">Track and manage your digital assets</p>
+        <div className="w-full max-w-5xl mt-8 space-y-8">
+          {/* Dashboard Header - Simplified */}
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+            <div className="animate-fade-in">
+              <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2 tracking-tight">Portfolio Overview</h1>
+              <p className="text-gray-400 text-sm lg:text-base">Track and manage your digital assets</p>
             </div>
             
-            {/* Action Buttons */}
-            <div className="flex items-center gap-3 mt-4 md:mt-0">
+            {/* Action Buttons - Enhanced with Psychological Triggers */}
+            <div className="flex items-center gap-3 mt-4 lg:mt-0 animate-slide-in">
+
+            <Link href="/stake">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-gradient-to-br text-yellow-400 from-yellow-500/10 to-yellow-600/5 backdrop-blur-sm rounded-l  border border-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200 group cursor-pointer"
+                >
+                  <Coins className="w-4 h-4 mr-2 group-hover:rotate-12 text-yellow-400 transition-transform duration-200" />
+                  Stake
+                </Button>
+              </Link>
+
+
+              <Link href="/presale">
+                <Button
+                  size="sm"
+                  className="group bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-black font-semibold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 relative overflow-hidden"
+                >
+                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></span>
+                  <Plus className="w-4 h-4 mr-2 group-hover:rotate-90 transition-transform duration-200" />
+                  Buy BBLIP
+                </Button>
+              </Link>
+
+
               <Button
                 onClick={handleRefresh}
                 disabled={isRefreshing}
                 variant="outline"
                 size="sm"
-                className="bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 transition-all"
+                className="group bg-zinc-900/80 backdrop-blur-sm border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 transition-all duration-200"
               >
-                <RefreshCw className={cn("w-4 h-4 mr-2", isRefreshing && "animate-spin")} />
+                <RefreshCw className={cn(
+                  "w-4 h-4 mr-2 group-hover:rotate-180 transition-transform duration-500",
+                  isRefreshing && "animate-spin"
+                )} />
                 Refresh
               </Button>
               
-              <Link href="/presale">
-                <Button
-                  size="sm"
-                  className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold shadow-lg transition-all"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Buy 
-                </Button>
-              </Link>
+            
 
-              <Link href="/stake">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-blue-500/10 border-blue-500/30 text-blue-400 hover:bg-blue-500/20 hover:border-blue-500/50 font-semibold transition-all"
-                >
-                  <Coins className="w-4 h-4 mr-2" />
-                  Stake
-                </Button>
-              </Link>
+             
             </div>
           </div>
 
-                     
-  
-          {/* Assets Table - Clean Professional Design */}
-          <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 shadow-xl overflow-hidden">
-            {/* Table Header with Total Assets Value */}
-           
+          {/* Quick Stats Bar - Improved for Desktop */}
+          <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 lg:gap-6 animate-fade-in-up">
+            <div className="bg-zinc-900/80 backdrop-blur-sm border-zinc-800 text-zinc-400 rounded-xl p-4 lg:p-6 border border-blue-500/20 hover:border-blue-500/30 transition-all duration-200 group cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs lg:text-sm  mb-1">Total Staked</p>
+                  <p className="text-lg lg:text-xl font-bold text-zinc-200">{userData?.stakedAmount || '0'} BBLIP</p>
+                </div>
+                <Coins className="w-5 h-5 lg:w-6 lg:h-6 text-zinc-200 group-hover:rotate-12 transition-transform" />
+              </div>
+            </div>
+            
+            <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 backdrop-blur-sm rounded-xl p-4 lg:p-6 border border-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200 group cursor-pointer">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs lg:text-sm text-yellow-400/80 mb-1">Referral Earnings</p>
+                  <p className="text-lg lg:text-xl font-bold text-yellow-400">{parseFloat(referralStats.totalRewards).toFixed(0)} BBLIP</p>
+                </div>
+                <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-yellow-400 group-hover:scale-110 transition-transform" />
+              </div>
+            </div>
+          </div>
 
-            {/* Assets List - Simplified */}
-            <div className="divide-y divide-zinc-800">
-              {ASSETS.map((asset) => {
+          {/* Assets Table - Enhanced for Desktop */}
+          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden animate-fade-in-up">
+            {/* Assets List - Enhanced */}
+            <div className="divide-y divide-zinc-800/50">
+              {ASSETS.map((asset, index) => {
                 const data = getAssetData(asset.symbol);
                 const isPositive = data.changeValue > 0;
                 
                 return (
                   <div
                     key={asset.symbol}
-                    className="px-6 py-4 hover:bg-zinc-800/50 transition-colors cursor-pointer"
+                    className="px-6 py-5 hover:bg-zinc-800/30 transition-all duration-200 cursor-pointer group animate-fade-in"
+                    style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div className="flex items-center justify-between">
                       {/* Asset Info */}
                       <div className="flex items-center gap-4">
-                        <div className={cn(
-                          "w-12 h-12 rounded-xl flex items-center justify-center ",
-                      
-                        )}>
-                          <Image src={asset.icon} alt={asset.symbol} width={24} height={24} />
+                        <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg">
+                          <Image 
+                            src={asset.icon} 
+                            alt={asset.symbol} 
+                            width={28} 
+                            height={28} 
+                            className="group-hover:rotate-12 transition-transform lg:w-8 lg:h-8" 
+                          />
                         </div>
                         <div>
-                          <h3 className="font-semibold text-white">{asset.symbol}</h3>
+                          <h3 className="font-semibold text-white group-hover:text-yellow-400 transition-colors text-base lg:text-lg">{asset.symbol}</h3>
                           <p className="text-sm text-gray-500">{data.balance.toFixed(4)} {asset.symbol}</p>
                         </div>
                       </div>
 
                       {/* Balance & Change */}
                       <div className="text-right">
-                        <p className="font-semibold text-lg text-white">
+                        <p className="font-bold text-lg lg:text-xl text-white">
                           ${data.usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                         </p>
-                     
+                    
                       </div>
                     </div>
                   </div>
@@ -307,39 +390,25 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Stake Logs - Only show when wallet is connected */}
+          {/* Staking Activity - Better Desktop Layout */}
           {isConnected && stakeLogs.length > 0 && (
-            <div className="mt-8 mb-10 bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 p-8 shadow-xl">
-              {/* Stake Logs Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center">
-                    <History className="w-6 h-6 text-blue-400" />
-                  </div>
+            <div className="animate-fade-in-up">
+              <div className="mb-6">
+                {/* Header - Enhanced */}
+                <div className="flex items-center justify-between mb-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-white">Staking Activity</h3>
-                    <p className="text-sm text-gray-500">Your recent staking transactions</p>
+                    <h3 className="text-lg lg:text-xl font-semibold text-white">Recent Activity</h3>
+                    <p className="text-sm text-gray-400">Your staking transactions</p>
                   </div>
+                  <span className="text-xs text-gray-500 bg-zinc-800/50 px-3 py-1 rounded-full">
+                    {stakeLogs.length} total
+                  </span>
                 </div>
-                <Button
-                  onClick={() => setShowStakeLogs(!showStakeLogs)}
-                  variant="ghost"
-                  size="sm"
-                  className="text-gray-400 hover:text-white"
-                >
-                  {showStakeLogs ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </Button>
-              </div>
 
-              {/* Stake Logs List */}
-              {showStakeLogs && (
-                <div className="space-y-3">
-                  {stakeLogs.slice(0, 5).map((log, index) => {
+                {/* Transactions List - Show 3 by default */}
+                <div className="space-y-3 lg:space-y-4">
+                  {stakeLogs.slice(0, showAllStakeLogs ? stakeLogs.length : 3).map((log, index) => {
                     const logDate = new Date(log.created_at || '');
-                    const isConfirmed = log.status === 'confirmed';
-                    const isPending = log.status === 'pending';
-                    const isFailed = log.status === 'failed';
-
                     const getActionIcon = (actionType: string) => {
                       switch (actionType) {
                         case 'stake': return <TrendingUp className="w-4 h-4 text-green-400" />;
@@ -352,37 +421,34 @@ export default function Dashboard() {
 
                     const getActionColor = (actionType: string) => {
                       switch (actionType) {
-                        case 'stake': return 'text-green-400';
-                        case 'unstake': return 'text-yellow-400';
-                        case 'claim_rewards': return 'text-blue-400';
-                        case 'emergency_withdraw': return 'text-red-400';
-                        default: return 'text-gray-400';
-                      }
-                    };
-
-                    const getStatusColor = (status: string) => {
-                      switch (status) {
-                        case 'confirmed': return 'bg-green-400';
-                        case 'pending': return 'bg-yellow-400';
-                        case 'failed': return 'bg-red-400';
-                        default: return 'bg-gray-400';
+                        case 'stake': return 'from-green-500/10 to-green-600/5 border-green-500/20 text-green-400';
+                        case 'unstake': return 'from-yellow-500/10 to-yellow-600/5 border-yellow-500/20 text-yellow-400';
+                        case 'claim_rewards': return 'from-blue-500/10 to-blue-600/5 border-blue-500/20 text-blue-400';
+                        case 'emergency_withdraw': return 'from-red-500/10 to-red-600/5 border-red-500/20 text-red-400';
+                        default: return 'from-gray-500/10 to-gray-600/5 border-gray-500/20 text-gray-400';
                       }
                     };
 
                     return (
-                      <div key={index} className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-4 rounded-xl border border-zinc-800 shadow-lg">
-                        <div className="flex items-center justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-zinc-800 border border-zinc-700">
+                      <div
+                        key={index}
+                        className={cn(
+                          "bg-gradient-to-br rounded-xl p-4 lg:p-6 border backdrop-blur-sm group hover:scale-[1.02] transition-all duration-200 animate-slide-in-right",
+                          getActionColor(log.action_type)
+                        )}
+                        style={{ animationDelay: `${index * 100}ms` }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3 lg:gap-4">
+                            <div className="p-2 rounded-lg bg-zinc-800/50 backdrop-blur-sm">
                               {getActionIcon(log.action_type)}
                             </div>
                             <div>
-                              <p className={`font-semibold capitalize ${getActionColor(log.action_type)}`}>
+                              <p className={cn("font-semibold capitalize text-sm lg:text-base", getActionColor(log.action_type).split(' ').pop())}>
                                 {log.action_type.replace('_', ' ')}
                               </p>
                               <p className="text-xs text-gray-400">
                                 {logDate.toLocaleDateString('en-US', { 
-                                  year: 'numeric', 
                                   month: 'short', 
                                   day: 'numeric',
                                   hour: '2-digit',
@@ -391,307 +457,131 @@ export default function Dashboard() {
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${getStatusColor(log.status)}`}></div>
-                            <span className="text-xs text-gray-400 capitalize">{log.status}</span>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between text-sm">
-                          <div className="flex items-center gap-4">
-                            {log.amount !== '0' && (
-                              <div>
-                                <p className="text-gray-400">Amount</p>
-                                <p className="font-semibold text-white">{parseFloat(log.amount).toFixed(2)} BBLIP</p>
-                              </div>
-                            )}
-                            {log.block_number && (
-                              <div>
-                                <p className="text-gray-400">Block</p>
-                                <p className="font-semibold text-white">#{log.block_number}</p>
-                              </div>
-                            )}
-                          </div>
                           
-                          <a
-                            href={`https://testnet.bscscan.com/tx/${log.transaction_hash}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300 transition-colors"
-                          >
-                            <span>View</span>
-                            <ExternalLink className="w-3 h-3" />
-                          </a>
-                        </div>
-
-                        {log.gas_used && log.gas_price && (
-                          <div className="mt-3 pt-3 border-t border-zinc-700">
-                            <div className="flex items-center justify-between text-xs text-gray-400">
-                              <span>Gas: {log.gas_used.toLocaleString()}</span>
-                              <span>Price: {ethers.formatUnits(log.gas_price, 'gwei')} Gwei</span>
-                            </div>
+                          <div className="flex items-center gap-3">
+                            {log.amount !== '0' && (
+                              <div className="text-right">
+                                <p className="font-bold text-white text-sm lg:text-base">{parseFloat(log.amount).toFixed(2)}</p>
+                                <p className="text-xs text-gray-400">BBLIP</p>
+                              </div>
+                            )}
+                            
+                            <a
+                              href={`https://testnet.bscscan.com/tx/${log.transaction_hash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-2 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 transition-colors"
+                            >
+                              <ExternalLink className="w-4 h-4 text-gray-400" />
+                            </a>
                           </div>
-                        )}
+                        </div>
                       </div>
                     );
                   })}
                 </div>
-              )}
 
-              {/* Show more link if there are more logs */}
-              {stakeLogs.length > 5 && (
-                <div className="mt-6 text-center">
-                  <Link href="/stake">
-                    <Button variant="ghost" size="sm" className="text-blue-400 hover:text-blue-300">
-                      View All Transactions
-                    </Button>
-                  </Link>
-                </div>
-              )}
+                {/* View All Link */}
+                {stakeLogs.length > 3 && (
+                  <div className="mt-6">
+                    <Link href="/stake">
+                      <Button
+                        variant="ghost"
+                        className="w-full text-yellow-400 transition-all duration-200 group"
+                      >
+                        <span>View All Transactions</span>
+                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                      </Button>
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
-          {/* No Transactions Message */}
+          {/* No Transactions State - Enhanced */}
           {isConnected && stakeLogs.length === 0 && (
-            <div className="mt-8 mb-10 bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 p-8 shadow-xl text-center">
-              <div className="w-16 h-16 rounded-2xl bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-                <History className="w-8 h-8 text-zinc-600" />
+            <div className="animate-fade-in-up">
+              <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-12 shadow-2xl text-center">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center mx-auto mb-6 animate-bounce">
+                  <History className="w-10 h-10 text-zinc-600" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-3">No Staking Activity Yet</h3>
+                <p className="text-gray-400 mb-8 max-w-md mx-auto">
+                  Start your staking journey today and earn rewards while supporting the network
+                </p>
+                <Link href="/stake">
+                  <Button className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 group">
+                    <Sparkles className="w-4 h-4 mr-2 group-hover:animate-spin" />
+                    Start Staking Now
+                  </Button>
+                </Link>
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">No Staking Activity</h3>
-              <p className="text-sm text-gray-500 mb-6">Start staking to see your transaction history</p>
-              <Link href="/stake">
-                <Button className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold">
-                  Start Staking
-                </Button>
-              </Link>
             </div>
           )}
 
-          {/* Referral System - Only show when wallet is connected */}
+          {/* Referral Section - Better Desktop Layout */}
           {isConnected && referralCode && (
-            <div className="mt-8 mb-10 bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-800 p-8 shadow-xl">
-              {/* Referral Header */}
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
-                    <Gift className="w-6 h-6 text-purple-400" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">Referral Program</h3>
-                    <p className="text-sm text-gray-500">Earn rewards by inviting friends</p>
-                  </div>
-                </div>
-                <Button
-                  onClick={() => setShowReferralSection(!showReferralSection)}
-                  variant="ghost"
-                  size="sm"
-                  className="text-gray-400 hover:text-white"
-                >
-                  {showReferralSection ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                </Button>
-              </div>
-
-              {/* Referral Stats */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-4 h-4 text-blue-400" />
-                    <span className="text-sm text-gray-400">Total Referrals</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">{referralStats.totalReferrals}</p>
-                </div>
-                
-                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Gift className="w-4 h-4 text-green-400" />
-                    <span className="text-sm text-gray-400">Tier 1 Rewards</span>
-                  </div>
-                  <p className="text-2xl font-bold text-green-400">{parseFloat(referralStats.tier1Rewards).toFixed(2)} BBLIP</p>
-                  <p className="text-xs text-gray-500">100+ BBLIP stakes</p>
-                </div>
-                
-                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Gift className="w-4 h-4 text-yellow-400" />
-                    <span className="text-sm text-gray-400">Tier 2 Rewards</span>
-                  </div>
-                  <p className="text-2xl font-bold text-yellow-400">{parseFloat(referralStats.tier2Rewards).toFixed(2)} BBLIP</p>
-                  <p className="text-xs text-gray-500">500+ BBLIP stakes</p>
-                </div>
-                
-                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Gift className="w-4 h-4 text-orange-400" />
-                    <span className="text-sm text-gray-400">Tier 3 Rewards</span>
-                  </div>
-                  <p className="text-2xl font-bold text-orange-400">{parseFloat(referralStats.tier3Rewards).toFixed(2)} BBLIP</p>
-                  <p className="text-xs text-gray-500">1000+ BBLIP stakes</p>
-                </div>
-                
-                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Gift className="w-4 h-4 text-red-400" />
-                    <span className="text-sm text-gray-400">Tier 4 Rewards</span>
-                  </div>
-                  <p className="text-2xl font-bold text-red-400">{parseFloat(referralStats.tier4Rewards).toFixed(2)} BBLIP</p>
-                  <p className="text-xs text-gray-500">2500+ BBLIP stakes</p>
-                </div>
-                
-                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Gift className="w-4 h-4 text-pink-400" />
-                    <span className="text-sm text-gray-400">Tier 5 Rewards</span>
-                  </div>
-                  <p className="text-2xl font-bold text-pink-400">{parseFloat(referralStats.tier5Rewards).toFixed(2)} BBLIP</p>
-                  <p className="text-xs text-gray-500">3500+ BBLIP stakes</p>
-                </div>
-                
-                <div className="bg-zinc-800/50 rounded-xl p-4 border border-zinc-700">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Share2 className="w-4 h-4 text-purple-400" />
-                    <span className="text-sm text-gray-400">Total Rewards</span>
-                  </div>
-                  <p className="text-2xl font-bold text-white">{parseFloat(referralStats.totalRewards).toFixed(2)} BBLIP</p>
-                  <p className="text-xs text-gray-500 font-mono">{referralCode.code}</p>
-                </div>
-              </div>
-
-              {/* Referral Details */}
-              {showReferralSection && (
-                <div className="space-y-4">
-                  {/* Referral Link */}
-                  <div className="bg-zinc-800/30 rounded-xl p-4 border border-zinc-700">
-                    <h4 className="text-sm font-semibold text-white mb-3">Your Referral Link</h4>
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="text"
-                        value={`${window.location.origin}?ref=${referralCode.code}`}
-                        readOnly
-                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-sm text-white font-mono"
-                      />
+            <div className="animate-fade-in-up">
+              <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-6 lg:p-8 shadow-lg">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                  {/* Left Side - Info */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center animate-pulse">
+                        <Gift className="w-6 h-6 text-yellow-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-white">Earn with Referrals</h3>
+                        <p className="text-sm text-gray-400">Invite friends, earn rewards together</p>
+                      </div>
+                    </div>
+                    
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-3 gap-4 mb-6">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-white">{referralStats.totalReferrals}</p>
+                        <p className="text-xs text-gray-400">Friends Referred</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-yellow-400">{parseFloat(referralStats.totalRewards).toFixed(0)}</p>
+                        <p className="text-xs text-gray-400">BBLIP Earned</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-yellow-400">5</p>
+                        <p className="text-xs text-gray-400">Reward Tiers</p>
+                      </div>
+                    </div>
+                    
+                    {/* Referral Code - Minimal */}
+                    <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl p-3 flex items-center gap-3 group/code">
+                      <p className="text-sm text-gray-400">Your referral link:</p>
+                      <p className="font-mono font-bold text-yellow-400">{referralCode.code}</p>
                       <Button
                         onClick={() => {
-                          navigator.clipboard.writeText(`${window.location.origin}?ref=${referralCode.code}`);
+                          navigator.clipboard.writeText(`http://localhost:3000?ref=${referralCode.code}`);
                           toast.success('Referral link copied!');
                         }}
                         size="sm"
-                        variant="outline"
-                        className="bg-zinc-800 border-zinc-700 text-gray-300 hover:bg-zinc-700"
+                        variant="ghost"
+                        className="ml-auto text-yellow-400 hover:text-yellow-300"
                       >
                         <Copy className="w-4 h-4" />
                       </Button>
-                      <Button
-                        onClick={() => {
-                          const url = `${window.location.origin}?ref=${referralCode.code}`;
-                          if (navigator.share) {
-                            navigator.share({
-                              title: 'Join BBLIP Card Program',
-                              text: 'Get your exclusive crypto cards with my referral link!',
-                              url: url
-                            });
-                          } else {
-                            navigator.clipboard.writeText(url);
-                            toast.success('Referral link copied!');
-                          }
-                        }}
-                        size="sm"
-                        variant="outline"
-                        className="bg-zinc-800 border-zinc-700 text-gray-300 hover:bg-zinc-700"
-                      >
-                        <Share2 className="w-4 h-4" />
-                      </Button>
                     </div>
                   </div>
-
-                  {/* How it works */}
-                  <div className="bg-gradient-to-br from-purple-500/10 to-blue-500/10 rounded-xl p-4 border border-purple-500/20">
-                    <h4 className="text-sm font-semibold text-white mb-4">Tiered Referral Reward System</h4>
-                    
-                    {/* Tier 1 */}
-                    <div className="mb-4 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-3 h-3 rounded-full bg-green-400"></div>
-                        <h5 className="text-sm font-semibold text-green-400">Tier 1 (100+ BBLIP Stake)</h5>
-                      </div>
-                      <p className="text-xs text-gray-300 mb-1">Referrer gets: <span className="text-green-400 font-semibold">10 BBLIP</span></p>
-                      <p className="text-xs text-gray-300">Referred gets: <span className="text-green-400 font-semibold">5 BBLIP</span></p>
-                    </div>
-
-                    {/* Tier 2 */}
-                    <div className="mb-4 p-3 bg-yellow-500/10 rounded-lg border border-yellow-500/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
-                        <h5 className="text-sm font-semibold text-yellow-400">Tier 2 (500+ BBLIP Stake)</h5>
-                      </div>
-                      <p className="text-xs text-gray-300 mb-1">Referrer gets: <span className="text-yellow-400 font-semibold">+50 BBLIP</span></p>
-                      <p className="text-xs text-gray-300">Referred gets: <span className="text-yellow-400 font-semibold">+25 BBLIP</span></p>
-                    </div>
-
-                    {/* Tier 3 */}
-                    <div className="mb-4 p-3 bg-orange-500/10 rounded-lg border border-orange-500/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-3 h-3 rounded-full bg-orange-400"></div>
-                        <h5 className="text-sm font-semibold text-orange-400">Tier 3 (1000+ BBLIP Stake)</h5>
-                      </div>
-                      <p className="text-xs text-gray-300 mb-1">Referrer gets: <span className="text-orange-400 font-semibold">+100 BBLIP</span></p>
-                      <p className="text-xs text-gray-300">Referred gets: <span className="text-orange-400 font-semibold">+50 BBLIP</span></p>
-                    </div>
-
-                    {/* Tier 4 */}
-                    <div className="mb-4 p-3 bg-red-500/10 rounded-lg border border-red-500/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-3 h-3 rounded-full bg-red-400"></div>
-                        <h5 className="text-sm font-semibold text-red-400">Tier 4 (2500+ BBLIP Stake)</h5>
-                      </div>
-                      <p className="text-xs text-gray-300 mb-1">Referrer gets: <span className="text-red-400 font-semibold">+250 BBLIP</span></p>
-                      <p className="text-xs text-gray-300">Referred gets: <span className="text-red-400 font-semibold">+125 BBLIP</span></p>
-                    </div>
-
-                    {/* Tier 5 */}
-                    <div className="mb-4 p-3 bg-pink-500/10 rounded-lg border border-pink-500/20">
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-3 h-3 rounded-full bg-pink-400"></div>
-                        <h5 className="text-sm font-semibold text-pink-400">Tier 5 (3500+ BBLIP Stake)</h5>
-                      </div>
-                      <p className="text-xs text-gray-300 mb-1">Referrer gets: <span className="text-pink-400 font-semibold">+350 BBLIP</span></p>
-                      <p className="text-xs text-gray-300">Referred gets: <span className="text-pink-400 font-semibold">+175 BBLIP</span></p>
-                    </div>
-
-                    <div className="space-y-2 text-sm text-gray-300">
-                      <div className="flex items-start gap-2">
-                        <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
-                        <p>Share your referral link with friends</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
-                        <p>When they stake 100+ BBLIP, both earn Tier 1 rewards</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
-                        <p>Higher stake amounts unlock higher tier rewards (up to Tier 5)</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
-                        <p>Each tier adds to the previous rewards (cumulative)</p>
-                      </div>
-                      <div className="flex items-start gap-2">
-                        <div className="w-2 h-2 rounded-full bg-purple-400 mt-2 flex-shrink-0"></div>
-                        <p>Rewards are based on their highest stake balance ever reached</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* View All Referrals Button */}
-                  <div className="text-center pt-4">
+                  
+                  {/* Right Side - CTA */}
+                  <div className="lg:w-64">
                     <Link href="/referral">
-                      <Button className="bg-purple-600 hover:bg-purple-700 text-white">
-                        <Users className="w-4 h-4 mr-2" />
-                        View All Referrals
+                      <Button className="bg-yellow-400 w-full text-black shadow-lg transition-all duration-200 group/btn">
+                        <span>View Referral Program</span>
+                        <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
           )}
         </div>

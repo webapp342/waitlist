@@ -67,8 +67,8 @@ export default function CTA() {
           text="Spend Crypto."
         />
 
-        <div className="flex items-center justify-center text-5xl font-medium tracking-tighter sm:text-6xl">
-          <AnimatedShinyText>Anywhere.</AnimatedShinyText>
+        <div className="flex items-center justify-center text-yellow-200 text-5xl font-medium tracking-tighter sm:text-6xl">
+         Anywhere.
         </div>
       </div>
       

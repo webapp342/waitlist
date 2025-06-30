@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Button } from "./ui/button";
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { Menu, LogOut } from "lucide-react";
+import { Menu, LogOut, Gift } from "lucide-react";
 import { useState } from "react";
 import { useAccount, useDisconnect } from 'wagmi';
 import { useRouter } from 'next/navigation';
@@ -72,6 +72,13 @@ export default function Header() {
               className="text-base font-medium text-zinc-400 hover:text-yellow-200 transition-colors"
             >
               Stake
+            </Link>
+            <Link 
+              href="/referral" 
+              className="text-base font-medium text-zinc-400 hover:text-yellow-200 transition-colors flex items-center gap-2"
+            >
+              <Gift size={16} />
+              Referral
             </Link>
           </motion.nav>
         </div>
@@ -145,6 +152,14 @@ export default function Header() {
                 onClick={() => setIsMenuOpen(false)}
               >
                 Stake
+              </Link>
+              <Link 
+                href="/referral" 
+                className="text-base font-medium text-zinc-300 hover:text-yellow-200 transition-colors px-2 py-1.5 rounded-lg hover:bg-white/5 flex items-center gap-2"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Gift size={16} />
+                Referral
               </Link>
             </nav>
             
