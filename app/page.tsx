@@ -19,6 +19,8 @@ import FeaturesGridSecond from "@/components/features-grid-second";
 import FeaturesGridThird from "@/components/features-grid-third";
 import RewardsMarket from '@/components/rewards-market';
 import SecurityFeatures from '@/components/security-features';
+import TokenomicsSection from '@/components/tokenomics-section';
+import RoadmapSection from '@/components/roadmap-section';
 import { userService, referralService } from '@/lib/supabase';
 import { toast } from 'sonner';
 
@@ -119,9 +121,13 @@ export default function Home() {
         {/* Features Grid */}
         <FeaturesGrid />
 
+        {/* Tokenomics Section */}
+        <TokenomicsSection />
 
         <SecurityFeatures />
 
+        {/* Roadmap Section */}
+        <RoadmapSection />
 
         <FeaturesGridSecond />
 

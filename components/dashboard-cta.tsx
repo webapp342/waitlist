@@ -14,6 +14,7 @@ import { userService, cardService, Card } from '@/lib/supabase';
 import { UserData } from '@/types';
 import { ethers } from 'ethers';
 import CreditCard from './CreditCard';
+import CardPrioritiesModal from "./ui/card-priorities-modal";
 
 interface DashboardCTAProps {
   userData: UserData;
@@ -477,6 +478,10 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
     return `${mm}/${yy}`;
   };
 
+
+  const [showPrioritiesModal, setShowPrioritiesModal] = useState(false);
+
+
   return (
     <motion.div
       className="flex w-full max-w-2xl flex-col mt-10 gap-2"
@@ -562,13 +567,15 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
                      </p>
                    </div>
                  </div>
-                <EnhancedButton
-                  onClick={() => window.location.href = '/asset-priorities'}
-                  size="sm" variant="ghost" className="text-green-300 hover:text-green-200 hover:bg-green-500/10"
+                 <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowPrioritiesModal(true);
+                  }}
+                  className="px-3 py-1 text-xs font-semibold text-white bg-green-500/20 hover:bg-green-500/30 rounded-full transition-colors"
                 >
-                  <Settings className="w-3 h-3 mr-1" />
                   Set Priorities
-                </EnhancedButton>
+                </button>
               </div>
             </div>
           )}
@@ -697,6 +704,12 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
           </div>
         </div>
       )}
+
+      <CardPrioritiesModal
+        isOpen={showPrioritiesModal}
+        onClose={() => setShowPrioritiesModal(false)}
+        cardType={userCards[currentCardIndex]?.card_type as 'bronze' | 'silver' | 'black'}
+      />
     </motion.div>
   );
 } 

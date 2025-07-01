@@ -66,8 +66,7 @@ export default function CTA() {
           className="text-center text-5xl font-medium tracking-tighter sm:text-6xl"
           text="Spend Any Crypto."
         />
-
-        <div className="flex items-center justify-center text-yellow-200 text-5xl font-medium tracking-tighter sm:text-6xl">
+        <div className="flex items-center justify-center text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-600 text-5xl font-medium tracking-tighter sm:text-6xl">
          Anywhere.
         </div>
       </div>

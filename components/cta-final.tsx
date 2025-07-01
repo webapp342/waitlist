@@ -95,7 +95,7 @@ export default function CTAFinal() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-4xl md:text-5xl lg:text-6xl font-bold mb-4"
+              className="text-4xl md:text-5xl lg:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-600 font-bold mb-4"
             >
               Join the Revolution.
             </motion.h2>

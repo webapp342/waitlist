@@ -191,10 +191,24 @@ CREATE OR REPLACE FUNCTION generate_card_number() RETURNS VARCHAR AS $$
 DECLARE
     card_number VARCHAR(16);
     is_unique BOOLEAN := FALSE;
+    prefix VARCHAR(6);
+    account_number VARCHAR(9);
+    check_digit VARCHAR(1);
 BEGIN
     WHILE NOT is_unique LOOP
-        -- Generate a 16-digit card number
-        card_number := LPAD(FLOOR(RANDOM() * 10000000000000000)::TEXT, 16, '0');
+        -- Generate a card number with proper structure:
+        -- First 6 digits: IIN/BIN (Issuer Identification Number)
+        -- Use a fixed prefix for each tier to make it look more realistic
+        prefix := '422345'; -- Using a fake BIN that looks realistic
+        
+        -- Generate 9 digits for account number
+        account_number := LPAD(FLOOR(RANDOM() * 1000000000)::TEXT, 9, '0');
+        
+        -- Generate check digit (Luhn algorithm would go here in production)
+        check_digit := FLOOR(RANDOM() * 10)::TEXT;
+        
+        -- Combine all parts
+        card_number := prefix || account_number || check_digit;
         
         -- Check if it's unique across all card number columns
         SELECT NOT EXISTS (

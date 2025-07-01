@@ -16,7 +16,7 @@ export default function SecurityFeatures() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-4xl md:text-5xl font-bold mb-6"
+              className="text-4xl md:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-600 font-bold mb-6"
             >
               YOUR MONEY&apos;S<br />SAFE SPACE
             </motion.h2>
@@ -42,7 +42,7 @@ export default function SecurityFeatures() {
             className="flex justify-center md:justify-end w-full"
           >
             <div className="relative w-32 -h-10 -mb-20 md:mb-0 md:w-[420px] md:h-[420px] flex items-center justify-center">
-              <Shield className="hidden md:block -mt-20 w-48 h-48 md:w-64 md:h-64 text-yellow-200" strokeWidth={1.5} />
+              <Shield className="hidden md:block -mt-20 w-48 h-48 md:w-64 md:h-64 text-yellow-200 w-200 " strokeWidth={1.5} />
             </div>
           </motion.div>
         </div>

@@ -11,12 +11,15 @@ import { cn } from "@/lib/utils";
 import Link from 'next/link';
 import { useWallet } from '@/hooks/useWallet';
 import { ethers } from 'ethers';
-import { ArrowLeft, ChevronDown, ChevronUp, Info, Zap, TrendingUp, Shield, Clock, DollarSign, History, ExternalLink } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Info, Zap, TrendingUp, Shield, Clock, DollarSign, History, ExternalLink, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 import WalletModal from '@/components/WalletModal';
 import { userService, cardService, stakeLogsService } from '@/lib/supabase';
 import { useChainId } from 'wagmi';
 import { StakeLog } from '@/lib/supabase';
 import Image from 'next/image';
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { TransactionStatus, type TransactionStatus as TxStatus } from "@/components/ui/transaction-status";
+import { TransactionModal } from "@/components/ui/transaction-modal";
 
 // Card stake requirements
 const CARD_REQUIREMENTS = {
@@ -93,6 +96,21 @@ const metallicTextStyles = `
   animation: shine 3s linear infinite;
 `;
 
+interface ErrorModalType {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  showPurchaseButton?: boolean;
+  purchaseAmount?: number;
+}
+
+interface StakeTransaction {
+  status: TxStatus;
+  message: string;
+  type: 'stake' | 'unstake' | 'claim' | 'approve';
+  stakedAmount?: string;
+}
+
 function StakeContent() {
   const { isConnected, address, chain } = useAccount();
   const chainId = useChainId();
@@ -105,6 +123,15 @@ function StakeContent() {
   const [stakeLogs, setStakeLogs] = useState<StakeLog[]>([]);
   const [showStakeLogs, setShowStakeLogs] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [errorModal, setErrorModal] = useState<ErrorModalType>({
+    isOpen: false,
+    title: '',
+    message: '',
+    showPurchaseButton: false,
+    purchaseAmount: 0
+  });
+  const [userInteracted, setUserInteracted] = useState(false);
+  const [currentTransaction, setCurrentTransaction] = useState<StakeTransaction | null>(null);
   
   const { 
     walletState, 
@@ -202,22 +229,294 @@ function StakeContent() {
     }
   };
 
-  // Handle approve and stake process
+  // Helper function to format error messages
+  const formatErrorMessage = (error: any) => {
+    if (!error) return { title: 'Error', message: 'An unknown error occurred' };
+
+    // Ignore provider initialization errors
+    if (error.message?.includes('invalid EIP-1193 provider') || 
+        error.message?.includes('window.ethereum is undefined')) {
+      return null;
+    }
+
+    // Check for insufficient balance
+    if (!hasEnoughBalance() && stakeAmount) {
+      return {
+        title: 'Insufficient BBLIP Balance',
+        message: `You need ${parseFloat(stakeAmount).toFixed(2)} BBLIP for staking.\nYour current balance: ${formatTokenAmount(userData.tokenBalance)} BBLIP`,
+        showPurchaseButton: true,
+        purchaseAmount: parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))
+      };
+    }
+
+    // Check for common error types
+    if (error.code === 'CALL_EXCEPTION') {
+      return {
+        title: 'Transaction Failed',
+        message: 'The transaction could not be completed. This might be due to:\n\n' +
+                '• Insufficient gas fees\n' +
+                '• Smart contract restrictions\n' +
+                '• Network congestion\n\n' +
+                'Please try again or contact support if the issue persists.'
+      };
+    }
+
+    if (error.code === 'ACTION_REJECTED') {
+      return {
+        title: 'Transaction Rejected',
+        message: 'You have rejected the transaction in your wallet.'
+      };
+    }
+
+    // Check for specific error messages
+    if (error.message?.includes('insufficient funds')) {
+      return {
+        title: 'Insufficient BNB Balance',
+        message: 'You do not have enough BNB to cover the transaction fees. Please add more BNB to your wallet and try again.'
+      };
+    }
+
+    if (error.message?.includes('user rejected')) {
+      return {
+        title: 'Transaction Cancelled',
+        message: 'You cancelled the transaction in your wallet.'
+      };
+    }
+
+    // Default error message
+    return {
+      title: 'Transaction Error',
+      message: error.message || 'Something went wrong with your transaction. Please try again.'
+    };
+  };
+
+  // Add function to handle transaction modal close
+  const handleTransactionModalClose = () => {
+    if (currentTransaction?.status === 'completed' || currentTransaction?.status === 'failed') {
+      setCurrentTransaction(null);
+    }
+  };
+
+  // Update handleUnstake
+  const handleUnstake = async (stakeId: string) => {
+    try {
+      setUserInteracted(true);
+      const stake = userData.stakes.find((s: any) => s.stakeId === stakeId);
+      if (stake) {
+        const stakeTimestamp = Number(stake.timestamp);
+        const currentTime = Math.floor(Date.now() / 1000);
+        const stakingPeriod = currentTime - stakeTimestamp;
+        const minPeriod = Number(userData.minimumStakingPeriod);
+        
+        if (stakingPeriod < minPeriod) {
+          const remainingTime = minPeriod - stakingPeriod;
+          const remainingDays = Math.ceil(remainingTime / 86400);
+          setErrorModal({
+            isOpen: true,
+            title: 'Cannot Unstake Yet',
+            message: `You need to wait ${remainingDays} more days before unstaking. This helps maintain the stability of the staking pool.`
+          });
+          return;
+        }
+      }
+
+      setCurrentTransaction({
+        status: 'pending',
+        message: 'Initiating unstake transaction...',
+        type: 'unstake'
+      });
+      
+      const success = await unstakeTokens(stakeId);
+      
+      if (!success) {
+        throw new Error('Unstake transaction failed');
+      }
+      
+      setCurrentTransaction({
+        status: 'completed',
+        message: 'Unstake successful!',
+        type: 'unstake'
+      });
+      
+    } catch (error: any) {
+      console.error('Unstaking error:', error);
+      setCurrentTransaction({
+        status: 'failed',
+        message: 'Unstake failed. Please try again.',
+        type: 'unstake'
+      });
+      
+      const formattedError = formatErrorMessage(error);
+      if (formattedError) {
+        setErrorModal({
+          isOpen: true,
+          ...formattedError
+        });
+      }
+    }
+  };
+
+  // Update handleApproveAndStake
   const handleApproveAndStake = async () => {
     if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
+      setErrorModal({
+        isOpen: true,
+        title: 'Invalid Amount',
+        message: 'Please enter a valid staking amount'
+      });
       return;
     }
 
     try {
-      const approveSuccess = await approveTokens(stakeAmount);
-      if (approveSuccess) {
-        await stakeTokens(stakeAmount);
-        setStakeAmount('');
+      setUserInteracted(true);
+
+      // Check balance before trying to stake
+      if (!hasEnoughBalance()) {
+        const error = {
+          message: 'insufficient_balance',
+          stakeAmount,
+          currentBalance: userData.tokenBalance
+        };
+        throw error;
       }
-    } catch (error) {
-      console.error('Approve and stake error:', error);
+
+      // Check allowance first
+      setCurrentTransaction({
+        status: 'pending',
+        message: 'Checking allowance...',
+        type: 'approve'
+      });
+      
+      const allowance = await getAllowance();
+      const amountInWei = ethers.parseEther(stakeAmount);
+      const allowanceInWei = ethers.parseEther(allowance);
+      
+      // Approve if needed
+      if (allowanceInWei < amountInWei) {
+        setCurrentTransaction({
+          status: 'pending',
+          message: 'Approving tokens...',
+          type: 'approve'
+        });
+        
+        const approveSuccess = await approveTokens(stakeAmount);
+        
+        if (!approveSuccess) {
+          throw new Error('Token approval failed');
+        }
+        
+        setCurrentTransaction({
+          status: 'completed',
+          message: 'Token approval successful',
+          type: 'approve'
+        });
+
+        // Short delay before starting stake transaction
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+
+      // Stake tokens
+      setCurrentTransaction({
+        status: 'pending',
+        message: 'Initiating staking transaction...',
+        type: 'stake'
+      });
+      
+      const stakeSuccess = await stakeTokens(stakeAmount);
+      
+      if (!stakeSuccess) {
+        throw new Error('Staking transaction failed');
+      }
+
+      // Calculate new total staked amount
+      const newTotalStaked = (parseFloat(userData.stakedAmount) + parseFloat(stakeAmount)).toString();
+      
+      setCurrentTransaction({
+        status: 'completed',
+        message: 'Staking successful!',
+        type: 'stake',
+        stakedAmount: newTotalStaked
+      });
+      
+      // Clear input
+      setStakeAmount('');
+      
+    } catch (error: any) {
+      console.error('Staking error:', error);
+      setCurrentTransaction({
+        status: 'failed',
+        message: 'Transaction failed. Please try again.',
+        type: currentTransaction?.type || 'stake'
+      });
+      
+      const formattedError = formatErrorMessage(error);
+      if (formattedError) {
+        setErrorModal({
+          isOpen: true,
+          ...formattedError
+        });
+      }
     }
   };
+
+  // Update handleClaimRewards
+  const handleClaimRewards = async () => {
+    try {
+      setCurrentTransaction({
+        status: 'pending',
+        message: 'Initiating claim transaction...',
+        type: 'claim'
+      });
+      
+      const success = await claimRewards();
+      
+      if (!success) {
+        throw new Error('Claim transaction failed');
+      }
+      
+      setCurrentTransaction({
+        status: 'completed',
+        message: 'Rewards claimed successfully!',
+        type: 'claim'
+      });
+      
+    } catch (error: any) {
+      console.error('Claim error:', error);
+      setCurrentTransaction({
+        status: 'failed',
+        message: 'Claim failed. Please try again.',
+        type: 'claim'
+      });
+      
+      const formattedError = formatErrorMessage(error);
+      if (formattedError) {
+        setErrorModal({
+          isOpen: true,
+          ...formattedError
+        });
+      }
+    }
+  };
+
+  // Update error effect to only show errors after user interaction
+  useEffect(() => {
+    if (userInteracted && walletState.error) {
+      const formattedError = formatErrorMessage({ message: walletState.error });
+      if (formattedError) {
+        setErrorModal({
+          isOpen: true,
+          ...formattedError
+        });
+      }
+    }
+  }, [walletState.error, userInteracted]);
+
+  // Reset userInteracted when component unmounts
+  useEffect(() => {
+    return () => {
+      setUserInteracted(false);
+    };
+  }, []);
 
   // Handle presale button click
   const handlePresaleClick = () => {
@@ -254,41 +553,6 @@ function StakeContent() {
   };
 
   const estimatedRewards = calculateEstimatedRewards();
-
-  // Handle unstake
-  const handleUnstake = async (stakeId: string) => {
-    try {
-      const stake = userData.stakes.find((s: any) => s.stakeId === stakeId);
-      if (stake) {
-        const stakeTimestamp = Number(stake.timestamp);
-        const currentTime = Math.floor(Date.now() / 1000);
-        const stakingPeriod = currentTime - stakeTimestamp;
-        const minPeriod = Number(userData.minimumStakingPeriod);
-        
-        if (stakingPeriod < minPeriod) {
-          const remainingTime = minPeriod - stakingPeriod;
-          const remainingDays = Math.ceil(remainingTime / 86400);
-          console.warn(`Cannot unstake yet. Need to wait ${remainingDays} more days`);
-        }
-      }
-      
-      const stakeIdNumber = parseInt(stakeId);
-      const result = await unstakeTokens(stakeIdNumber.toString());
-      console.log('Unstake result:', result);
-    } catch (error: any) {
-      console.error('Unstake error:', error);
-    }
-  };
-
-  // Handle emergency withdraw
-  const handleEmergencyWithdraw = async (stakeId: string) => {
-    try {
-      const result = await emergencyWithdraw(stakeId);
-      console.log('Emergency withdraw result:', result);
-    } catch (error) {
-      console.error('Emergency withdraw error:', error);
-    }
-  };
 
   // Calculate user's staking status
   const totalStaked = parseFloat(formatTokenAmount(userData.stakedAmount));
@@ -437,6 +701,8 @@ function StakeContent() {
               <div className="relative">
                 <Input
                   type="number"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   placeholder="1000"
                   value={stakeAmount}
                   onChange={(e) => setStakeAmount(e.target.value)}
@@ -449,65 +715,14 @@ function StakeContent() {
               </div>
 
               {/* Professional Insufficient Balance Design - Only show when wallet is connected */}
-              {isConnected && stakeAmount && !hasEnoughBalance() && (
-                <div className="mt-4 p-4 rounded-xl bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-400/20">
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center justify-center mt-0.5 flex-shrink-0">
-                      <Info className="w-3 h-3 text-orange-400" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="text-sm font-medium text-orange-200 mb-2">Insufficient Balance</h4>
-                   
-                      
-                      <Link 
-                        href={`/presale?amount=${parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))}`}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-orange-500/20 hover:bg-orange-500/30 border border-orange-400/30 text-orange-200 hover:text-orange-100 transition-all duration-200 text-sm font-medium"
-                      >
-                        <DollarSign className="w-4 h-4" />
-                        Purchase {(parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))).toFixed(2)} BBLIP
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Estimated Rewards Section - Show always for information */}
-            <div className="p-4 md:p-6 rounded-2xl bg-gradient-to-br from-zinc-900/80 to-zinc-950/80 border border-zinc-700 mb-6 shadow-lg">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-green-400/10 border border-green-400/20">
-                  <TrendingUp className="w-4 h-4 text-green-400" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-white">Estimated Rewards</h3>
-                  <p className="text-xs text-gray-500">10% APR calculated returns</p>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-6">
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
-                    <p className="text-xs text-gray-400 font-medium">Daily</p>
-                  </div>
-                  <p className="text-lg md:text-xl font-bold text-blue-400 mb-1">{estimatedRewards.daily.toFixed(4)}</p>
-                  <p className="text-xs text-gray-500">~${estimatedRewards.dailyUSD.toFixed(2)} USD</p>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center gap-2 mb-2">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
-                    <p className="text-xs text-gray-400 font-medium">Yearly</p>
-                  </div>
-                  <p className="text-lg md:text-xl font-bold text-green-400 mb-1">{estimatedRewards.yearly.toFixed(2)}</p>
-                  <p className="text-xs text-gray-500">~${estimatedRewards.yearlyUSD.toFixed(2)} USD</p>
-                </div>
-              </div>
+           
             </div>
 
             {/* Stake Button - Conditional Based on Wallet Connection */}
             {!isConnected ? (
               <Button
                 className={cn(
-                  "w-full h-12 md:h-14 font-semibold text-black",
+                  "w-full h-12 md:h-14 font-semibold text-black mt-6",
                   "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400",
                   "hover:from-yellow-300 hover:via-yellow-200 hover:to-yellow-300",
                   "shadow-lg shadow-yellow-400/25 hover:shadow-yellow-400/40",
@@ -516,37 +731,71 @@ function StakeContent() {
                 size="lg"
                 onClick={() => setShowWalletModal(true)}
               >
-                <div className="flex items-center gap-2">
+                <div className="flex items-center justify-center w-full gap-2">
                   <Zap className="w-4 h-4" />
                   <span className="text-sm md:text-base">Connect Wallet to Stake</span>
                 </div>
               </Button>
             ) : (
-              <Button
-                className={cn(
-                  "w-full h-12 md:h-14 font-semibold text-black",
-                  "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400",
-                  "hover:from-yellow-300 hover:via-yellow-200 hover:to-yellow-300",
-                  "shadow-lg shadow-yellow-400/25 hover:shadow-yellow-400/40",
-                  "transition-all duration-300 transform hover:scale-[1.02]",
-                  "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+              <>
+                <Button
+                  onClick={handleApproveAndStake}
+                  disabled={!stakeAmount || parseFloat(stakeAmount) <= 0 || walletState.loading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900"
+                >
+                  {walletState.loading ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <Zap className="w-4 h-4 mr-2" />
+                  )}
+                  Stake Now
+                </Button>
+
+                {stakeAmount && !hasEnoughBalance() && (
+                  <Button
+                    asChild
+                    variant="outline"
+                    className="w-full mt-3 bg-transparent border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all duration-200"
+                  >
+                    <Link href={`/presale?amount=${parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))}`}>
+                      Purchase {(parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))).toFixed(2)} BBLIP
+                    </Link>
+                  </Button>
                 )}
-                size="lg"
-                disabled={!hasEnoughBalance() || walletState.loading}
-                onClick={handleApproveAndStake}
-              >
-                {walletState.loading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                    <span className="text-sm md:text-base">Processing...</span>
+              </>
+            )}
+
+            {/* Estimated Rewards Section - Show always for information */}
+            {stakeAmount && parseFloat(stakeAmount) > 0 && (
+              <div className="mt-4 p-4 rounded-xl border border-zinc-800/50">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 rounded-lg bg-green-400/10 border border-green-400/20">
+                    <TrendingUp className="w-4 h-4 text-green-400" />
                   </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    <span className="text-sm md:text-base">Approve & Stake</span>
+                  <div>
+                    <h3 className="text-sm font-semibold text-white">Estimated Rewards</h3>
+                    <p className="text-xs text-gray-500">10% APR calculated returns</p>
                   </div>
-                )}
-              </Button>
+                </div>
+                <div className="grid grid-cols-2 gap-6">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
+                      <p className="text-xs text-gray-400 font-medium">Daily</p>
+                    </div>
+                    <p className="text-lg md:text-xl font-bold text-blue-400 mb-1">{estimatedRewards.daily.toFixed(4)}</p>
+                    <p className="text-xs text-gray-500">~${estimatedRewards.dailyUSD.toFixed(2)} USD</p>
+                  </div>
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-2 mb-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
+                      <p className="text-xs text-gray-400 font-medium">Yearly</p>
+                    </div>
+                    <p className="text-lg md:text-xl font-bold text-green-400 mb-1">{estimatedRewards.yearly.toFixed(2)}</p>
+                    <p className="text-xs text-gray-500">~${estimatedRewards.yearlyUSD.toFixed(2)} USD</p>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
@@ -571,7 +820,7 @@ function StakeContent() {
                 </div>
                 
                 <Button
-                  onClick={claimRewards}
+                  onClick={handleClaimRewards}
                   disabled={walletState.loading}
                   className={cn(
                     "font-semibold text-black px-4 md:px-6",
@@ -940,6 +1189,70 @@ function StakeContent() {
         open={showWalletModal} 
         onClose={() => setShowWalletModal(false)} 
       />
+
+      {/* Error Modal with Purchase Button */}
+      {errorModal.title && errorModal.message && (
+        <Dialog open={errorModal.isOpen} onOpenChange={(isOpen: boolean) => setErrorModal(prev => ({ ...prev, isOpen }))}>
+          <DialogContent className="bg-zinc-900 border border-red-500/20 p-6">
+            <div className="absolute top-4 right-4">
+              <button
+                onClick={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
+                className="text-gray-400 hover:text-gray-300 transition-colors"
+              >
+                <XCircle className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
+                <AlertCircle className="w-6 h-6 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">{errorModal.title}</h3>
+                <p className="text-sm text-gray-400">Transaction Error Details</p>
+              </div>
+            </div>
+
+            <div className="mt-4 p-4 rounded-lg bg-red-500/5 border border-red-500/10">
+              <p className="text-sm text-gray-300 whitespace-pre-line">
+                {errorModal.message}
+              </p>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              {errorModal.showPurchaseButton && errorModal.purchaseAmount && (
+                <Button
+                  asChild
+                  className="flex-1 bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-red-200 hover:text-red-100 transition-all duration-200"
+                >
+                  <Link href={`/presale?amount=${errorModal.purchaseAmount.toFixed(2)}`}>
+                    Purchase {errorModal.purchaseAmount.toFixed(2)} BBLIP
+                  </Link>
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                className="border-red-500/20 text-red-400 hover:bg-red-500/10"
+                onClick={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
+              >
+                Close
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Add Transaction Modal */}
+      {currentTransaction && (
+        <TransactionModal
+          isOpen={true}
+          onClose={handleTransactionModalClose}
+          status={currentTransaction.status}
+          message={currentTransaction.message}
+          type={currentTransaction.type}
+          stakedAmount={currentTransaction.stakedAmount}
+        />
+      )}
     </>
   );
 }

@@ -104,7 +104,7 @@ export default function Testimonials() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white mb-6">
+          <h2 className="text-3xl sm:text-4xl lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-600 font-bold mb-6">
             Users. Unfiltered.
           </h2>
           <p className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto leading-relaxed">
