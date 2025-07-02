@@ -2,6 +2,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { FaTimes, FaLock, FaEye, FaEyeSlash, FaShieldAlt, FaCheck } from 'react-icons/fa';
 import { validatePasswordStrength } from '@/lib/auth';
+import { useDisconnect } from 'wagmi';
+import { toast } from 'sonner';
 
 interface PasswordModalProps {
   open: boolean;
@@ -18,6 +20,7 @@ export default function PasswordModal({
   onPasswordSubmit,
   walletAddress 
 }: PasswordModalProps) {
+  const { disconnect } = useDisconnect();
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -73,6 +76,13 @@ export default function PasswordModal({
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDisconnect = () => {
+    disconnect();
+    localStorage.removeItem('bblip_auth_token');
+    toast.success("Wallet disconnected successfully!");
+    onClose();
   };
 
   const getStrengthColor = () => {
@@ -272,18 +282,40 @@ export default function PasswordModal({
                 <button
                   type="submit"
                   disabled={loading}
-                  className={`w-full py-3 px-4 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-medium rounded-xl transition-all transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-                    loading ? 'animate-pulse' : ''
-                  }`}
+                  className="w-full bg-yellow-400 hover:bg-yellow-500 text-black font-medium py-3 rounded-xl transition-colors relative overflow-hidden"
                 >
-                  {loading ? 'Processing...' : mode === 'set' ? 'Set Password' : 'Verify Password'}
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <motion.span
+                        className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full inline-block"
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                      />
+                      Verifying...
+                    </span>
+                  ) : (
+                    'Verify Password'
+                  )}
                 </button>
 
-                {/* Footer Text */}
+                {/* Forgot Password and Disconnect Section - Only show in verify mode */}
                 {mode === 'verify' && (
-                  <p className="text-xs text-zinc-500 text-center mt-4">
-                    Forgot your password? Disconnect and reconnect your wallet to reset.
-                  </p>
+                  <div className="pt-4 space-y-3 border-t border-zinc-800">
+                    <p className="text-sm text-zinc-400 text-center">
+                      Forgot your password? Contact{' '}
+                      <a href="mailto:help@bblip.io" className="text-yellow-400 hover:text-yellow-300 transition-colors">
+                        help@bblip.io
+                      </a>
+                    </p>
+                    <button
+                      type="button"
+                      onClick={handleDisconnect}
+                      className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 font-medium py-2.5 rounded-xl transition-colors flex items-center justify-center gap-2"
+                    >
+                      <FaTimes className="w-4 h-4" />
+                      Disconnect Wallet
+                    </button>
+                  </div>
                 )}
               </form>
             </div>

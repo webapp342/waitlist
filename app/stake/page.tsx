@@ -2,7 +2,7 @@
 
 import { useAccount } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useCallback } from 'react';
 import Particles from "@/components/ui/particles";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
@@ -200,7 +200,7 @@ function StakeContent() {
   // Remove wallet connection redirect - allow access without wallet
 
   // Format token amounts from wei to ether
-  const formatTokenAmount = (amount: string) => {
+  const formatTokenAmount = useCallback((amount: string) => {
     try {
       if (!amount || amount === '0') return '0.00';
       if (amount.includes('.')) {
@@ -214,7 +214,7 @@ function StakeContent() {
       console.error('Error formatting amount:', error);
       return '0.00';
     }
-  };
+  }, []);
 
   // Format BNB fee amounts
   const formatBNBAmount = (amount: string) => {
@@ -229,8 +229,16 @@ function StakeContent() {
     }
   };
 
+  // Check if user has enough balance for staking
+  const hasEnoughBalance = useCallback(() => {
+    if (!stakeAmount || !userData.tokenBalance) return false;
+    const amount = parseFloat(stakeAmount);
+    const balance = parseFloat(formatTokenAmount(userData.tokenBalance));
+    return !isNaN(amount) && !isNaN(balance) && balance >= amount;
+  }, [stakeAmount, userData.tokenBalance, formatTokenAmount]);
+
   // Helper function to format error messages
-  const formatErrorMessage = (error: any) => {
+  const formatErrorMessage = useCallback((error: any) => {
     if (!error) return { title: 'Error', message: 'An unknown error occurred' };
 
     // Ignore provider initialization errors
@@ -288,7 +296,7 @@ function StakeContent() {
       title: 'Transaction Error',
       message: error.message || 'Something went wrong with your transaction. Please try again.'
     };
-  };
+  }, [hasEnoughBalance, stakeAmount, userData.tokenBalance, formatTokenAmount]);
 
   // Add function to handle transaction modal close
   const handleTransactionModalClose = () => {
@@ -526,14 +534,6 @@ function StakeContent() {
   const handlePresaleClick = () => {
     const requiredAmount = stakeAmount || '0';
     router.push(`/presale?amount=${requiredAmount}`);
-  };
-
-  // Check if user has enough balance
-  const hasEnoughBalance = () => {
-    if (!isConnected || !stakeAmount || !userData.tokenBalance) return true;
-    const stakeAmountNum = parseFloat(stakeAmount);
-    const balanceNum = parseFloat(formatTokenAmount(userData.tokenBalance));
-    return balanceNum >= stakeAmountNum;
   };
 
   // Calculate estimated rewards

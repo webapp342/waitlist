@@ -113,11 +113,11 @@ export default function CreditCard({
             {/* Center: Balance and Card Number */}
             <div className="flex flex-col">
               {balance && (
-                <div className="text-2xl font-bold opacity-90 -mt-2 mb-2">
+                <div className="text-2xl font-bold opacity-90 -mt-2 -mb-1">
                    {balance}
                 </div>
               )}
-              <div className="font-mono text-2xl tracking-wider font-bold mt-0 -mb-20">
+              <div className="font-mono text-xl tracking-wider font-bold mt-0 -mb-5">
                 {formatCardNumber(cardNumber)}
               </div>
             </div>

@@ -1,0 +1,307 @@
+'use client';
+
+import { useState, useEffect, useMemo } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Token } from '@/types/swap';
+import { Search, ChevronDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { useSwap } from '@/hooks/useSwap';
+import Image from 'next/image';
+
+interface TokenSelectorProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (token: Token) => void;
+  selectedToken: Token | null;
+  otherToken: Token | null;
+  balances: Record<string, string>;
+}
+
+interface TokenButtonProps {
+  token: Token | null;
+  onClick: () => void;
+  disabled?: boolean;
+  className?: string;
+}
+
+const formatBalance = (balance: string | undefined) => {
+  if (!balance || balance === '0') return '0';
+  const num = parseFloat(balance);
+  if (num === 0) return '0';
+  if (num < 0.0001) return '0';
+  if (num < 1) return num.toFixed(4);
+  if (num < 1000) return num.toFixed(3);
+  return num.toFixed(2);
+};
+
+const COMMON_TOKENS = [
+  { symbol: 'BNB', name: 'Binance Coin', address: 'NATIVE' },
+  { symbol: 'BUSD', name: 'Binance USD', address: '0xe9e7cea3dedca5984780bafc599bd69add087d56' },
+  { symbol: 'USDT', name: 'Tether USD', address: '0x55d398326f99059ff775485246999027b3197955' },
+  { symbol: 'CAKE', name: 'PancakeSwap Token', address: '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82' }
+] as const;
+
+export const TokenSelector: React.FC<TokenSelectorProps> = ({
+  isOpen,
+  onClose,
+  onSelect,
+  selectedToken,
+  otherToken,
+  balances
+}) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoadingCustomToken, setIsLoadingCustomToken] = useState(false);
+  const [customTokenError, setCustomTokenError] = useState<string | null>(null);
+  const { tokens, addCustomToken, loadVisibleTokensBalances } = useSwap();
+
+  // Load balances when token selector opens
+  useEffect(() => {
+    if (isOpen) {
+      loadVisibleTokensBalances();
+    }
+  }, [isOpen, loadVisibleTokensBalances]);
+
+  const handleSelect = (token: Token) => {
+    onSelect(token);
+    setSearchQuery('');
+    setCustomTokenError(null);
+  };
+
+  // Check if search query is a valid address
+  const isValidAddress = (address: string) => {
+    return /^0x[a-fA-F0-9]{40}$/.test(address);
+  };
+
+  const handleCustomTokenAdd = async () => {
+    if (!isValidAddress(searchQuery)) return;
+    
+    setIsLoadingCustomToken(true);
+    setCustomTokenError(null);
+    
+    try {
+      const customToken = await addCustomToken(searchQuery);
+      if (customToken) {
+        handleSelect(customToken);
+      } else {
+        setCustomTokenError('Failed to load token. Please check the address.');
+      }
+    } catch (error) {
+      console.error('Failed to add custom token:', error);
+      setCustomTokenError('Invalid token address or network error.');
+    } finally {
+      setIsLoadingCustomToken(false);
+    }
+  };
+
+  // Filter out WBNB and filter by search query
+  const filteredTokens = useMemo(() => {
+    return tokens.filter(token => 
+      token.symbol !== 'WBNB' && // Filter out WBNB
+      (token.symbol.toLowerCase().includes(searchQuery.toLowerCase()) ||
+       token.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+       token.address.toLowerCase().includes(searchQuery.toLowerCase()))
+    );
+  }, [tokens, searchQuery]);
+
+  const showCustomTokenOption = isValidAddress(searchQuery) && 
+    !tokens.some(token => token.address.toLowerCase() === searchQuery.toLowerCase());
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-md max-h-[80vh] flex flex-col bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl border border-zinc-800 shadow-xl">
+        <DialogHeader>
+          <DialogTitle className="text-lg font-semibold text-white">Select a token</DialogTitle>
+        </DialogHeader>
+        
+        <div className="relative mb-4">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="Search name or paste address (0x...)"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCustomTokenError(null);
+            }}
+            className="pl-10 bg-black/20 border-zinc-800 text-white placeholder-gray-500 focus:ring-yellow-400/20"
+          />
+          
+          {/* Error Message */}
+          {customTokenError && (
+            <div className="mt-2 p-2 rounded-lg bg-red-500/10 border border-red-500/20">
+              <p className="text-sm text-red-200">{customTokenError}</p>
+            </div>
+          )}
+          
+          {/* Address Format Helper */}
+          {searchQuery && searchQuery.length > 0 && !isValidAddress(searchQuery) && searchQuery.startsWith('0x') && (
+            <div className="mt-2 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+              <p className="text-sm text-yellow-200">Token address should be 42 characters long (0x + 40 hex characters)</p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto space-y-1 hide-scrollbar">
+          {/* Custom Token Option */}
+          {showCustomTokenOption && (
+            <button
+              onClick={handleCustomTokenAdd}
+              disabled={isLoadingCustomToken}
+              className={cn(
+                "w-full p-3 rounded-xl text-left transition-colors",
+                "bg-gradient-to-r from-yellow-400/10 to-yellow-300/10",
+                "border border-yellow-400/20 hover:border-yellow-400/30",
+                "hover:from-yellow-400/20 hover:to-yellow-300/20",
+                "disabled:opacity-50 disabled:cursor-not-allowed"
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-300 flex items-center justify-center">
+                    {isLoadingCustomToken ? (
+                      <div className="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <span className="text-black text-xs font-bold">+</span>
+                    )}
+                  </div>
+                  <div>
+                    <div className="font-medium text-white">
+                      {isLoadingCustomToken ? 'Loading Token...' : 'Add Custom Token'}
+                    </div>
+                    <div className="text-sm text-gray-400">
+                      {searchQuery.slice(0, 6)}...{searchQuery.slice(-4)}
+                    </div>
+                  </div>
+                </div>
+                {!isLoadingCustomToken && (
+                  <div className="text-yellow-400 text-sm">Click to add</div>
+                )}
+              </div>
+            </button>
+          )}
+
+          {/* Token List */}
+          {filteredTokens.map((token) => {
+            const isSelected = selectedToken?.address === token.address;
+            const isOtherToken = otherToken?.address === token.address;
+            const balance = balances[token.address];
+            
+            return (
+              <button
+                key={token.address}
+                onClick={() => handleSelect(token)}
+                disabled={isSelected || isOtherToken}
+                className={cn(
+                  "w-full p-3 rounded-xl text-left transition-colors",
+                  "bg-black/20 border border-zinc-800",
+                  "hover:bg-yellow-400/5 hover:border-yellow-400/20",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                  isSelected && "bg-yellow-400/10 border-yellow-400/20"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <div className="relative w-8 h-8">
+                      {token.logoURI ? (
+                        <Image
+                          src={token.logoURI}
+                          alt={token.symbol}
+                          width={32}
+                          height={32}
+                          className="rounded-full"
+                          onError={(e) => {
+                            // Hide the image on error
+                            const target = e.target as HTMLImageElement;
+                            target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-yellow-200 to-yellow-400 flex items-center justify-center text-black text-sm font-semibold">
+                          {token.symbol.slice(0, 2)}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <div className="font-medium text-white">
+                        {token.symbol}
+                      </div>
+                      <div className="text-sm text-gray-400">
+                        {token.name}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {balance && (
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-white">
+                        {formatBalance(balance)}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </button>
+            );
+          })}
+          
+          {filteredTokens.length === 0 && (
+            <div className="text-center py-8 text-gray-400">
+              No tokens found
+            </div>
+          )}
+        </div>
+
+        {/* Warning */}
+        <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+          <p className="text-sm text-red-200">
+            Warning: This swap interface uses BSC Mainnet. Always double-check token addresses and amounts before swapping.
+          </p>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+export const TokenButton: React.FC<TokenButtonProps> = ({ 
+  token, 
+  onClick, 
+  disabled = false,
+  className
+}) => {
+  return (
+    <Button
+      variant="ghost"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "flex items-center space-x-2 py-1.5",
+        className
+      )}
+    >
+      <div className="relative w-6 h-6">
+        {token?.logoURI ? (
+          <Image
+            src={token.logoURI}
+            alt={token.symbol}
+            width={24}
+            height={24}
+            className="rounded-full"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
+        ) : token ? (
+          <div className="w-6 h-6 rounded-full bg-gradient-to-r from-yellow-200 to-yellow-400 flex items-center justify-center text-black text-xs font-semibold">
+            {token.symbol.slice(0, 2)}
+          </div>
+        ) : (
+          <div className="w-6 h-6 rounded-full bg-zinc-800" />
+        )}
+      </div>
+      <span className="font-medium">{token?.symbol || 'Select'}</span>
+      <ChevronDown className="w-4 h-4" />
+    </Button>
+  );
+}; 

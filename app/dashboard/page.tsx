@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useWallet } from '@/hooks/useWallet';
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Wallet, RefreshCw, Plus, Send, Info, ArrowUpRight, ArrowDownLeft, Coins, History, ExternalLink, ChevronDown, ChevronUp, Copy, Share2, Users, Gift, Sparkles, Trophy, Crown, ArrowRight, Activity } from 'lucide-react';
+import { TrendingUp, Wallet, RefreshCw, Plus, Send, Info, ArrowUpRight, ArrowDownLeft, Coins, History, ExternalLink, ChevronDown, ChevronUp, Copy, Share2, Users, Gift, Sparkles, Trophy, Crown, ArrowRight, Activity, Repeat } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
@@ -271,14 +271,42 @@ function DashboardContent() {
           {/* Dashboard Header - Simplified */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
             <div className="animate-fade-in">
-              <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2 tracking-tight">Portfolio Overview</h1>
+<div className="flex items-center gap-2 mb-2">
+<h1 className="text-3xl lg:text-4xl font-bold text-white mb-2 tracking-tight">Portfolio Overview</h1>
+              <button 
+                onClick={handleRefresh}
+                className="text-zinc-400 hover:text-yellow-400 transition-colors"
+                disabled={isRefreshing}
+              >
+                <RefreshCw className={cn("w-5 h-5", isRefreshing && "animate-spin")} />
+              </button>
+</div>             
               <p className="text-gray-400 text-sm lg:text-base">Track and manage your digital assets</p>
             </div>
             
             {/* Action Buttons - Enhanced with Psychological Triggers */}
             <div className="flex items-center gap-3 mt-4 -mb-5 lg:mt-0 animate-slide-in">
 
-            <Link href="/stake">
+           
+
+
+        
+
+
+              <Link href="/swap">
+              <Button
+                  size="sm"
+                  variant="outline"
+                  className="bg-zinc-900/80 backdrop-blur-sm border-zinc-800 text-zinc-400 rounded-l p-4 lg:p-6 border   transition-all duration-200 group cursor-pointer"
+                >
+                  <Repeat className="w-4 h-4 mr-2 group-hover:rotate-12 text-zinc-200 transition-transform duration-200" />
+                  Swap
+                </Button>
+              </Link>
+
+
+
+              <Link href="/stake">
                 <Button
                   size="sm"
                   variant="outline"
@@ -289,7 +317,7 @@ function DashboardContent() {
                 </Button>
               </Link>
 
-
+           
               <Link href="/presale">
                 <Button
                   size="sm"
@@ -301,21 +329,7 @@ function DashboardContent() {
                 </Button>
               </Link>
 
-
-              <Button
-                onClick={handleRefresh}
-                disabled={isRefreshing}
-                variant="outline"
-                size="sm"
-                className="group bg-zinc-900/80 backdrop-blur-sm border-zinc-800 text-zinc-400 hover:bg-zinc-800 hover:text-white hover:border-zinc-700 transition-all duration-200"
-              >
-                <RefreshCw className={cn(
-                  "w-4 h-4 mr-2 group-hover:rotate-180 transition-transform duration-500",
-                  isRefreshing && "animate-spin"
-                )} />
-                Refresh
-              </Button>
-              
+                
             
 
              
@@ -338,7 +352,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs lg:text-sm text-yellow-400/80 mb-1">Referral Earnings</p>
-                  <p className="text-lg lg:text-xl font-bold text-yellow-400">{parseFloat(referralStats.totalRewards).toFixed(0)} BBLIP</p>
+                  <p className="text-lg lg:text-xl font-bold text-yellow-400">{parseFloat(referralStats.totalRewards).toFixed(0)} rBBLIP</p>
                 </div>
                 <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-yellow-400 group-hover:scale-110 transition-transform" />
               </div>

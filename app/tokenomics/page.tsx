@@ -24,7 +24,9 @@ import Container from '@/components/container'
 import Header from '@/components/header'
 import Footer from '@/components/footer'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import Particles from "@/components/ui/particles"
+import Image from "next/image"
 
 interface TokenAllocation {
   name: string;
@@ -111,7 +113,7 @@ const utilities = [
 
 const metrics = [
   { label: 'Total Supply', value: '220,000,000', suffix: 'BBLIP' },
-  { label: 'Presale Price', value: '$0.08', suffix: 'per token' },
+  { label: 'Presale Price', value: '$0.10', suffix: 'per token' },
   { label: 'Initial Circulating Supply', value: '12%', suffix: 'of total' },
   { label: 'Burn Rate', value: '2%', suffix: 'per transaction' },
   { label: 'Maximum Staking APY', value: '25%', suffix: 'annually' },
@@ -123,6 +125,15 @@ const metrics = [
 export default function TokenomicsPage() {
   const [viewMode, setViewMode] = useState<'chart' | 'bars'>('chart')
   const [selectedAllocation, setSelectedAllocation] = useState<number | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Simulate loading time
+    const timer = setTimeout(() => {
+      setLoading(false)
+    }, 1000)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Calculate pie chart segments
   let cumulativePercentage = 0
@@ -147,11 +158,40 @@ export default function TokenomicsPage() {
     }
   })
 
+  if (loading) {
+    return (
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2">
+        <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
+          <Header />
+          <div className="flex items-center justify-center py-20 mt-20">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
+              <Image 
+                src="/logo.svg" 
+                alt="BBLIP" 
+                width={32} 
+                height={32} 
+                className="absolute inset-0 m-auto animate-pulse" 
+              />
+            </div>
+          </div>
+        </section>
+        <Particles
+          quantityDesktop={80}
+          quantityMobile={30}
+          ease={120}
+          color={"#F7FF9B"}
+          refresh
+        />
+      </main>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-black">
       <Header />
       
-      <main className="pt-20">
+      <main className="pt-20 mt-20">
         <Container size="lg">
           {/* Breadcrumb */}
         
@@ -162,10 +202,7 @@ export default function TokenomicsPage() {
             animate={{ opacity: 1, y: 0 }}
             className="text-center mb-16"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 mb-6 bg-yellow-400/10 border border-yellow-400/30 rounded-full">
-              <ChartPie className="w-4 h-4 text-yellow-200" />
-              <span className="text-sm text-yellow-200 font-medium">Full Tokenomics</span>
-            </div>
+       
             
             <h1 className="text-4xl md:text-6xl font-bold text-white mb-6">
               BBLIP Token
@@ -177,17 +214,7 @@ export default function TokenomicsPage() {
               and economic design principles for sustainable growth
             </p>
 
-            {/* Download Actions */}
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-yellow-400 to-yellow-600 text-black font-semibold rounded-full hover:shadow-lg hover:shadow-yellow-400/25 transition-all duration-300">
-                <Download className="w-4 h-4" />
-                Download Whitepaper
-              </button>
-              <button className="inline-flex items-center gap-2 px-6 py-3 bg-transparent border border-yellow-400/30 text-yellow-200 font-semibold rounded-full hover:bg-yellow-400/10 transition-all duration-300">
-                <ExternalLink className="w-4 h-4" />
-                Audit Report
-              </button>
-            </div>
+            
           </motion.div>
 
           {/* Key Metrics Grid */}
@@ -479,15 +506,15 @@ export default function TokenomicsPage() {
           >
             <div className="bg-gradient-to-r from-yellow-400/10 to-yellow-600/10 border border-yellow-400/20 rounded-2xl p-8">
               <div className="text-center mb-8">
-                <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">🚀 Presale Now Active</h3>
+                <h3 className="text-2xl md:text-3xl font-bold text-white mb-4">Presale Now is Live</h3>
                 <p className="text-zinc-400 max-w-2xl mx-auto">
-                  Join the BBLIP presale and secure your tokens at the early bird price of $0.08 per token
+                  Join the BBLIP presale and secure your tokens at the early bird price of $0.10 per token
                 </p>
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-yellow-200 mb-2">$0.08</div>
+                  <div className="text-2xl font-bold text-yellow-200 mb-2">$0.10</div>
                   <div className="text-sm text-zinc-400">Presale Price</div>
                 </div>
                 <div className="text-center">

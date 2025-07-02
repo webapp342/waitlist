@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState, useCallback } from "react";
 
+// Particles component
 interface MousePosition {
   x: number;
   y: number;
@@ -314,4 +315,4 @@ const Particles: React.FC<ParticlesProps> = ({
   );
 };
 
-export default Particles;
+export default Particles; 

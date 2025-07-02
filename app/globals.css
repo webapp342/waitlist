@@ -309,4 +309,42 @@ body {
       background-position: -200% 0;
     }
   }
+
+  .hide-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari and Opera */
+  }
+
+  /* Text Shine Animation */
+  @keyframes text-shine {
+    0% {
+      background-position: 0% 50%;
+    }
+    100% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-text-shine {
+    background: linear-gradient(90deg, #F7FF9B, #facc15, #F7FF9B);
+    background-size: 200% 100%;
+    animation: text-shine 3s linear infinite;
+    -webkit-background-clip: text;
+    background-clip: text;
+  }
+}
+
+/* Add specific style for swap inputs */
+.swap-input {
+  @apply w-full bg-transparent border-none text-lg lg:text-xl font-medium text-white placeholder-gray-500 p-0;
+}
+
+.swap-input:focus {
+  outline: none !important;
+  border: none !important;
+  ring: 0 !important;
+  box-shadow: none !important;
 }

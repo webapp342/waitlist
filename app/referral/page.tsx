@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { referralService, ReferralCode, Referral } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { userService } from '@/lib/supabase';
+import Image from 'next/image';
 
 export default function ReferralPage() {
   const { isConnected, address } = useAccount();
@@ -117,8 +118,14 @@ export default function ReferralPage() {
           <Header />
           <div className="flex items-center justify-center py-20 mt-20">
             <div className="relative">
-              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-400"></div>
-              <Gift className="absolute inset-0 m-auto w-6 h-6 text-yellow-400 animate-pulse" />
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
+              <Image 
+                src="/logo.svg" 
+                alt="BBLIP" 
+                width={32} 
+                height={32} 
+                className="absolute inset-0 m-auto animate-pulse" 
+              />
             </div>
           </div>
         </section>
