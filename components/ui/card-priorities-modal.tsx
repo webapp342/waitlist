@@ -88,7 +88,7 @@ export default function CardPrioritiesModal({ isOpen, onClose, cardType }: CardP
         </div>
 
         <div className="mt-4 p-3 text-xs text-center text-gray-400">
-          These settings will be available once the card payment system exits beta phase. We'll notify you when you can start customizing your experience.
+          These settings will be available once the card payment system exits beta phase. We&apos;ll notify you when you can start customizing your experience.
         </div>
       </DialogContent>
     </Dialog>

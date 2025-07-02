@@ -173,7 +173,7 @@ export default function TokenomicsPage() {
             </h1>
             
             <p className="text-lg md:text-xl text-zinc-400 max-w-3xl mx-auto mb-8">
-              Comprehensive breakdown of BBLIP's 220 million token distribution, utility mechanisms, 
+              Comprehensive breakdown of BBLIP&apos;s 220 million token distribution, utility mechanisms, 
               and economic design principles for sustainable growth
             </p>
 

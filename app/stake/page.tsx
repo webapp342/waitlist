@@ -500,16 +500,20 @@ function StakeContent() {
 
   // Update error effect to only show errors after user interaction
   useEffect(() => {
-    if (userInteracted && walletState.error) {
-      const formattedError = formatErrorMessage({ message: walletState.error });
-      if (formattedError) {
-        setErrorModal({
-          isOpen: true,
-          ...formattedError
-        });
+    const handleError = async () => {
+      if (userInteracted && walletState.error) {
+        const formattedError = formatErrorMessage({ message: walletState.error });
+        if (formattedError) {
+          setErrorModal({
+            isOpen: true,
+            ...formattedError
+          });
+        }
       }
-    }
-  }, [walletState.error, userInteracted]);
+    };
+
+    handleError();
+  }, [walletState.error, userInteracted, formatErrorMessage]);
 
   // Reset userInteracted when component unmounts
   useEffect(() => {

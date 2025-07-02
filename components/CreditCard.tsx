@@ -1,7 +1,6 @@
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
-import CardPrioritiesModal from './ui/card-priorities-modal';
 
 interface CreditCardProps {
   cardType: 'bronze' | 'silver' | 'black';
@@ -118,44 +117,30 @@ export default function CreditCard({
                    {balance}
                 </div>
               )}
-              <div className="font-mono text-xl tracking-wider font-bold -mt-2">
+              <div className="font-mono text-2xl tracking-wider font-bold mt-0 -mb-20">
                 {formatCardNumber(cardNumber)}
               </div>
             </div>
 
             {/* Bottom Row: CVV and Expiration */}
-            <div className="flex justify-between items-end">
+            <div className="flex  ">
               <div>
                 <div className="text-xs font-bold">CVV</div>
                 <div className="font-mono text-xs font-bold">{cvv}</div>
               </div>
               <div className="text-right">
-                <div className="text-xs font-bold">EXPIRES</div>
-                <div className="font-mono text-left text-xs font-bold">
+                <div className="text-xs font-bold ml-20">EXPIRES</div>
+                <div className="font-mono text-left text-xs font-bold ml-20">
                   {formatExpirationDate(expirationDate)}
                 </div>
               </div>
-              {isReserved && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setShowPrioritiesModal(true);
-                  }}
-                  className="px-3 py-1 text-xs font-semibold text-white bg-green-500/20 hover:bg-green-500/30 rounded-full transition-colors"
-                >
-                  Set Priorities
-                </button>
-              )}
+       
             </div>
           </div>
         </div>
       </motion.div>
 
-      <CardPrioritiesModal
-        isOpen={showPrioritiesModal}
-        onClose={() => setShowPrioritiesModal(false)}
-        cardType={cardType}
-      />
+      
     </>
   );
 } 

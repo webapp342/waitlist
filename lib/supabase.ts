@@ -23,6 +23,7 @@ export const supabase = createClient(
 export interface User {
   id: number
   wallet_address: string
+  password_hash?: string
   referred_by?: number
   referral_code_used?: string
   created_at?: string
@@ -218,6 +219,88 @@ export const userService = {
     }
 
     return { totalUsers: count || 0 }
+  },
+
+  // Set user password
+  async setUserPassword(walletAddress: string, passwordHash: string) {
+    // Check if Supabase is properly configured
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, skipping password save')
+      return null
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({ password_hash: passwordHash })
+        .eq('wallet_address', walletAddress)
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error setting user password:', error)
+        throw error
+      }
+
+      console.log('Password set successfully for user:', walletAddress)
+      return data
+    } catch (error) {
+      console.error('Error in setUserPassword:', error)
+      throw error
+    }
+  },
+
+  // Verify user password
+  async getUserPasswordHash(walletAddress: string): Promise<string | null> {
+    // Check if Supabase is properly configured
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, skipping password check')
+      return null
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .select('password_hash')
+        .eq('wallet_address', walletAddress)
+        .single()
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching user password:', error)
+        throw error
+      }
+
+      return data?.password_hash || null
+    } catch (error) {
+      console.error('Error in getUserPasswordHash:', error)
+      return null
+    }
+  },
+
+  // Check if user has password set (excludes placeholder values)
+  async hasPasswordSet(walletAddress: string): Promise<boolean> {
+    const passwordHash = await this.getUserPasswordHash(walletAddress)
+    
+    // Check if password hash exists and is not a placeholder value
+    if (!passwordHash) return false
+    
+    // List of placeholder values that indicate password is NOT set
+    const placeholderValues = [
+      'CHANGE_PASSWORD_REQUIRED',
+      'NULL',
+      'null',
+      'undefined',
+      'PLACEHOLDER',
+      ''
+    ]
+    
+    // Check if the password hash is actually a real bcrypt hash (starts with $2b$ or $2a$ or $2y$)
+    const isBcryptHash = /^\$2[aby]\$\d+\$/.test(passwordHash)
+    
+    // Check if it's not a placeholder value
+    const isNotPlaceholder = !placeholderValues.includes(passwordHash.toUpperCase())
+    
+    return isBcryptHash && isNotPlaceholder
   }
 }
 

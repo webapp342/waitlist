@@ -57,6 +57,12 @@ import { injected, walletConnect } from 'wagmi/connectors'
 
 const projectId = process.env.NEXT_PUBLIC_WC_PROJECT_ID || '8854ffe902172613202b1442500a8f1e'
 
+// Debug log to check if projectId is loaded
+if (typeof window === 'undefined') {
+  console.log('🔧 Wagmi Config Loading...')
+  console.log('📋 Project ID:', projectId ? 'Found' : 'Missing')
+}
+
 // BSC Testnet Configuration
 export const BSC_TESTNET_CHAIN_ID = '0x61'; // 97 in hex
 export const BSC_TESTNET_CONFIG = {
@@ -140,12 +146,25 @@ export const config = createConfig({
       // This enables detection of chains not in our config
       shimDisconnect: true,
     }),
-    walletConnect({ projectId }),
+    walletConnect({ 
+      projectId,
+      metadata: {
+        name: 'Bblip',
+        description: 'Bblip Wallet Connect',
+        url: 'https://bblip.io',
+        icons: ['https://bblip.io/logo.svg']
+      }
+    }),
   ],
   transports,
   // Enable multi injected provider discovery
   multiInjectedProviderDiscovery: true,
 })
+
+// Debug log to verify config is created
+if (typeof window === 'undefined') {
+  console.log('✅ Wagmi Config Created:', config ? 'Success' : 'Failed')
+}
 
 declare module 'wagmi' {
   interface Register {

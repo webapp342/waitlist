@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { stakeLogsService, StakeLog, referralService, ReferralCode } from '@/lib/supabase';
 import { ethers } from 'ethers';
 import { userService } from '@/lib/supabase';
+import AuthGuard from '@/components/AuthGuard';
 
 const USDT_ADDRESS = '0x690419A4f1B5320c914f41b44CE10EB0BAC70908';
 const BUSD_ADDRESS = '0xD7D767dB964C36B41EfAABC02669169eDF513eAb';
@@ -29,7 +30,7 @@ const ASSETS = [
   { symbol: 'BUSD', name: 'Binance USD', icon: '/busd.svg' }
 ];
 
-export default function Dashboard() {
+function DashboardContent() {
   const { isConnected, address } = useAccount();
   const router = useRouter();
   const { userData } = useWallet();
@@ -595,5 +596,13 @@ export default function Dashboard() {
         refresh
       />
     </main>
+  );
+}
+
+export default function Dashboard() {
+  return (
+    <AuthGuard>
+      <DashboardContent />
+    </AuthGuard>
   );
 } 

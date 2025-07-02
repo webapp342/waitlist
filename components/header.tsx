@@ -20,7 +20,12 @@ export default function Header() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const handleDisconnect = () => {
+    // Remove auth token
+    localStorage.removeItem('bblip_auth_token');
+    
+    // Disconnect wallet
     disconnect();
+    
     toast.success("Wallet disconnected successfully!");
     router.push('/');
   };

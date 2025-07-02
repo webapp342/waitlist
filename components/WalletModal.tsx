@@ -1,7 +1,10 @@
 import { motion, AnimatePresence } from 'framer-motion';
-import { useConnect } from 'wagmi';
+import { useConnect, useAccount } from 'wagmi';
 import { FaTimes } from 'react-icons/fa';
 import { FaWallet } from 'react-icons/fa6';
+import { useEffect } from 'react';
+import { toast } from 'sonner';
+import { useRouter, usePathname } from 'next/navigation';
 
 interface WalletModalProps {
   open: boolean;
@@ -10,18 +13,41 @@ interface WalletModalProps {
 
 export default function WalletModal({ open, onClose }: WalletModalProps) {
   const { connect, connectors, isPending } = useConnect();
+  const { address, isConnected } = useAccount();
+  const router = useRouter();
+  const pathname = usePathname();
 
   // Filter out the injected connector and any other connectors we want to hide
   const filteredConnectors = connectors.filter(connector => 
     connector.id !== 'injected' && connector.name !== 'Mock Connector'
   );
 
+  // Define which paths should redirect to dashboard after connection
+  const shouldRedirectToDashboard = (path: string) => {
+    // Only redirect to dashboard if user is on the home page
+    return path === '/';
+  };
+
+  // When wallet connects, close modal and only redirect if on home page
+  useEffect(() => {
+    if (isConnected && address && open) {
+      toast.success('Wallet connected!');
+      onClose();
+      
+      // Only redirect to dashboard if on home page
+      if (shouldRedirectToDashboard(pathname)) {
+        router.push('/dashboard');
+      }
+    }
+  }, [isConnected, address, open, onClose, router, pathname]);
+
   const handleSelect = async (connector: any) => {
     try {
       await connect({ connector });
-      onClose();
+      // Modal will close automatically when wallet connects
     } catch (err) {
       console.error(err);
+      toast.error('Failed to connect wallet');
     }
   };
 
