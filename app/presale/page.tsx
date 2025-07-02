@@ -307,15 +307,12 @@ function PresalePageInner() {
           <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-3xl border border-yellow-400/10 p-6 md:p-8 mb-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10">
             
             {/* Presale Info Grid */}
-            <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="grid grid-cols-2 gap-4 mb-8">
               <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/10">
                 <p className="text-lg font-bold text-yellow-200">$0.10</p>
                 <p className="text-xs text-gray-400">Token Price</p>
               </div>
-              <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/10">
-                <p className="text-lg font-bold text-white">0</p>
-                <p className="text-xs text-gray-400">Purchased</p>
-              </div>
+        
               <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/10">
                 <p className="text-lg font-bold text-yellow-200">Presale</p>
                 <p className="text-xs text-gray-400">Round 2</p>
