@@ -330,8 +330,10 @@ function PresalePageInner() {
               
               <div className="relative">
                 <Input
-                  type="number"
-                  placeholder="1000"
+                   type="number"
+                   inputMode="numeric"
+                   pattern="[0-9]*"
+                   placeholder="1000"
                   value={desiredTokens}
                   onChange={(e) => setDesiredTokens(e.target.value)}
                   className="h-12 md:h-14 text-lg font-semibold bg-black/60 border-yellow-400/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
