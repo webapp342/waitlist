@@ -297,7 +297,7 @@ function DashboardContent() {
               <Button
                   size="sm"
                   variant="outline"
-                  className="bg-zinc-900/80 backdrop-blur-sm border-zinc-800 text-zinc-400 rounded-l p-4 lg:p-6 border   transition-all duration-200 group cursor-pointer"
+                  className="bg-zinc-900/80 backdrop-blur-sm border-zinc-800 text-zinc-400 rounded-l  border   transition-all duration-200 group cursor-pointer"
                 >
                   <Repeat className="w-4 h-4 mr-2 group-hover:rotate-12 text-zinc-200 transition-transform duration-200" />
                   Swap
@@ -537,13 +537,13 @@ function DashboardContent() {
 
           {/* Referral Section - Better Desktop Layout */}
           {isConnected && referralCode && (
-            <div >
-              <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl pb-10 rounded-2xl border border-zinc-800 mb-20 p-6 lg:p-8 shadow-lg">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div>
+              <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 mb-8 shadow-lg overflow-hidden">
+                <div className="flex flex-col lg:flex-row lg:items-stretch">
                   {/* Left Side - Info */}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-4">
-                      <div className="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center animate-pulse">
+                  <div className="flex-1 p-6 lg:p-8 lg:border-r border-zinc-800">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
                         <Gift className="w-6 h-6 text-yellow-400" />
                       </div>
                       <div>
@@ -553,45 +553,70 @@ function DashboardContent() {
                     </div>
                     
                     {/* Quick Stats */}
-                    <div className="grid grid-cols-3 gap-4 mb-6">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-white">{referralStats.totalReferrals}</p>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
+                        <p className="text-2xl font-bold text-white mb-1">{referralStats.totalReferrals}</p>
                         <p className="text-xs text-gray-400">Friends Referred</p>
                       </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-yellow-400">{parseFloat(referralStats.totalRewards).toFixed(0)}</p>
+                      <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
+                        <p className="text-2xl font-bold text-yellow-400 mb-1">{parseFloat(referralStats.totalRewards).toFixed(0)}</p>
                         <p className="text-xs text-gray-400">BBLIP Earned</p>
                       </div>
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-yellow-400">5</p>
+                      <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
+                        <p className="text-2xl font-bold text-yellow-400 mb-1">5</p>
                         <p className="text-xs text-gray-400">Reward Tiers</p>
                       </div>
                     </div>
                     
-                    {/* Referral Code - Minimal */}
-                    <div className="bg-zinc-800/50 backdrop-blur-sm rounded-xl p-3 flex items-center gap-3 group/code">
-                      <p className="text-sm text-gray-400">Your referral link:</p>
-                      <p className="font-mono font-bold text-yellow-400">{referralCode.code}</p>
-                      <Button
-                        onClick={() => {
-                          navigator.clipboard.writeText(`http://localhost:3000?ref=${referralCode.code}`);
-                          toast.success('Referral link copied!');
-                        }}
-                        size="sm"
-                        variant="ghost"
-                        className="ml-auto text-yellow-400 hover:text-yellow-300"
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
+                    {/* Referral Link */}
+                    <div className="mt-6 bg-black/20 rounded-xl p-4 border border-zinc-800">
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs text-gray-400 mb-1">Your referral link</p>
+                          <p className="text-sm font-mono text-white truncate">
+                            http://localhost:3000?ref={referralCode.code}
+                          </p>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`http://localhost:3000?ref=${referralCode.code}`);
+                              toast.success('Referral link copied!');
+                            }}
+                            className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200"
+                            aria-label="Copy referral link"
+                          >
+                            <Copy className="w-4 h-4 text-yellow-400" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (navigator.share) {
+                                navigator.share({
+                                  title: 'Join BBLIP',
+                                  text: 'Join BBLIP and earn rewards when you stake! Use my referral link:',
+                                  url: `http://localhost:3000?ref=${referralCode.code}`
+                                });
+                              } else {
+                                navigator.clipboard.writeText(`http://localhost:3000?ref=${referralCode.code}`);
+                                toast.success('Referral link copied!');
+                              }
+                            }}
+                            className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200"
+                            aria-label="Share referral link"
+                          >
+                            <Share2 className="w-4 h-4 text-yellow-400" />
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                   
                   {/* Right Side - CTA */}
-                  <div className="lg:w-64">
-                    <Link href="/referral">
-                      <Button className="bg-yellow-400 w-full text-black shadow-lg transition-all duration-200 group/btn">
-                        <span>View Referral Program</span>
-                        <ArrowRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                  <div className="lg:w-64 flex items-center justify-center p-6 lg:p-8 bg-black/20">
+                    <Link href="/referral" className="w-full">
+                      <Button className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 group">
+                        <Trophy className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform" />
+                        View Referral Program
                       </Button>
                     </Link>
                   </div>

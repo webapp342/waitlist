@@ -744,15 +744,22 @@ function StakeContent() {
               <>
                 <Button
                   onClick={handleApproveAndStake}
-                  disabled={!stakeAmount || parseFloat(stakeAmount) <= 0 || walletState.loading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-700 hover:to-blue-900"
+                  disabled={!stakeAmount || parseFloat(stakeAmount) <= 0 || walletState.loading || !hasEnoughBalance()}
+                  className={cn(
+                    "w-full transition-all duration-200",
+                    hasEnoughBalance() 
+                      ? "bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 text-black"
+                      : "bg-zinc-800 text-zinc-400 cursor-not-allowed hover:bg-zinc-800"
+                  )}
                 >
                   {walletState.loading ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : !hasEnoughBalance() ? (
+                    <AlertCircle className="w-4 h-4 mr-2" />
                   ) : (
                     <Zap className="w-4 h-4 mr-2" />
                   )}
-                  Stake Now
+                  {!hasEnoughBalance() ? 'Insufficient Balance' : 'Stake Now'}
                 </Button>
 
                 {stakeAmount && !hasEnoughBalance() && (

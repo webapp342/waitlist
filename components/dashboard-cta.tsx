@@ -628,7 +628,12 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <div className="text-xs text-zinc-400 font-medium mb-1">Card Number</div>
-                      <div className="font-mono text-xl text-yellow-100 tracking-widest select-all">{userCards[currentCardIndex]?.card_number.replace(/(.{4})/g, '$1 ')}</div>
+                      <div className="font-mono text-xl text-yellow-100 tracking-widest select-all">
+                        {userCards[currentCardIndex]?.card_number.replace(/(\d{4})/g, (_, group, offset) => {
+                          const isLast = offset + 4 >= userCards[currentCardIndex]?.card_number.length;
+                          return isLast ? group : '**** ';
+                        })}
+                      </div>
                       {copiedField === 'number' && <div className="text-xs text-green-400 mt-1 animate-pulse">Copied!</div>}
                     </div>
                     <button

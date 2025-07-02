@@ -43,13 +43,11 @@ export default function CreditCard({
     // Ensure the number is exactly 16 digits, pad with zeros if needed
     const paddedNumber = cleanNumber.padStart(16, '0');
     
-    // Split into groups of 4 and join with spaces
-    const groups = paddedNumber.match(/.{1,4}/g) || [];
-    
-    // Mask all but the last 4 digits
-    return groups.map((group, index) => 
-      index < groups.length - 1 ? '****' : group
-    ).join(' ');
+    // Replace each group of 4 digits with stars except the last group
+    return paddedNumber.replace(/(\d{4})/g, (_, group, offset) => {
+      const isLast = offset + 4 >= paddedNumber.length;
+      return isLast ? group : '**** ';
+    });
   };
 
   const formatExpirationDate = (date: string) => {
