@@ -17,8 +17,7 @@ import { userService, cardService, stakeLogsService } from '@/lib/supabase';
 import { useChainId } from 'wagmi';
 import { StakeLog } from '@/lib/supabase';
 import Image from 'next/image';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { TransactionStatus, type TransactionStatus as TxStatus } from "@/components/ui/transaction-status";
+import {   TransactionStatus, type TransactionStatus as TxStatus } from "@/components/ui/transaction-status";
 import { TransactionModal } from "@/components/ui/transaction-modal";
 
 // Card stake requirements
@@ -293,8 +292,8 @@ function StakeContent() {
 
     // Default error message
     return {
-      title: 'Transaction Error',
-      message: error.message || 'Something went wrong with your transaction. Please try again.'
+      title: 'Insufficient BNB Balance',
+      message:  'You do not have enough BNB to cover the transaction fees. Please add more BNB to your wallet and try again.'
     };
   }, [hasEnoughBalance, stakeAmount, userData.tokenBalance, formatTokenAmount]);
 
@@ -1201,57 +1200,7 @@ function StakeContent() {
         onClose={() => setShowWalletModal(false)} 
       />
 
-      {/* Error Modal with Purchase Button */}
-      {errorModal.title && errorModal.message && (
-        <Dialog open={errorModal.isOpen} onOpenChange={(isOpen: boolean) => setErrorModal(prev => ({ ...prev, isOpen }))}>
-          <DialogContent className="bg-zinc-900 border border-red-500/20 p-6">
-            <div className="absolute top-4 right-4">
-              <button
-                onClick={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
-                className="text-gray-400 hover:text-gray-300 transition-colors"
-              >
-                <XCircle className="w-6 h-6" />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center">
-                <AlertCircle className="w-6 h-6 text-red-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-white">{errorModal.title}</h3>
-                <p className="text-sm text-gray-400">Transaction Error Details</p>
-              </div>
-            </div>
-
-            <div className="mt-4 p-4 rounded-lg bg-red-500/5 border border-red-500/10">
-              <p className="text-sm text-gray-300 whitespace-pre-line">
-                {errorModal.message}
-              </p>
-            </div>
-
-            <div className="mt-6 flex justify-end gap-3">
-              {errorModal.showPurchaseButton && errorModal.purchaseAmount && (
-                <Button
-                  asChild
-                  className="flex-1 bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 text-red-200 hover:text-red-100 transition-all duration-200"
-                >
-                  <Link href={`/presale?amount=${errorModal.purchaseAmount.toFixed(2)}`}>
-                    Purchase {errorModal.purchaseAmount.toFixed(2)} BBLIP
-                  </Link>
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                className="border-red-500/20 text-red-400 hover:bg-red-500/10"
-                onClick={() => setErrorModal(prev => ({ ...prev, isOpen: false }))}
-              >
-                Close
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      )}
+     
 
       {/* Add Transaction Modal */}
       {currentTransaction && (
