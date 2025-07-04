@@ -460,13 +460,8 @@ export default function TokenomicsPage() {
                       <div className="text-xs md:text-sm text-zinc-400">No single entity controls majority</div>
                     </div>
                   </div>
-                  <div className="flex items-start space-x-3">
-                    <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-blue-400 mt-0.5 flex-shrink-0" />
-                    <div>
-                      <div className="font-semibold text-white text-sm md:text-base">Audit & Security</div>
-                      <div className="text-xs md:text-sm text-zinc-400">Third-party audited contracts</div>
-                    </div>
-                  </div>
+                 
+             
                 </div>
               </div>
             </div>

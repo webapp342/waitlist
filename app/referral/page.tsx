@@ -82,7 +82,7 @@ export default function ReferralPage() {
 
   const copyReferralLink = () => {
     if (referralCode) {
-      const link = `http://localhost:3000?ref=${referralCode.code}`;
+      const link = `https://waitlist-murex-nine.vercel.app?ref=${referralCode.code}`;
       navigator.clipboard.writeText(link);
       toast.success('Referral link copied to clipboard!');
     }
@@ -90,12 +90,12 @@ export default function ReferralPage() {
 
   const shareReferralLink = () => {
     if (referralCode) {
-      const link = `http://localhost:3000?ref=${referralCode.code}`;
+      const link = `https://waitlist-murex-nine.vercel.app?ref=${referralCode.code}`;
       
       if (navigator.share) {
         navigator.share({
           title: 'Join BBLP - Earn Crypto Rewards Together',
-          text: '🚀 Join BBLP and earn rewards when you stake! Use my referral link and we both earn bonus BBLP tokens.',
+          text: 'Join BBLP and earn rewards when you stake! Use my referral link and we both earn bonus BBLP tokens.',
           url: link
         }).catch(() => {
           // User cancelled share
@@ -222,7 +222,7 @@ export default function ReferralPage() {
                 </div>
                 <div className="text-center">
                   <p className="text-xs text-gray-500 break-all">
-                    http://localhost:3000?ref={referralCode.code}
+                    https://waitlist-murex-nine.vercel.app?ref={referralCode.code}
                   </p>
                 </div>
               </div>
