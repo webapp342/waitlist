@@ -87,7 +87,9 @@ export default function Header() {
                   height={36}
                   className="drop-shadow-md"
                 />
-                <span className="text-l font-semibold text-yellow-200 tracking-tight">Bblip</span>
+                <div className="flex items-baseline">
+                  <span className="text-xl font-bold text-yellow-200 tracking-tight">Bblip</span>
+                </div>
               </Link>
             </motion.div>
 

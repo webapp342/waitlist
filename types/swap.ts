@@ -6,6 +6,8 @@ export interface Token {
   logoURI?: string;
   chainId: number;
   balance?: string;
+  disabled?: boolean;
+  comingSoon?: boolean;
 }
 
 export interface SwapQuote {

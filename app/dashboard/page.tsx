@@ -3,13 +3,13 @@
 import DashboardCTA from "@/components/dashboard-cta";
 import Particles from "@/components/ui/particles";
 import Header from "@/components/header";
-import { useAccount, useBalance } from 'wagmi';
+import { useAccount, useBalance, useSwitchChain } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useWallet } from '@/hooks/useWallet';
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Wallet, RefreshCw, Plus, Send, Info, ArrowUpRight, ArrowDownLeft, Coins, History, ExternalLink, ChevronDown, ChevronUp, Copy, Share2, Users, Gift, Sparkles, Trophy, Crown, ArrowRight, Activity, Repeat } from 'lucide-react';
+import { TrendingUp, Wallet, RefreshCw, Plus, Send, Info, ArrowUpRight, ArrowDownLeft, Coins, History, ExternalLink, ChevronDown, ChevronUp, Copy, Share2, Users, Gift, Sparkles, Trophy, Crown, ArrowRight, Activity, Repeat, Network, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
@@ -17,21 +17,27 @@ import { stakeLogsService, StakeLog, referralService, ReferralCode } from '@/lib
 import { ethers } from 'ethers';
 import { userService } from '@/lib/supabase';
 import AuthGuard from '@/components/AuthGuard';
+import { useChainId } from 'wagmi';
 
 const USDT_ADDRESS = '0x690419A4f1B5320c914f41b44CE10EB0BAC70908';
 const BUSD_ADDRESS = '0xD7D767dB964C36B41EfAABC02669169eDF513eAb';
-const BBLIP_ADDRESS = '0x65D25C1e3BD1D64a42E4Cc729695A7EfB1632a1C';
+const BBLP_ADDRESS = '0x38f5e5902AA2FC1170653f764D5C0A79C7c0a254';
+
+// BSC Testnet Chain ID
+const BSC_TESTNET_CHAIN_ID = 97;
 
 const ASSETS = [
-  { symbol: 'BBLIP', name: 'BBLIP Token', icon: '/logo.svg' },
-  { symbol: 'rBBLIP', name: 'Referral BBLIP', icon: '/logo.svg' },
+  { symbol: 'BBLP', name: 'BBLP Token', icon: '/logo.svg' },
+  { symbol: 'rBBLP', name: 'Referral BBLP', icon: '/logo.svg' },
   { symbol: 'BNB', name: 'Binance Coin', icon: '/bnb.svg'  },
   { symbol: 'USDT', name: 'Tether USD', icon: '/usdt.svg'  },
   { symbol: 'BUSD', name: 'Binance USD', icon: '/busd.svg' }
 ];
 
 function DashboardContent() {
-  const { isConnected, address } = useAccount();
+  const { isConnected, address, chain } = useAccount();
+  const { switchChain } = useSwitchChain();
+  const chainId = useChainId();
   const router = useRouter();
   const { userData } = useWallet();
   const [activeTab, setActiveTab] = useState<'portfolio' | 'transactions'>('portfolio');
@@ -51,11 +57,45 @@ function DashboardContent() {
   });
   const [showReferralDetails, setShowReferralDetails] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isSwitchingChain, setIsSwitchingChain] = useState(false);
+  const [switchChainError, setSwitchChainError] = useState<string | null>(null);
 
-  // Fetch token balances for the connected wallet
-  const { data: usdtBalance, refetch: refetchUSDT } = useBalance(address ? { address, token: USDT_ADDRESS } : { address: undefined });
-  const { data: busdBalance, refetch: refetchBUSD } = useBalance(address ? { address, token: BUSD_ADDRESS } : { address: undefined });
-  const { data: bblipBalance, refetch: refetchBBLIP } = useBalance(address ? { address, token: BBLIP_ADDRESS } : { address: undefined });
+  // Check if user is on the correct network (BSC Testnet - Chain ID 97)
+  const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
+  const isOnBSCTestnet = actualChainId === BSC_TESTNET_CHAIN_ID;
+
+  // Handle chain switching
+  const handleSwitchChain = async () => {
+    if (!switchChain) return;
+    
+    try {
+      setIsSwitchingChain(true);
+      setSwitchChainError(null);
+      await switchChain({ chainId: BSC_TESTNET_CHAIN_ID });
+    } catch (err: any) {
+      console.error('Failed to switch chain:', err);
+      if (err.code === 4001) {
+        setSwitchChainError('Chain switch was cancelled by user');
+      } else {
+        setSwitchChainError('Failed to switch to BSC Testnet. Please switch manually in your wallet.');
+      }
+    } finally {
+      setIsSwitchingChain(false);
+    }
+  };
+
+  // Clear switch chain error after 5 seconds
+  useEffect(() => {
+    if (switchChainError) {
+      const timer = setTimeout(() => setSwitchChainError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [switchChainError]);
+
+  // Fetch token balances for the connected wallet - only on correct network
+  const { data: usdtBalance, refetch: refetchUSDT } = useBalance(address && isOnBSCTestnet ? { address, token: USDT_ADDRESS } : { address: undefined });
+  const { data: busdBalance, refetch: refetchBUSD } = useBalance(address && isOnBSCTestnet ? { address, token: BUSD_ADDRESS } : { address: undefined });
+  const { data: bblpBalance, refetch: refetchBBLP } = useBalance(address && isOnBSCTestnet ? { address, token: BBLP_ADDRESS } : { address: undefined });
 
   // Clear any existing toasts on dashboard load
   useEffect(() => {
@@ -95,10 +135,10 @@ function DashboardContent() {
     fetchBNBPrice();
   }, []);
 
-  // Load stake logs when wallet is connected
+  // Load stake logs when wallet is connected and on correct network
   useEffect(() => {
     const loadStakeLogs = async () => {
-      if (isConnected && address) {
+      if (isConnected && address && isOnBSCTestnet) {
         try {
           const logs = await stakeLogsService.getUserStakeLogs(address);
           setStakeLogs(logs);
@@ -110,12 +150,12 @@ function DashboardContent() {
     };
 
     loadStakeLogs();
-  }, [isConnected, address]);
+  }, [isConnected, address, isOnBSCTestnet]);
 
-  // Load referral data when wallet is connected
+  // Load referral data when wallet is connected and on correct network
   useEffect(() => {
     const loadReferralData = async () => {
-      if (isConnected && address) {
+      if (isConnected && address && isOnBSCTestnet) {
         try {
           // Get user first
           const user = await userService.getUserByWallet(address);
@@ -149,23 +189,28 @@ function DashboardContent() {
     };
 
     loadReferralData();
-  }, [isConnected, address]);
+  }, [isConnected, address, isOnBSCTestnet]);
 
   // Calculate total USD value for all assets
   const bnbUsd = userData?.bnbBalance && bnbPrice ? parseFloat(userData.bnbBalance) * bnbPrice : 0;
   const usdtUsd = usdtBalance ? parseFloat(usdtBalance.formatted) * 1 : 0;
   const busdUsd = busdBalance ? parseFloat(busdBalance.formatted) * 1 : 0;
-  const bblipUsd = bblipBalance ? parseFloat(bblipBalance.formatted) * 0.10 : 0;
-  const rBblipUsd = referralStats ? parseFloat(referralStats.totalRewards) * 0.10 : 0;
-  const totalUsd = bnbUsd + usdtUsd + busdUsd + bblipUsd + rBblipUsd;
+      const bblpUsd = bblpBalance ? parseFloat(bblpBalance.formatted) * 0.10 : 0;
+    const rBblpUsd = referralStats ? parseFloat(referralStats.totalRewards) * 0.10 : 0;
+    const totalUsd = bnbUsd + usdtUsd + busdUsd + bblpUsd + rBblpUsd;
 
   const handleRefresh = async () => {
+    if (!isOnBSCTestnet) {
+      toast.error('Please switch to BSC Testnet to refresh portfolio');
+      return;
+    }
+    
     setIsRefreshing(true);
     try {
       await Promise.all([
         refetchUSDT(),
         refetchBUSD(),
-        refetchBBLIP()
+        refetchBBLP()
       ]);
       toast.success('Portfolio refreshed successfully!');
     } catch (error) {
@@ -201,18 +246,18 @@ function DashboardContent() {
           change: '0.00%',
           changeValue: 0
         };
-      case 'BBLIP':
+      case 'BBLP':
         return {
-          balance: bblipBalance ? parseFloat(bblipBalance.formatted) : 0,
-          usdValue: bblipUsd,
+          balance: bblpBalance ? parseFloat(bblpBalance.formatted) : 0,
+          usdValue: bblpUsd,
           price: 0.10,
           change: '+15.67%',
           changeValue: 15.67
         };
-      case 'rBBLIP':
+      case 'rBBLP':
         return {
           balance: referralStats ? parseFloat(referralStats.totalRewards) : 0,
-          usdValue: rBblipUsd,
+          usdValue: rBblpUsd,
           price: 0.10,
           change: '+15.67%',
           changeValue: 15.67
@@ -240,7 +285,7 @@ function DashboardContent() {
               <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
               <Image 
                 src="/logo.svg" 
-                alt="BBLIP" 
+                alt="BBLP" 
                 width={32} 
                 height={32} 
                 className="absolute inset-0 m-auto animate-pulse" 
@@ -261,13 +306,60 @@ function DashboardContent() {
 
   return (
     <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2">
-      <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full max-w-7xl mx-auto">
+      <section className="flex flex-col items-center mt-10 px-4 sm:px-6 lg:px-8 w-full max-w-7xl mx-auto">
         <Header />
+
+        {/* Network Warning - Show when connected but not on BSC Testnet */}
+        {isConnected && !isOnBSCTestnet && (
+          <div className="w-full max-w-5xl mt-20 -mb-10 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="p-2 rounded-lg bg-orange-500/20 border border-orange-500/30">
+                <Network className="w-5 h-5 text-orange-400" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-orange-200">Wrong Network</h3>
+                <p className="text-xs text-orange-300/80">
+                  You&apos;re connected to {chain?.name || "Unknown Network"}. Please switch to BSC Testnet to access all features.
+                </p>
+              </div>
+            </div>
+            <Button
+              onClick={handleSwitchChain}
+              disabled={isSwitchingChain}
+              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg h-10"
+            >
+              {isSwitchingChain ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  Switching Network...
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Network className="w-4 h-4" />
+                  Switch to BSC Testnet
+                </div>
+              )}
+            </Button>
+          </div>
+        )}
+
+        {/* Switch Chain Error Message */}
+        {switchChainError && (
+          <div className="w-full max-w-5xl mt-8 mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 text-red-400" />
+              <p className="text-sm text-red-300">{switchChainError}</p>
+            </div>
+          </div>
+        )}
 
         <DashboardCTA userData={userData} totalUsd={totalUsd} />
 
         {/* Main Dashboard Content */}
-        <div className="w-full max-w-5xl mt-8 space-y-4">
+        <div className={cn(
+          "w-full max-w-5xl mt-8 space-y-4 transition-all duration-300",
+          !isOnBSCTestnet && isConnected && "opacity-50 pointer-events-none"
+        )}>
           {/* Dashboard Header - Simplified */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
             <div className="animate-fade-in">
@@ -275,8 +367,11 @@ function DashboardContent() {
 <h1 className="text-3xl lg:text-4xl font-bold text-white mb-2 tracking-tight">Portfolio Overview</h1>
               <button 
                 onClick={handleRefresh}
-                className="text-zinc-400 hover:text-yellow-400 transition-colors"
-                disabled={isRefreshing}
+                className={cn(
+                  "text-zinc-400 hover:text-yellow-400 transition-colors",
+                  (!isOnBSCTestnet || isRefreshing) && "opacity-50 cursor-not-allowed"
+                )}
+                disabled={isRefreshing || !isOnBSCTestnet}
               >
                 <RefreshCw className={cn("w-5 h-5", isRefreshing && "animate-spin")} />
               </button>
@@ -293,41 +388,62 @@ function DashboardContent() {
         
 
 
-              <Link href="/swap">
-              <Button
-                  size="sm"
-                  variant="outline"
-                  className="bg-zinc-900/80 backdrop-blur-sm border-zinc-800 text-zinc-400 rounded-l  border   transition-all duration-200 group cursor-pointer"
-                >
-                  <Repeat className="w-4 h-4 mr-2 group-hover:rotate-12 text-zinc-200 transition-transform duration-200" />
-                  Swap
-                </Button>
-              </Link>
-
-
-
-              <Link href="/stake">
+              {!isOnBSCTestnet ? (
                 <Button
+                  onClick={handleSwitchChain}
+                  disabled={isSwitchingChain}
                   size="sm"
-                  variant="outline"
-                  className="bg-gradient-to-br text-yellow-400 from-yellow-500/10 to-yellow-600/5 backdrop-blur-sm rounded-l  border border-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200 group cursor-pointer"
+                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg transition-all duration-200"
                 >
-                  <Coins className="w-4 h-4 mr-2 group-hover:rotate-12 text-yellow-400 transition-transform duration-200" />
-                  Stake
+                  {isSwitchingChain ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Switching...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Network className="w-4 h-4" />
+                      Switch Network
+                    </div>
+                  )}
                 </Button>
-              </Link>
+              ) : (
+                <>
+                  <Link href="/swap">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-zinc-900/80 backdrop-blur-sm border-zinc-800 text-zinc-400 rounded-l  border   transition-all duration-200 group cursor-pointer"
+                      >
+                        <Repeat className="w-4 h-4 mr-2 group-hover:rotate-12 text-zinc-200 transition-transform duration-200" />
+                        Swap
+                      </Button>
+                    </Link>
 
-           
-              <Link href="/presale">
-                <Button
-                  size="sm"
-                  className="group bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-black font-semibold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 relative overflow-hidden"
-                >
-                  <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></span>
-                  <Plus className="w-4 h-4 mr-2 group-hover:rotate-90 transition-transform duration-200" />
-                  Buy BBLIP
-                </Button>
-              </Link>
+                    <Link href="/stake">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="bg-gradient-to-br text-yellow-400 from-yellow-500/10 to-yellow-600/5 backdrop-blur-sm rounded-l  border border-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200 group cursor-pointer"
+                      >
+                        <Coins className="w-4 h-4 mr-2 group-hover:rotate-12 text-yellow-400 transition-transform duration-200" />
+                        Stake
+                      </Button>
+                    </Link>
+
+                 
+                    <Link href="/presale">
+                      <Button
+                        size="sm"
+                        className="group bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-black font-semibold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 relative overflow-hidden"
+                      >
+                        <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></span>
+                        <Plus className="w-4 h-4 mr-2 group-hover:rotate-90 transition-transform duration-200" />
+                        Buy BBLP
+                      </Button>
+                    </Link>
+                </>
+              )}
 
                 
             
@@ -342,7 +458,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs lg:text-sm  mb-1">Total Staked</p>
-                  <p className="text-lg lg:text-xl font-bold text-zinc-200">{userData?.stakedAmount || '0'} BBLIP</p>
+                  <p className="text-lg lg:text-xl font-bold text-zinc-200">{userData?.stakedAmount || '0'} BBLP</p>
                 </div>
                 <Coins className="w-5 h-5 lg:w-6 lg:h-6 text-zinc-200 group-hover:rotate-12 transition-transform" />
               </div>
@@ -352,7 +468,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs lg:text-sm text-yellow-400/80 mb-1">Referral Earnings</p>
-                  <p className="text-lg lg:text-xl font-bold text-yellow-400">{parseFloat(referralStats.totalRewards).toFixed(0)} rBBLIP</p>
+                  <p className="text-lg lg:text-xl font-bold text-yellow-400">{parseFloat(referralStats.totalRewards).toFixed(0)} rBBLP</p>
                 </div>
                 <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-yellow-400 group-hover:scale-110 transition-transform" />
               </div>
@@ -477,7 +593,7 @@ function DashboardContent() {
                             {log.amount !== '0' && (
                               <div className="text-right">
                                 <p className="font-bold text-white text-sm lg:text-base">{parseFloat(log.amount).toFixed(2)}</p>
-                                <p className="text-xs text-gray-400">BBLIP</p>
+                                <p className="text-xs text-gray-400">BBLP</p>
                               </div>
                             )}
                             
@@ -560,7 +676,7 @@ function DashboardContent() {
                       </div>
                       <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
                         <p className="text-2xl font-bold text-yellow-400 mb-1">{parseFloat(referralStats.totalRewards).toFixed(0)}</p>
-                        <p className="text-xs text-gray-400">BBLIP Earned</p>
+                        <p className="text-xs text-gray-400">BBLP Earned</p>
                       </div>
                       <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
                         <p className="text-2xl font-bold text-yellow-400 mb-1">5</p>
@@ -592,8 +708,8 @@ function DashboardContent() {
                             onClick={() => {
                               if (navigator.share) {
                                 navigator.share({
-                                  title: 'Join BBLIP',
-                                  text: 'Join BBLIP and earn rewards when you stake! Use my referral link:',
+                                                                  title: 'Join BBLP',
+                                text: 'Join BBLP and earn rewards when you stake! Use my referral link:',
                                   url: `http://localhost:3000?ref=${referralCode.code}`
                                 });
                               } else {

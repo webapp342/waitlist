@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, Suspense } from 'react';
-import { useAccount } from 'wagmi';
+import { useAccount, useSwitchChain } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Particles from "@/components/ui/particles";
@@ -15,7 +15,7 @@ import { usePresale } from '@/hooks/usePresale';
 import { TOKEN_IDS } from '@/config/presale';
 import { formatUnits } from 'ethers';
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
-import { Info, ChevronDown, ChevronUp, TrendingUp, Shield, Clock, DollarSign, Zap } from 'lucide-react';
+import { Info, ChevronDown, ChevronUp, TrendingUp, Shield, Clock, DollarSign, Zap, Network } from 'lucide-react';
 import WalletModal from '@/components/WalletModal';
 import { userService, cardService } from '@/lib/supabase';
 import { useChainId } from 'wagmi';
@@ -26,8 +26,12 @@ const PAYMENT_TOKENS = [
   { id: TOKEN_IDS.busd, name: 'BUSD', icon: '/busd.svg', color: 'from-blue-600 to-blue-400' },
 ];
 
+// BSC Testnet Chain ID
+const BSC_TESTNET_CHAIN_ID = 97;
+
 function PresalePageInner() {
   const { isConnected, address, chain } = useAccount();
+  const { switchChain } = useSwitchChain();
   const chainId = useChainId();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -42,11 +46,13 @@ function PresalePageInner() {
   const [showDetails, setShowDetails] = useState(false);
   const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [isSwitchingChain, setIsSwitchingChain] = useState(false);
   
   const { 
     presaleInfo, 
     paymentTokens, 
     loading,
+    error: presaleError,
     checkAllowance,
     approveToken,
     buyTokens,
@@ -64,7 +70,7 @@ function PresalePageInner() {
 
   // Check if user is on the correct network (BSC Testnet - Chain ID 97)
   const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
-  const isOnBSCTestnet = actualChainId === 97;
+  const isOnBSCTestnet = actualChainId === BSC_TESTNET_CHAIN_ID;
 
   // Save user to database when wallet is connected to correct network
   useEffect(() => {
@@ -82,7 +88,26 @@ function PresalePageInner() {
     saveUserToDatabase();
   }, [isConnected, address, isOnBSCTestnet]);
 
-  // Remove wallet connection redirect - allow access without wallet
+  // Handle chain switching
+  const handleSwitchChain = async () => {
+    if (!switchChain) return;
+    
+    try {
+      setIsSwitchingChain(true);
+      setStatusMessage('Switching to BSC Testnet...');
+      await switchChain({ chainId: BSC_TESTNET_CHAIN_ID });
+      setStatusMessage('Successfully switched to BSC Testnet!');
+    } catch (err: any) {
+      console.error('Failed to switch chain:', err);
+      if (err.code === 4001) {
+        setError('Chain switch was cancelled by user');
+      } else {
+        setError('Failed to switch to BSC Testnet. Please switch manually in your wallet.');
+      }
+    } finally {
+      setIsSwitchingChain(false);
+    }
+  };
 
   // Clear error after 5 seconds
   useEffect(() => {
@@ -103,7 +128,7 @@ function PresalePageInner() {
   // Calculate payment amount when desired tokens or selected token changes
   useEffect(() => {
     const updatePaymentAmount = async () => {
-      if (desiredTokens) {
+      if (desiredTokens && isOnBSCTestnet) {
         const amount = await calculatePaymentAmount(selectedToken, desiredTokens);
         setPaymentAmount(amount);
         
@@ -131,12 +156,12 @@ function PresalePageInner() {
     };
 
     updatePaymentAmount();
-  }, [desiredTokens, selectedToken, calculatePaymentAmount, checkAllowance]);
+  }, [desiredTokens, selectedToken, calculatePaymentAmount, checkAllowance, isOnBSCTestnet]);
 
   // Don't redirect if wallet is not connected - show the page with connect wallet option
 
   const handleApprove = async () => {
-    if (!paymentAmount || paymentAmount === '0') return;
+    if (!paymentAmount || paymentAmount === '0' || !isOnBSCTestnet) return;
     
     try {
       setIsApproving(true);
@@ -160,7 +185,7 @@ function PresalePageInner() {
   };
 
   const handleBuy = async () => {
-    if (!paymentAmount || paymentAmount === '0') return;
+    if (!paymentAmount || paymentAmount === '0' || !isOnBSCTestnet) return;
     
     try {
       setIsBuying(true);
@@ -247,6 +272,40 @@ function PresalePageInner() {
             </p>
           </div>
 
+          {/* Network Warning - Show when connected but not on BSC Testnet */}
+          {isConnected && !isOnBSCTestnet && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 rounded-lg bg-orange-500/20 border border-orange-500/30">
+                  <Network className="w-5 h-5 text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-orange-200">Wrong Network</h3>
+                  <p className="text-xs text-orange-300/80">
+                    You&apos;re connected to {chain?.name || "Unknown Network"}. Please switch to BSC Testnet to participate in the presale.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleSwitchChain}
+                disabled={isSwitchingChain}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg h-10"
+              >
+                {isSwitchingChain ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Switching Network...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Network className="w-4 h-4" />
+                    Switch to BSC Testnet
+                  </div>
+                )}
+              </Button>
+            </div>
+          )}
+
           {/* Presale Progress Stepper */}
           <div className="mb-8">
             <div className="bg-black backdrop-blur-xl rounded-2xl border border-zinc-800 p-6 shadow-xl">
@@ -305,7 +364,10 @@ function PresalePageInner() {
           </div>
 
           {/* Main Presale Card */}
-          <div className="bg-[#0A0A0A]/90 backdrop-blur-xl rounded-3xl border border-yellow-400/10 p-6 md:p-8 mb-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10">
+          <div className={cn(
+            "bg-[#0A0A0A]/90 backdrop-blur-xl rounded-3xl border border-yellow-400/10 p-6 md:p-8 mb-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10 transition-all duration-300",
+            !isOnBSCTestnet && isConnected && "opacity-50 pointer-events-none"
+          )}>
             
             {/* Presale Info Grid */}
             <div className="grid grid-cols-2 gap-4 mb-8">
@@ -335,7 +397,7 @@ function PresalePageInner() {
                   value={desiredTokens}
                   onChange={(e) => setDesiredTokens(e.target.value)}
                   className="h-12 md:h-14 text-lg font-semibold bg-black/60 border-yellow-400/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
-                  disabled={loading || presaleInfo?.isPaused}
+                  disabled={loading || presaleInfo?.isPaused || !isOnBSCTestnet}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
                   BBLIP
@@ -351,11 +413,13 @@ function PresalePageInner() {
                   <button
                     key={token.id}
                     onClick={() => setSelectedToken(token.id)}
+                    disabled={!isOnBSCTestnet}
                     className={cn(
                       "p-3 md:p-4 rounded-xl flex flex-col items-center justify-center transition-all duration-300 border-2",
                       selectedToken === token.id 
                         ? 'bg-yellow-400/10 border-yellow-400/60 scale-105 shadow-lg' 
-                        : 'bg-black/30 border-yellow-400/10 hover:border-yellow-400/30 hover:scale-102'
+                        : 'bg-black/30 border-yellow-400/10 hover:border-yellow-400/30 hover:scale-102',
+                      !isOnBSCTestnet && "opacity-50 cursor-not-allowed"
                     )}
                   >
                     <Image src={token.icon} alt={token.name} width={32} height={32} className="mb-2" />
@@ -367,7 +431,7 @@ function PresalePageInner() {
             </div>
 
             {/* Payment Summary - Clean Design */}
-            {desiredTokens && paymentAmount !== '0' && (
+            {desiredTokens && paymentAmount !== '0' && isOnBSCTestnet && (
               <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 border border-zinc-800 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <DollarSign className="w-4 h-4 text-yellow-400" />
@@ -389,13 +453,11 @@ function PresalePageInner() {
             )}
 
             {/* Status Messages */}
-            {(error || statusMessage || isCheckingAllowance) && (
+            {(error || statusMessage) && (
               <div className={cn(
                 "w-full mb-4 p-3 rounded-xl text-center font-medium border flex items-center justify-center gap-2",
                 error 
                   ? 'bg-red-500/10 text-red-300 border-red-500/20' 
-                  : isCheckingAllowance
-                  ? 'bg-blue-500/10 text-blue-300 border-blue-500/20'
                   : 'bg-green-500/10 text-green-300 border-green-500/20'
               )}>
                 {error ? (
@@ -403,7 +465,7 @@ function PresalePageInner() {
                 ) : (
                   <div className="w-4 h-4 border-2 border-current/30 border-t-current rounded-full animate-spin"></div>
                 )}
-                {error || (isCheckingAllowance ? 'Checking allowance...' : statusMessage)}
+                {error || statusMessage}
               </div>
             )}
 
@@ -423,6 +485,29 @@ function PresalePageInner() {
                     Connect Wallet 
                   </div>
                 </Button>
+              ) : !isOnBSCTestnet ? (
+                /* Switch Network Button - Show when connected but wrong network */
+                <Button
+                  className={cn(
+                    "w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg h-12 md:h-14",
+                    "transition-all duration-300"
+                  )}
+                  size="lg"
+                  onClick={handleSwitchChain}
+                  disabled={isSwitchingChain}
+                >
+                  {isSwitchingChain ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Switching Network...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Network className="w-4 h-4" />
+                      Switch to BSC Testnet
+                    </div>
+                  )}
+                </Button>
               ) : (
                 <>
                   {/* Approve Button - Only show when token is not BNB, has no allowance, and not currently approving/buying */}
@@ -436,10 +521,10 @@ function PresalePageInner() {
                       disabled={isApproving || !desiredTokens || isCheckingAllowance}
                       onClick={handleApprove}
                     >
-                      {isApproving ? (
+                      {(isApproving || isCheckingAllowance) ? (
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                          Approving {selectedTokenName}...
+                          {isCheckingAllowance ? `Checking allowance...` : `Approving ${selectedTokenName}...`}
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
@@ -466,10 +551,10 @@ function PresalePageInner() {
                       }
                       onClick={handleBuy}
                     >
-                      {isBuying ? (
+                      {(isBuying || isCheckingAllowance) ? (
                         <div className="flex items-center gap-2">
                           <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          Processing Purchase...
+                          {isCheckingAllowance ? `Checking allowance...` : `Processing Purchase...`}
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
@@ -478,15 +563,6 @@ function PresalePageInner() {
                         </div>
                       )}
                     </Button>
-                  )}
-
-                  {/* Helper Text when checking allowance */}
-                  {isCheckingAllowance && paymentAmount !== '0' && (
-                    <div className="text-center p-3 bg-zinc-900/50 rounded-lg border border-zinc-800">
-                      <p className="text-sm text-gray-400">
-                        Verifying your {selectedTokenName} allowance...
-                      </p>
-                    </div>
                   )}
                 </>
               )}
@@ -550,6 +626,16 @@ function PresalePageInner() {
                     <div>
                       <h4 className="text-sm font-semibold text-white mb-1">Early Bird Pricing</h4>
                       <p className="text-xs text-gray-400">Available during presale period only</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-start gap-3 p-3 bg-black/20 rounded-lg">
+                    <div className="p-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20">
+                      <Network className="w-4 h-4 text-orange-400" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-semibold text-white mb-1">Network Requirement</h4>
+                      <p className="text-xs text-gray-400">Presale is available on BSC Testnet only</p>
                     </div>
                   </div>
                 </div>

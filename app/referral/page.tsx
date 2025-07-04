@@ -94,8 +94,8 @@ export default function ReferralPage() {
       
       if (navigator.share) {
         navigator.share({
-          title: 'Join BBLIP - Earn Crypto Rewards Together',
-          text: '🚀 Join BBLIP and earn rewards when you stake! Use my referral link and we both earn bonus BBLIP tokens.',
+          title: 'Join BBLP - Earn Crypto Rewards Together',
+          text: '🚀 Join BBLP and earn rewards when you stake! Use my referral link and we both earn bonus BBLP tokens.',
           url: link
         }).catch(() => {
           // User cancelled share
@@ -121,7 +121,7 @@ export default function ReferralPage() {
               <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
               <Image 
                 src="/logo.svg" 
-                alt="BBLIP" 
+                alt="BBLP" 
                 width={32} 
                 height={32} 
                 className="absolute inset-0 m-auto animate-pulse" 
@@ -158,11 +158,13 @@ export default function ReferralPage() {
           <div className="inline-flex items-center gap-3 mb-4">
           
             <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400">
-              Referral Program
+            Invite Friends, Earn Together
+
             </h1>
           </div>
           <p className="text-gray-400 text-base max-w-lg mx-auto">
-            Invite friends to BBLIP and earn rewards together           </p>
+          Share BBLP with your friends and earn rewards for every successful referral. The more friends join, the more rewards you get!
+          </p>
         </div>
 
         {/* Stats Cards */}
@@ -184,7 +186,7 @@ export default function ReferralPage() {
                 <Coins className="w-5 h-5 md:w-6 md:h-6 text-yellow-400" />
               </div>
               <div className="text-2xl md:text-3xl font-bold text-white mb-1">{parseFloat(referralStats.totalRewards).toFixed(0)}</div>
-              <div className="text-xs md:text-sm text-gray-400 font-medium">BBLIP Earned</div>
+              <div className="text-xs md:text-sm text-gray-400 font-medium">BBLP Earned</div>
               <div className="text-xs text-gray-500 mt-1">Total rewards</div>
             </div>
 
@@ -319,7 +321,7 @@ export default function ReferralPage() {
                         </div>
                         <div>
                           <p className="font-bold text-white">Tier {tier.tier}</p>
-                          <p className="text-sm text-gray-400">{tier.stake}+ BBLIP stake</p>
+                          <p className="text-sm text-gray-400">{tier.stake}+ BBLP stake</p>
                         </div>
                       </div>
                       <div className="flex gap-6">

@@ -183,64 +183,49 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
 
           {/* Token List */}
           {filteredTokens.map((token) => {
-            const isSelected = selectedToken?.address === token.address;
-            const isOtherToken = otherToken?.address === token.address;
+            const isSelected = selectedToken && selectedToken.address === token.address;
+            const isOtherToken = otherToken && otherToken.address === token.address;
+            const isDisabled = isSelected || isOtherToken || token.disabled || token.comingSoon;
             const balance = balances[token.address];
             
             return (
               <button
                 key={token.address}
-                onClick={() => handleSelect(token)}
-                disabled={isSelected || isOtherToken}
+                type="button"
                 className={cn(
-                  "w-full p-3 rounded-xl text-left transition-colors",
-                  "bg-black/20 border border-zinc-800",
-                  "hover:bg-yellow-400/5 hover:border-yellow-400/20",
-                  "disabled:opacity-50 disabled:cursor-not-allowed",
-                  isSelected && "bg-yellow-400/10 border-yellow-400/20"
+                  "flex items-center w-full px-4 py-3 rounded-xl transition-all duration-200 border border-zinc-800 bg-zinc-900/80 hover:bg-zinc-800/60 mb-2 gap-3 text-left",
+                  isSelected && 'border-yellow-400 bg-yellow-400/10',
+                  isOtherToken && 'opacity-50 pointer-events-none',
+                  isDisabled && 'opacity-50 cursor-not-allowed',
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
                 )}
+                onClick={() => !isDisabled && handleSelect(token)}
+                disabled={isDisabled}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="relative w-8 h-8">
-                      {token.logoURI ? (
-                        <Image
-                          src={token.logoURI}
-                          alt={token.symbol}
-                          width={32}
-                          height={32}
-                          className="rounded-full"
-                          onError={(e) => {
-                            // Hide the image on error
-                            const target = e.target as HTMLImageElement;
-                            target.style.display = 'none';
-                          }}
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-r from-yellow-200 to-yellow-400 flex items-center justify-center text-black text-sm font-semibold">
-                          {token.symbol.slice(0, 2)}
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div>
-                      <div className="font-medium text-white">
-                        {token.symbol}
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        {token.name}
-                      </div>
+                {token.logoURI ? (
+                  <Image src={token.logoURI} alt={token.symbol} width={28} height={28} className="w-7 h-7 rounded-full border border-zinc-800 bg-zinc-950" />
+                ) : (
+                  <div className="w-7 h-7 rounded-full border border-zinc-800 bg-zinc-950 flex items-center justify-center">
+                    <span className="text-xs text-gray-400">{token.symbol.slice(0, 2)}</span>
+                  </div>
+                )}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold text-white">{token.symbol}</span>
+                    {token.comingSoon && (
+                      <span className="ml-2 px-2 py-0.5 rounded bg-yellow-400 text-black text-xs font-bold">Coming Soon</span>
+                    )}
+                  </div>
+                  <div className="text-xs text-gray-400">{token.name}</div>
+                </div>
+                
+                {balance && (
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-white">
+                      {formatBalance(balance)}
                     </div>
                   </div>
-                  
-                  {balance && (
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-white">
-                        {formatBalance(balance)}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                )}
               </button>
             );
           })}

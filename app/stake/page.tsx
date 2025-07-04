@@ -1,6 +1,6 @@
 'use client';
 
-import { useAccount } from 'wagmi';
+import { useAccount, useSwitchChain } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense, useCallback } from 'react';
 import Particles from "@/components/ui/particles";
@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import Link from 'next/link';
 import { useWallet } from '@/hooks/useWallet';
 import { ethers } from 'ethers';
-import { ArrowLeft, ChevronDown, ChevronUp, Info, Zap, TrendingUp, Shield, Clock, DollarSign, History, ExternalLink, XCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ChevronUp, Info, Zap, TrendingUp, Shield, Clock, DollarSign, History, ExternalLink, XCircle, AlertCircle, Loader2, Network } from 'lucide-react';
 import WalletModal from '@/components/WalletModal';
 import { userService, cardService, stakeLogsService } from '@/lib/supabase';
 import { useChainId } from 'wagmi';
@@ -26,6 +26,9 @@ const CARD_REQUIREMENTS = {
   SILVER: 2000,
   BLACK: 3500
 };
+
+// BSC Testnet Chain ID
+const BSC_TESTNET_CHAIN_ID = 97;
 
 // Enhanced styles
 const glowStyles = `
@@ -112,6 +115,7 @@ interface StakeTransaction {
 
 function StakeContent() {
   const { isConnected, address, chain } = useAccount();
+  const { switchChain } = useSwitchChain();
   const chainId = useChainId();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -131,6 +135,8 @@ function StakeContent() {
   });
   const [userInteracted, setUserInteracted] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<StakeTransaction | null>(null);
+  const [isSwitchingChain, setIsSwitchingChain] = useState(false);
+  const [switchChainError, setSwitchChainError] = useState<string | null>(null);
   
   const { 
     walletState, 
@@ -153,7 +159,35 @@ function StakeContent() {
 
   // Check if user is on the correct network (BSC Testnet - Chain ID 97)
   const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
-  const isOnBSCTestnet = actualChainId === 97;
+  const isOnBSCTestnet = actualChainId === BSC_TESTNET_CHAIN_ID;
+
+  // Handle chain switching
+  const handleSwitchChain = async () => {
+    if (!switchChain) return;
+    
+    try {
+      setIsSwitchingChain(true);
+      setSwitchChainError(null);
+      await switchChain({ chainId: BSC_TESTNET_CHAIN_ID });
+    } catch (err: any) {
+      console.error('Failed to switch chain:', err);
+      if (err.code === 4001) {
+        setSwitchChainError('Chain switch was cancelled by user');
+      } else {
+        setSwitchChainError('Failed to switch to BSC Testnet. Please switch manually in your wallet.');
+      }
+    } finally {
+      setIsSwitchingChain(false);
+    }
+  };
+
+  // Clear switch chain error after 5 seconds
+  useEffect(() => {
+    if (switchChainError) {
+      const timer = setTimeout(() => setSwitchChainError(null), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [switchChainError]);
 
   // Initial loading state
   useEffect(() => {
@@ -182,7 +216,7 @@ function StakeContent() {
   // Load stake logs when wallet is connected
   useEffect(() => {
     const loadStakeLogs = async () => {
-      if (isConnected && address) {
+      if (isConnected && address && isOnBSCTestnet) {
         try {
           const logs = await stakeLogsService.getUserStakeLogs(address);
           setStakeLogs(logs);
@@ -194,24 +228,22 @@ function StakeContent() {
     };
 
     loadStakeLogs();
-  }, [isConnected, address, userData.stakes]); // Reload when stakes change
-
-  // Remove wallet connection redirect - allow access without wallet
+  }, [isConnected, address, userData.stakes, isOnBSCTestnet]); // Reload when stakes change
 
   // Format token amounts from wei to ether
-  const formatTokenAmount = useCallback((amount: string) => {
+  const formatTokenAmount = useCallback((amount: string, decimals: number = 8) => {
     try {
-      if (!amount || amount === '0') return '0.00';
+      if (!amount || amount === '0') return '0.00000000';
       if (amount.includes('.')) {
         const num = parseFloat(amount);
-        return isNaN(num) ? '0.00' : num.toFixed(2);
+        return isNaN(num) ? '0.00000000' : num.toFixed(decimals);
       }
       const formatted = ethers.formatEther(amount);
       const num = parseFloat(formatted);
-      return isNaN(num) ? '0.00' : num.toFixed(2);
+      return isNaN(num) ? '0.00000000' : num.toFixed(decimals);
     } catch (error) {
       console.error('Error formatting amount:', error);
-      return '0.00';
+      return '0.00000000';
     }
   }, []);
 
@@ -249,8 +281,8 @@ function StakeContent() {
     // Check for insufficient balance
     if (!hasEnoughBalance() && stakeAmount) {
       return {
-        title: 'Insufficient BBLIP Balance',
-        message: `You need ${parseFloat(stakeAmount).toFixed(2)} BBLIP for staking.\nYour current balance: ${formatTokenAmount(userData.tokenBalance)} BBLIP`,
+              title: 'Insufficient BBLP Balance',
+      message: `You need ${parseFloat(stakeAmount).toFixed(2)} BBLP for staking.\nYour current balance: ${formatTokenAmount(userData.tokenBalance)} BBLP`,
         showPurchaseButton: true,
         purchaseAmount: parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))
       };
@@ -542,7 +574,7 @@ function StakeContent() {
     }
 
     const stakeAmountNum = parseFloat(stakeAmount);
-    const apr = 10;
+    const apr = 32;
     
     const yearlyReward = (stakeAmountNum * apr) / 100;
     const dailyReward = yearlyReward / 365;
@@ -590,10 +622,10 @@ function StakeContent() {
 
     const targetCard = getCardTypeForAmount(stakeAmountNum);
     if (targetCard) {
-      return `Insufficient balance. You need ${difference.toFixed(2)} more BBLIP to activate your ${targetCard} card (min. ${CARD_REQUIREMENTS[targetCard]} BBLIP stake required).`;
+      return `Insufficient balance. You need ${difference.toFixed(2)} more BBLP to activate your ${targetCard} card (min. ${CARD_REQUIREMENTS[targetCard]} BBLP stake required).`;
     }
     
-    return `Insufficient balance. You need ${difference.toFixed(2)} more BBLIP.`;
+    return `Insufficient balance. You need ${difference.toFixed(2)} more BBLP.`;
   };
 
   if (loading) {
@@ -637,15 +669,62 @@ function StakeContent() {
           
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-2">
-              Stake BBLIP
+              Stake BBLP
             </h1>
             <p className="text-gray-400 text-sm md:text-base">
-              Earn <span className="text-yellow-200 font-semibold">10% APR</span> by staking your tokens
+              Earn <span className="text-yellow-200 font-semibold">32% APR</span> by staking your tokens
             </p>
           </div>
 
+          {/* Network Warning - Show when connected but not on BSC Testnet */}
+          {isConnected && !isOnBSCTestnet && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 rounded-lg bg-orange-500/20 border border-orange-500/30">
+                  <Network className="w-5 h-5 text-orange-400" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-orange-200">Wrong Network</h3>
+                  <p className="text-xs text-orange-300/80">
+                    You&apos;re connected to {chain?.name || 'Unknown Network'}. Please switch to BSC Testnet to stake your tokens.
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleSwitchChain}
+                disabled={isSwitchingChain}
+                className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg h-10"
+              >
+                {isSwitchingChain ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Switching Network...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Network className="w-4 h-4" />
+                    Switch to BSC Testnet
+                  </div>
+                )}
+              </Button>
+            </div>
+          )}
+
+          {/* Switch Chain Error Message */}
+          {switchChainError && (
+            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-red-400" />
+                <p className="text-sm text-red-300">{switchChainError}</p>
+              </div>
+            </div>
+          )}
+
           {/* Main Staking Card */}
-          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-3xl border border-zinc-800 p-6 md:p-8 mb-6 shadow-xl">
+          <div className={cn(
+            "bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-3xl border border-zinc-800 p-6 md:p-8 mb-6 shadow-xl transition-all duration-300",
+            !isOnBSCTestnet && isConnected && "opacity-50 pointer-events-none"
+          )}>
             
             {/* Portfolio Overview Header */}
             <div className="flex items-center gap-3 mb-6">
@@ -665,8 +744,8 @@ function StakeContent() {
                   <div className="w-2 h-2 rounded-full bg-blue-400"></div>
                   <p className="text-xs text-gray-500">Available</p>
                 </div>
-                <p className="text-lg md:text-2xl font-bold text-white mb-1">{formatTokenAmount(userData.tokenBalance)}</p>
-                <p className="text-xs md:text-sm text-gray-400">BBLIP Balance</p>
+                <p className="text-lg md:text-2xl font-bold text-white mb-1">{formatTokenAmount(userData.tokenBalance, 2)}</p>
+                <p className="text-xs md:text-sm text-gray-400">BBLP Balance</p>
               </div>
 
               <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-3 md:p-6 rounded-xl md:rounded-2xl border border-yellow-500/30 shadow-xl shadow-yellow-500/5">
@@ -674,7 +753,7 @@ function StakeContent() {
                   <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
                   <p className="text-xs text-gray-500">Staked</p>
                 </div>
-                <p className="text-lg md:text-2xl font-bold text-yellow-400 mb-1">{formatTokenAmount(userData.stakedAmount)}</p>
+                <p className="text-lg md:text-2xl font-bold text-yellow-400 mb-1">{formatTokenAmount(userData.stakedAmount, 2)}</p>
                 <p className="text-xs md:text-sm text-gray-400">Total Staked</p>
               </div>
 
@@ -683,7 +762,11 @@ function StakeContent() {
                   <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
                   <p className="text-xs text-gray-500">Pending</p>
                 </div>
-                <p className="text-lg md:text-2xl font-bold text-green-400 mb-1">{formatTokenAmount(userData.pendingRewards)}</p>
+                <p className="text-lg md:text-2xl font-bold text-green-400 mb-1">{
+                  Number(formatTokenAmount(userData.pendingRewards, 8)) >= 0.01
+                    ? formatTokenAmount(userData.pendingRewards, 2)
+                    : '0.00'
+                }</p>
                 <p className="text-xs md:text-sm text-gray-400">Rewards</p>
               </div>
             </div>
@@ -710,10 +793,10 @@ function StakeContent() {
                   value={stakeAmount}
                   onChange={(e) => setStakeAmount(e.target.value)}
                   className="h-12 md:h-14 text-lg font-semibold bg-black/60 border-yellow-400/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
-                  disabled={walletState.loading}
+                  disabled={walletState.loading || !isOnBSCTestnet}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                  BBLIP
+                  BBLP
                 </div>
               </div>
 
@@ -738,6 +821,31 @@ function StakeContent() {
                   <Zap className="w-4 h-4" />
                   <span className="text-sm md:text-base">Connect Wallet to Stake</span>
                 </div>
+              </Button>
+            ) : !isOnBSCTestnet ? (
+              <Button
+                onClick={handleSwitchChain}
+                disabled={isSwitchingChain}
+                className={cn(
+                  "w-full h-12 md:h-14 font-semibold text-white mt-6",
+                  "bg-gradient-to-r from-orange-500 to-red-500",
+                  "hover:from-orange-600 hover:to-red-600",
+                  "shadow-lg shadow-orange-500/25 hover:shadow-orange-500/40",
+                  "transition-all duration-300 transform hover:scale-[1.02]"
+                )}
+                size="lg"
+              >
+                {isSwitchingChain ? (
+                  <div className="flex items-center justify-center w-full gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    <span className="text-sm md:text-base">Switching Network...</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center w-full gap-2">
+                    <Network className="w-4 h-4" />
+                    <span className="text-sm md:text-base">Switch to BSC Testnet</span>
+                  </div>
+                )}
               </Button>
             ) : (
               <>
@@ -768,7 +876,7 @@ function StakeContent() {
                     className="w-full mt-3 bg-transparent border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all duration-200"
                   >
                     <Link href={`/presale?amount=${parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))}`}>
-                      Purchase {(parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))).toFixed(2)} BBLIP
+                      Purchase {(parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))).toFixed(2)} BBLP
                     </Link>
                   </Button>
                 )}
@@ -784,7 +892,7 @@ function StakeContent() {
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold text-white">Estimated Rewards</h3>
-                    <p className="text-xs text-gray-500">10% APR calculated returns</p>
+                    <p className="text-xs text-gray-500">32% APR calculated returns</p>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-6">
@@ -793,16 +901,14 @@ function StakeContent() {
                       <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
                       <p className="text-xs text-gray-400 font-medium">Daily</p>
                     </div>
-                    <p className="text-lg md:text-xl font-bold text-blue-400 mb-1">{estimatedRewards.daily.toFixed(4)}</p>
-                    <p className="text-xs text-gray-500">~${estimatedRewards.dailyUSD.toFixed(2)} USD</p>
+                    <p className="text-lg md:text-xl font-bold text-blue-400 mb-1">{estimatedRewards.daily.toFixed(4)} BBLP</p>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
                       <p className="text-xs text-gray-400 font-medium">Yearly</p>
                     </div>
-                    <p className="text-lg md:text-xl font-bold text-green-400 mb-1">{estimatedRewards.yearly.toFixed(2)}</p>
-                    <p className="text-xs text-gray-500">~${estimatedRewards.yearlyUSD.toFixed(2)} USD</p>
+                    <p className="text-lg md:text-xl font-bold text-green-400 mb-1">{estimatedRewards.yearly.toFixed(2)} BBLP</p>
                   </div>
                 </div>
               </div>
@@ -810,8 +916,11 @@ function StakeContent() {
           </div>
 
           {/* Rewards Available - Only show when wallet is connected */}
-          {isConnected && userData.pendingRewards && parseFloat(formatTokenAmount(userData.pendingRewards)) > 0 && (
-            <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-green-500/30 p-4 md:p-6 mb-6 shadow-xl shadow-green-500/10">
+          {isConnected && userData.pendingRewards && Number(userData.pendingRewards) > 0 && (
+            <div className={cn(
+              "bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-green-500/30 p-4 md:p-6 mb-6 shadow-xl shadow-green-500/10 transition-all duration-300",
+              !isOnBSCTestnet && "opacity-50 pointer-events-none"
+            )}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="p-3 rounded-xl bg-green-400/10 border border-green-400/20">
@@ -823,21 +932,22 @@ function StakeContent() {
                       <h4 className="text-sm font-semibold text-white">Rewards Available</h4>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <p className="text-lg font-bold text-green-400">{formatTokenAmount(userData.pendingRewards)}</p>
-                      <p className="text-xs text-gray-500">BBLIP</p>
+                      <p className="text-lg font-bold text-green-400">{formatTokenAmount(userData.pendingRewards, 8)}</p>
+                      <p className="text-xs text-gray-500">BBLP</p>
                     </div>
                   </div>
                 </div>
                 
                 <Button
                   onClick={handleClaimRewards}
-                  disabled={walletState.loading}
+                  disabled={walletState.loading || !isOnBSCTestnet}
                   className={cn(
                     "font-semibold text-black px-4 md:px-6",
                     "bg-gradient-to-r from-green-400 via-green-300 to-green-400",
                     "hover:from-green-300 hover:via-green-200 hover:to-green-300",
                     "shadow-lg shadow-green-400/25 hover:shadow-green-400/40",
-                    "transition-all duration-300 transform hover:scale-105"
+                    "transition-all duration-300 transform hover:scale-105",
+                    !isOnBSCTestnet && "opacity-50 cursor-not-allowed"
                   )}
                   size="sm"
                 >
@@ -848,7 +958,6 @@ function StakeContent() {
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
-                      <DollarSign className="w-4 h-4" />
                       <span className="text-sm">Claim</span>
                     </div>
                   )}
@@ -894,7 +1003,7 @@ function StakeContent() {
                       </div>
                       <div>
                         <h4 className="text-sm font-semibold text-white mb-1">Annual Percentage Rate</h4>
-                        <p className="text-xs text-gray-400 leading-relaxed">Earn 10% APR on your staked tokens</p>
+                        <p className="text-xs text-gray-400 leading-relaxed">Earn 32% APR on your staked tokens</p>
                       </div>
                     </div>
                     
@@ -927,6 +1036,16 @@ function StakeContent() {
                         <p className="text-xs text-gray-400 leading-relaxed">No hidden fees</p>
                       </div>
                     </div>
+                    
+                    <div className="flex items-start gap-3 p-3 rounded-lg bg-zinc-800/30">
+                      <div className="p-1.5 rounded-lg bg-red-400/10 border border-red-400/20 mt-0.5">
+                        <Network className="w-3 h-3 text-red-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-semibold text-white mb-1">Network Requirement</h4>
+                        <p className="text-xs text-gray-400 leading-relaxed">Staking is available on BSC Testnet only</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -935,7 +1054,10 @@ function StakeContent() {
 
           {/* Active Stakes List - Only show when wallet is connected */}
           {isConnected && userData.stakes && userData.stakes.length > 0 && (
-            <div className=" py-5 rounded-3xl  p-0  shadow-xl">
+            <div className={cn(
+              "py-5 rounded-3xl p-0 shadow-xl transition-all duration-300",
+              !isOnBSCTestnet && "opacity-50 pointer-events-none"
+            )}>
               {/* Active Stakes Header */}
               <div className="flex items-center gap-3 mb-6">
             
@@ -965,7 +1087,7 @@ function StakeContent() {
                             <span className="text-white font-bold text-xs md:text-sm">#{stake.stakeId}</span>
                           </div>
                           <div>
-                            <p className="text-lg md:text-xl font-bold text-white">{stakeAmount} BBLIP</p>
+                            <p className="text-lg md:text-xl font-bold text-white">{formatTokenAmount(stake.amount, 2)} BBLP</p>
                             <p className="text-xs md:text-sm text-gray-400">
                               Staked on {stakeDate.toLocaleDateString('en-US', { 
                                 year: 'numeric', 
@@ -1009,7 +1131,7 @@ function StakeContent() {
                         
                         <Button
                           onClick={() => handleUnstake(stake.stakeId)}
-                          disabled={walletState.loading || !canUnstake}
+                          disabled={walletState.loading || !canUnstake || !isOnBSCTestnet}
                           className={cn(
                             "font-semibold text-black px-4 md:px-6",
                             "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400",
@@ -1146,7 +1268,7 @@ function StakeContent() {
                             {log.amount !== '0' && (
                               <div>
                                 <p className="text-gray-400">Amount</p>
-                                <p className="font-semibold text-white">{parseFloat(log.amount).toFixed(2)} BBLIP</p>
+                                <p className="font-semibold text-white">{parseFloat(log.amount).toFixed(2)} BBLP</p>
                               </div>
                             )}
                             {log.block_number && (

@@ -489,21 +489,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
       initial="hidden"
       animate="visible">
 
-      {/* Network Switch Button - Only show when on wrong network */}
-      {!isOnBSCTestnet && (
-        <motion.div variants={itemVariants} className="mt-20 -mb-5 flex w-full justify-center">
-          <div className="flex w-full max-w-[24rem] flex-col gap-2">
-            <button
-              onClick={handleNetworkSwitch}
-              disabled={isSwitching}
-              className="w-full px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <FaTriangleExclamation className="w-4 h-4" />
-              {isSwitching ? "Switching Network..." : " Switch to BSC Testnet"}
-            </button>
-          </div>
-        </motion.div>
-      )}
+  
 
       {/* User Cards Display - Only show when on correct network */}
       {isOnBSCTestnet && (
@@ -585,14 +571,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
 
     
 
-      {/* Network requirement notice */}
-      {!isOnBSCTestnet && (
-        <motion.div variants={itemVariants} className="mt-8 text-center">
-            <p className="text-red-600 text-sm">
-              Switch to BSC to view your cards and access all features.
-            </p>
-        </motion.div>
-      )}
+    
 
       {/* Card Features Modal */}
       {showCardModal && (

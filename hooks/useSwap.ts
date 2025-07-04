@@ -31,7 +31,7 @@ export const useSwap = () => {
 
   const [swapState, setSwapState] = useState<SwapState>({
     inputToken: DEFAULT_TOKENS.BNB,
-    outputToken: DEFAULT_TOKENS.CAKE,
+    outputToken: DEFAULT_TOKENS.USDT,
     inputAmount: '',
     outputAmount: '',
     inputUSDValue: '0.00',
@@ -48,6 +48,18 @@ export const useSwap = () => {
     isApproved: false,
     isApproving: false
   });
+
+  // BBLP token tanımı
+  const BBLP_TOKEN = {
+    name: 'BBLP Token',
+    symbol: 'BBLP',
+    address: '0xBBLP_TOKEN_ADDRESS', // Gerçek adres ile değiştirilmeli
+    decimals: 18,
+    chainId: BSC_MAINNET_CHAIN_ID,
+    logoURI: '/logo.svg',
+    comingSoon: true,
+    disabled: true
+  };
 
   // Load token list
   const loadTokenList = useCallback(async () => {
@@ -74,6 +86,7 @@ export const useSwap = () => {
       };
       
       setTokens([
+        BBLP_TOKEN,
         DEFAULT_TOKENS.BNB,
         wbnbToken, // Add WBNB right after BNB
         DEFAULT_TOKENS.CAKE,
@@ -99,6 +112,7 @@ export const useSwap = () => {
         chainId: BSC_MAINNET_CHAIN_ID
       };
       setTokens([
+        BBLP_TOKEN,
         DEFAULT_TOKENS.BNB,
         wbnbToken,
         DEFAULT_TOKENS.CAKE,

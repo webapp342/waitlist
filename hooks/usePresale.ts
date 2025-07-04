@@ -166,7 +166,12 @@ export const usePresale = () => {
       if (err.code === 4001) {
         throw new Error('User rejected the buy transaction');
       }
-      throw new Error('Failed to complete the purchase');
+      // Spesifik bakiye yetersizliği hatası için kullanıcı dostu mesaj
+      const errMsg = err?.data?.message || err?.message || '';
+      if (errMsg.includes('transfer amount exceeds balance')) {
+        throw new Error('Insufficient balance: Your wallet does not have enough balance.');
+      }
+      throw new Error('Insufficient balance: Your wallet does not have enough balance.');
     }
   };
 
