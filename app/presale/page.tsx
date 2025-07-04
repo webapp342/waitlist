@@ -165,7 +165,7 @@ function PresalePageInner() {
     
     try {
       setIsApproving(true);
-      setStatusMessage('Approving tokens...');
+      setStatusMessage('Approving tokens...');  
       await approveToken(selectedToken, paymentAmount);
       setStatusMessage('Tokens approved successfully!');
       
@@ -177,7 +177,7 @@ function PresalePageInner() {
       if (err.message.includes('User rejected')) {
         setError('Approval was cancelled by user');
       } else {
-        setError(err.message || 'Failed to approve tokens');
+        setError(err.message || 'Please try again');
       }
     } finally {
       setIsApproving(false);
