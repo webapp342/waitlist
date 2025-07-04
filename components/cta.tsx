@@ -162,7 +162,9 @@ export default function CTA() {
 
           {/* Microcopy under button */}
           {!isWalletModalOpen && (
-            <p className="text-sm text-zinc-400 -mt-2">Start in 30&nbsp;seconds — no KYC required</p>
+            <div className="text-center">
+              <p className="text-xs text-yellow-400 -mt-2">⚡ Limited time offer - No KYC required</p>
+            </div>
           )}
         </div>
     

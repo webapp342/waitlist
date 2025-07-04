@@ -31,85 +31,88 @@ const roadmapData: Milestone[] = [
   {
     quarter: 'Q1',
     year: '2025',
-    status: 'in-progress',
-    title: 'Presale & Foundation',
+    status: 'completed',
+    title: 'Platform Launch',
     icon: Rocket,
     items: [
-      'Presale campaign launch',
-      'Community building & engagement',
-      'Smart contract security audits',
-      'Referral system optimization',
-      'Staking platform beta testing'
+      'Web application development',
+      'Swap system implementation',
+      'Staking platform launch',
+      'Crypto card system beta launch',
+
+      'Referral system deployment'
     ]
   },
   {
     quarter: 'Q2',
     year: '2025',
-    status: 'upcoming',
-    title: 'Token Launch',
+    status: 'in-progress',
+    title: 'Presale & Expansion',
     icon: Target,
     items: [
-      'Token generation event (TGE)',
-      'PancakeSwap DEX listing',
-      'Staking platform official launch',
-      'Mobile app development start',
-      'Partnership announcements'
+      'Public presale campaign',
+      'DEX listing on PancakeSwap , Uniswap, dYdX',
+      'Community growth initiatives',
+      'Strategic partnerships (Binance, Coinbase, Kraken)',
+
     ]
   },
   {
     quarter: 'Q3',
     year: '2025',
     status: 'upcoming',
-    title: 'Exchange Expansion',
-    icon: Globe,
+    title: 'Card System & DEX',
+    icon: Shield,
     items: [
-      'Tier 2 CEX listings (Gate.io, MEXC)',
-      'Cross-chain bridge development',
-      'Governance portal launch',
-      'DeFi yield farming integration',
-      'Marketing campaign expansion'
+      'Crypto card system public launch',
+      'Integration with top DEXs (Uniswap, dYdX, PancakeSwap)',
+      'iOS & Android app beta release',
+      'Mobile app development kickoff',
+      'Tier 2 CEX listings (Gate.io, KuCoin)',
+
+      'Enhanced security features',
     ]
   },
   {
     quarter: 'Q4',
     year: '2025',
     status: 'upcoming',
-    title: 'Platform Growth',
-    icon: Zap,
+    title: 'Exchange Listings',
+    icon: Globe,
     items: [
-      'Tier 1 CEX listings (Binance, OKX)',
-      'Advanced staking features',
-      'Mobile app public release',
+      'Crypto card public launch',
       'Institutional partnerships',
-      'DAO governance implementation'
+      'Cross-chain bridge development',
+      'Tier 1 CEX listing (Binance, Coinbase, Kraken)',
+
+      'Global marketing campaign'
     ]
   },
   {
     quarter: 'Q1',
     year: '2026',
     status: 'upcoming',
-    title: 'Innovation Hub',
-    icon: Shield,
+    title: 'Major Exchange Integration',
+    icon: Zap,
     items: [
-      'Multi-chain deployment',
-      'NFT ecosystem integration',
-      'Decentralized finance suite',
-      'AI-powered analytics tools',
-      'Educational platform launch'
+      'Advanced DeFi features',
+      'Fiat on/off ramp expansion',
+      'Enterprise solutions launch',
+      'Regional card partnerships'
     ]
   },
   {
     quarter: 'Q2',
     year: '2026',
     status: 'upcoming',
-    title: 'Mass Adoption',
+    title: 'Global Expansion',
     icon: Trophy,
     items: [
-      'Fiat on/off ramp integration',
-      'Enterprise solution rollout',
-      'Global community expansion',
-      '1M+ active users milestone',
-      'Ecosystem token burns'
+      'Additional Tier 1 CEX listings',
+      'Global card system rollout',
+      'Multi-chain ecosystem expansion',
+      'DAO governance implementation',
+      'Advanced trading features'
     ]
   }
 ]
@@ -320,7 +323,7 @@ export default function RoadmapSection() {
                   <Rocket className="w-5 h-5 text-yellow-400" />
                   <div>
                     <p className="text-sm font-semibold text-yellow-200">Presale Now Live!</p>
-                    <p className="text-xs text-zinc-400">Join our community and secure your BBLIP tokens at presale prices</p>
+                    <p className="text-xs text-zinc-400">Join our community and secure your BBLP tokens at presale prices</p>
                   </div>
                 </div>
               </div>

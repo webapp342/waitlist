@@ -49,7 +49,7 @@ export default function Footer() {
               </motion.a>
 
               <motion.a 
-                href="https://twitter.com/bblip"
+                href="https://x.com/bblip"
                 target="_blank"
                 rel="noopener noreferrer"
                 initial={{ opacity: 0, y: 20 }}

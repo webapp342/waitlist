@@ -1,7 +1,7 @@
 'use client'
 
 import { motion } from 'framer-motion'
-import { Shield, Lock, Zap, Globe, Rocket } from 'lucide-react'
+import { Shield, Lock, Zap, Globe, Rocket, AlertCircle } from 'lucide-react'
 import Container from './container'
 
 
@@ -28,9 +28,9 @@ export default function HeroSection() {
           className="text-center"
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 mb-0 bg-yellow-400/10 border border-yellow-400/30 rounded-full">
-          <Rocket className="w-5 h-5 text-yellow-400" />
+          <AlertCircle className="w-5 h-5 text-yellow-400" />
 
-            <span className="text-sm text-yellow-200 font-medium">Presale Now Live!</span>
+            <span className="text-sm text-yellow-200 font-medium">Limited Early Adopter Card Allocation </span>
           </div>
           
         

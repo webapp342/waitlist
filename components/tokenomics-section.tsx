@@ -13,16 +13,20 @@ import Container from './container'
 import Link from 'next/link'
 
 const keyAllocations = [
-  { name: 'Community & Rewards', percentage: 35, color: '#F7FF9B' },
-  { name: 'Liquidity & Exchange', percentage: 25, color: '#FFD93D' },
-  { name: 'Team & Development', percentage: 25, color: '#FFA500' },
-  { name: 'Treasury & Public', percentage: 15, color: '#FF6B35' }
+  { name: 'Staking Rewards', percentage: 30, color: '#FF6B35' },
+  { name: 'ICO & Presale', percentage: 25, color: '#FFD700' },
+  { name: 'Team & Development', percentage: 15, color: '#FFD93D' },
+  { name: 'Private Sale', percentage: 10, color: '#FFA500' },
+  { name: 'Initial Staking', percentage: 5, color: '#F7FF9B' },
+  { name: 'Liquidity', percentage: 5, color: '#00BFFF' },
+  { name: 'Business Partnerships', percentage: 5, color: '#8A2BE2' },
+  { name: 'Airdrop', percentage: 5, color: '#00FF7F' }
 ]
 
 const keyUtilities = [
-  { icon: Shield, title: 'Governance', description: 'Vote on protocol decisions' },
-  { icon: Coins, title: 'Staking Rewards', description: 'Earn up to 25% APY' },
-  { icon: TrendingUp, title: 'Revenue Sharing', description: '30% fee distribution' }
+  { icon: Shield, title: 'Governance', description: 'Participate in protocol decisions' },
+  { icon: Coins, title: 'Staking Rewards', description: 'Earn up to 32% APR' },
+  { icon: TrendingUp, title: 'Burn Mechanism', description: 'Deflationary tokenomics' }
 ]
 
 export default function TokenomicsSection() {
@@ -53,7 +57,7 @@ export default function TokenomicsSection() {
           </h2>
           
           <p className="text-base md:text-lg text-zinc-400 max-w-2xl mx-auto">
-            Fair distribution, strong utility, and long-term sustainability with a fixed supply of 220 million tokens
+            Fair distribution, strong utility, and long-term sustainability with a fixed supply of 100 million tokens
           </p>
         </motion.div>
 
@@ -71,7 +75,7 @@ export default function TokenomicsSection() {
               <Coins className="w-6 h-6 text-yellow-200" />
             </div>
             <h3 className="text-xl font-bold text-white mb-2">Total Supply</h3>
-            <p className="text-2xl font-bold text-yellow-200 mb-2">220M BBLIP</p>
+            <p className="text-2xl font-bold text-yellow-200 mb-2">100M BBLP</p>
             <p className="text-sm text-zinc-400">Fixed supply with deflationary burn mechanics</p>
           </motion.div>
 
@@ -115,19 +119,19 @@ export default function TokenomicsSection() {
             <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-sm text-zinc-400">Presale Price</span>
-                <span className="text-sm font-semibold text-yellow-200">$0.08</span>
+                <span className="text-sm font-semibold text-yellow-200">$0.10</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-zinc-400">Initial Circulating</span>
-                <span className="text-sm font-semibold text-yellow-200">12%</span>
+                <span className="text-sm font-semibold text-yellow-200">35%</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-zinc-400">Burn Rate</span>
-                <span className="text-sm font-semibold text-yellow-200">2% / TX</span>
+                <span className="text-sm text-zinc-400">Launch Price</span>
+                <span className="text-sm font-semibold text-yellow-200">$0.14</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm text-zinc-400">Staking APY</span>
-                <span className="text-sm font-semibold text-yellow-200">Up to 25%</span>
+                <span className="text-sm text-zinc-400">Staking APR</span>
+                <span className="text-sm font-semibold text-yellow-200">Up to 32%</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-zinc-400">Referral Rewards</span>

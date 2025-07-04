@@ -393,14 +393,14 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
           title: '',
           features: [
             'Digital subscriptions only',
-            '2% BBLIP rewards on subscriptions',
+            '2% BBLP rewards on subscriptions',
             '$200 monthly subscription limit',
             'Virtual card only',
             'Subscription management dashboard'
           ],
           featuresDetailed: [
             { title: 'Digital Subscriptions', desc: 'Digital subscriptions only' },
-            { title: 'BBLIP Rewards', desc: '2% BBLIP rewards on subscriptions' },
+            { title: 'BBLP Rewards', desc: '2% BBLP rewards on subscriptions' },
             { title: 'Subscription Limit', desc: '$200 monthly subscription limit' },
             { title: 'Virtual Card', desc: 'Virtual card only' },
             { title: 'Subscription Management', desc: 'Subscription management dashboard' }
@@ -416,14 +416,14 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
           title: 'E-Commerce Card',
           features: [
             'Online shopping specialized',
-            '1.5% BBLIP rewards on e-commerce',
+            '1.5% BBLP rewards on e-commerce',
             '$1,000 daily online limit',
             'E-commerce protection insurance',
             'Shopping analytics dashboard'
           ],
           featuresDetailed: [
             { title: 'Online Shopping', desc: 'Online shopping specialized' },
-            { title: 'BBLIP Rewards', desc: '1.5% BBLIP rewards on e-commerce' },
+            { title: 'BBLP Rewards', desc: '1.5% BBLP rewards on e-commerce' },
             { title: 'Online Limit', desc: '$1,000 daily online limit' },
             { title: 'E-commerce Protection', desc: 'E-commerce protection insurance' },
             { title: 'Shopping Analytics', desc: 'Shopping analytics dashboard' }
@@ -523,7 +523,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
                 <div className="flex-1">
                   <h4 className="text-sm font-semibold text-yellow-300 mb-1">Card Activation Required</h4>
                   <p className="text-xs text-gray-400">
-                    Stake {getRequiredStakeAmount().toLocaleString()} BBLIP to activate your {userCards[currentCardIndex]?.card_type} card
+                    Stake {getRequiredStakeAmount().toLocaleString()} BBLP to activate your {userCards[currentCardIndex]?.card_type} card
                   </p>
                 </div>
                 <EnhancedButton

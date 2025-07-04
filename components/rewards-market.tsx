@@ -23,12 +23,12 @@ const rewardTiers: RewardTier[] = [
     color: 'bronze',
     benefits: [
       'Digital subscriptions only',
-      '1% BBLIP rewards on subscriptions',
+      '1% BBLP rewards on subscriptions',
       '$200 monthly subscription limit',
       'Virtual card only',
       'Subscription management dashboard'
     ],
-    stakeAmount: '1,000 BBLIP',
+    stakeAmount: '1,000 BBLP',
     cashbackRate: '1%',
     isSpecial: false
   },
@@ -37,12 +37,12 @@ const rewardTiers: RewardTier[] = [
     color: 'slate',
     benefits: [
       'Online shopping specialized',
-      '1.5% BBLIP rewards on e-commerce',
+      '1.5% BBLP rewards on e-commerce',
       '$1,000 daily online limit',
       'E-commerce protection insurance',
       'Shopping analytics dashboard'
     ],
-    stakeAmount: '2,000 BBLIP',
+    stakeAmount: '2,000 BBLP',
     cashbackRate: '1.5%',
     isSpecial: false
   },
@@ -56,7 +56,7 @@ const rewardTiers: RewardTier[] = [
       'Premium metal card design',
       'Unlimited monthly spending'
     ],
-    stakeAmount: '3,500 BBLIP',
+    stakeAmount: '3,500 BBLP',
     cashbackRate: '2%',
     isSpecial: true
   }
@@ -110,7 +110,7 @@ export default function RewardsMarket() {
             transition={{ delay: 0.1 }}
             className="text-lg sm:text-xl text-zinc-400 max-w-2xl mx-auto"
           >
-            Stake BBLIP tokens to unlock premium benefits and earn higher rewards. The more you stake, the more you earn.
+            Stake BBLP tokens to unlock premium benefits and earn higher rewards. The more you stake, the more you earn.
           </motion.p>
         </div>
 

@@ -16,7 +16,7 @@ const faqs = [
   },
   {
     question: 'Which cryptocurrencies can I spend?',
-    answer: 'Currently, you can spend BBLIP, BNB, USDT, USDC, and ETH. We automatically convert your crypto to fiat at the point of sale using real-time exchange rates with zero markup.'
+    answer: 'Currently, you can spend BBLP, BNB, USDT, USDC, and ETH. We automatically convert your crypto to fiat at the point of sale using real-time exchange rates with zero markup.'
   },
   {
     question: 'How fast can I get my card?',

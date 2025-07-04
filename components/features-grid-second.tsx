@@ -43,7 +43,7 @@ const secondSectionFeatures: Feature[] = [
   {
     icon: Clock,
     title: 'Real-Time Rewards',
-    description: 'Earn up to 8% cashback in BBLIP tokens on every transaction'
+    description: 'Earn up to 8% cashback in BBLP tokens on every transaction'
   }
 ]
 

@@ -46,7 +46,7 @@ function SwapContent() {
               <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
               <Image 
                 src="/logo.svg" 
-                alt="BBLIP" 
+                alt="BBLP" 
                 width={32} 
                 height={32} 
                 className="absolute inset-0 m-auto animate-pulse" 

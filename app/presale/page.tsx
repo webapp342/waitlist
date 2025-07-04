@@ -224,7 +224,7 @@ function PresalePageInner() {
               <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
               <Image 
                 src="/logo.svg" 
-                alt="BBLIP" 
+                alt="BBLP" 
                 width={32} 
                 height={32} 
                 className="absolute inset-0 m-auto animate-pulse" 
@@ -265,10 +265,10 @@ function PresalePageInner() {
           
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-2">
-              Buy BBLIP
+              Buy BBLP
             </h1>
             <p className="text-gray-400 text-sm md:text-base">
-              Join the presale and get BBLIP at the <span className="text-yellow-200 font-semibold">best price!</span>
+              Join the presale and get BBLP at the <span className="text-yellow-200 font-semibold">best price!</span>
             </p>
           </div>
 
@@ -400,7 +400,7 @@ function PresalePageInner() {
                   disabled={loading || presaleInfo?.isPaused || !isOnBSCTestnet}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                  BBLIP
+                  BBLP
                 </div>
               </div>
             </div>
@@ -441,7 +441,7 @@ function PresalePageInner() {
                   <div className="text-center p-3 bg-black/30 rounded-lg border border-zinc-800">
                     <p className="text-xs text-gray-500 mb-1">Amount</p>
                     <p className="text-lg font-bold text-white">{desiredTokens}</p>
-                    <p className="text-xs text-gray-400">BBLIP Tokens</p>
+                    <p className="text-xs text-gray-400">BBLP Tokens</p>
                   </div>
                   <div className="text-center p-3 bg-black/30 rounded-lg border border-zinc-800">
                     <p className="text-xs text-gray-500 mb-1">Total Cost</p>
@@ -605,7 +605,7 @@ function PresalePageInner() {
                     </div>
                     <div>
                       <h4 className="text-sm font-semibold text-white mb-1">Current Price</h4>
-                      <p className="text-xs text-gray-400">$0.10 per BBLIP token (Presale Round 2)</p>
+                      <p className="text-xs text-gray-400">$0.10 per BBLP token (Presale Round 2)</p>
                     </div>
                   </div>
                   

@@ -72,7 +72,7 @@ const CardActivationStatus = ({ stakedAmount }: { stakedAmount: number }) => {
           {staked >= CARD_REQUIREMENTS.BRONZE ? (
             <span className="text-green-400 text-sm">Activated! </span>
           ) : (
-            <span className="text-white/60 text-sm">Need {remainingForBronze.toFixed(2)} more BBLIP</span>
+            <span className="text-white/60 text-sm">Need {remainingForBronze.toFixed(2)} more BBLP</span>
           )}
         </div>
 
@@ -85,7 +85,7 @@ const CardActivationStatus = ({ stakedAmount }: { stakedAmount: number }) => {
           {staked >= CARD_REQUIREMENTS.SILVER ? (
             <span className="text-green-400 text-sm">Activated! </span>
           ) : staked >= CARD_REQUIREMENTS.BRONZE ? (
-            <span className="text-white/60 text-sm">Need {remainingForSilver.toFixed(2)} more BBLIP</span>
+            <span className="text-white/60 text-sm">Need {remainingForSilver.toFixed(2)} more BBLP</span>
           ) : (
             <span className="text-white/60 text-sm">Unlock Bronze first</span>
           )}
@@ -100,11 +100,11 @@ const CardActivationStatus = ({ stakedAmount }: { stakedAmount: number }) => {
           {staked >= CARD_REQUIREMENTS.BLACK ? (
             <span className="text-green-400 text-sm">Activated! </span>
           ) : staked >= CARD_REQUIREMENTS.SILVER ? (
-            <span className="text-white/60 text-sm">Need {remainingForBlack.toFixed(2)} more BBLIP</span>
+            <span className="text-white/60 text-sm">Need {remainingForBlack.toFixed(2)} more BBLP</span>
           ) : staked >= CARD_REQUIREMENTS.BRONZE ? (
-            <span className="text-white/60 text-sm">Need {(CARD_REQUIREMENTS.BLACK - staked).toFixed(2)} BBLIP for Black</span>
+            <span className="text-white/60 text-sm">Need {(CARD_REQUIREMENTS.BLACK - staked).toFixed(2)} BBLP for Black</span>
           ) : (
-            <span className="text-white/60 text-sm">Need {CARD_REQUIREMENTS.BLACK.toFixed(2)} BBLIP total</span>
+            <span className="text-white/60 text-sm">Need {CARD_REQUIREMENTS.BLACK.toFixed(2)} BBLP total</span>
           )}
         </div>
 

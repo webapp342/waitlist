@@ -216,15 +216,11 @@ export default function ReferralPage() {
                 <div className="flex items-center justify-center gap-3 mb-4">
                   <div className="text-center">
                     <p className="text-lg md:text-xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-500">
-                      {referralCode.code}
+                    https://waitlist-murex-nine.vercel.app?ref={referralCode.code}
                     </p>
                   </div>
                 </div>
-                <div className="text-center">
-                  <p className="text-xs text-gray-500 break-all">
-                    https://waitlist-murex-nine.vercel.app?ref={referralCode.code}
-                  </p>
-                </div>
+              
               </div>
 
               <div className="flex flex-col sm:flex-row gap-3">
