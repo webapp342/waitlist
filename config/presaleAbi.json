@@ -65,9 +65,9 @@
         },
         {
           "indexed": false,
-          "internalType": "uint256",
-          "name": "priceUSD",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "priceFeed",
+          "type": "address"
         },
         {
           "indexed": false,
@@ -162,6 +162,12 @@
           "internalType": "uint256",
           "name": "tokenAmount",
           "type": "uint256"
+        },
+        {
+          "indexed": false,
+          "internalType": "uint256",
+          "name": "priceUSD",
+          "type": "uint256"
         }
       ],
       "name": "TokensPurchased",
@@ -213,6 +219,39 @@
       "type": "function"
     },
     {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_token",
+          "type": "address"
+        },
+        {
+          "internalType": "address",
+          "name": "_priceFeed",
+          "type": "address"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_decimals",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "_useStaticPrice",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_staticPriceUSD",
+          "type": "uint256"
+        }
+      ],
+      "name": "addPaymentToken",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
       "inputs": [],
       "name": "buyWithBNB",
       "outputs": [],
@@ -251,6 +290,25 @@
         }
       ],
       "name": "calculateTokenAmount",
+      "outputs": [
+        {
+          "internalType": "uint256",
+          "name": "",
+          "type": "uint256"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "address",
+          "name": "_priceFeed",
+          "type": "address"
+        }
+      ],
+      "name": "getLatestPrice",
       "outputs": [
         {
           "internalType": "uint256",
@@ -342,9 +400,9 @@
           "type": "address"
         },
         {
-          "internalType": "uint256",
-          "name": "priceUSD",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "priceFeed",
+          "type": "address"
         },
         {
           "internalType": "bool",
@@ -354,6 +412,16 @@
         {
           "internalType": "uint256",
           "name": "decimals",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "useStaticPrice",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "staticPriceUSD",
           "type": "uint256"
         }
       ],
@@ -394,6 +462,29 @@
         }
       ],
       "name": "togglePaymentToken",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        },
+        {
+          "internalType": "bool",
+          "name": "_useStatic",
+          "type": "bool"
+        },
+        {
+          "internalType": "uint256",
+          "name": "_staticPrice",
+          "type": "uint256"
+        }
+      ],
+      "name": "toggleStaticPrice",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"
@@ -489,12 +580,12 @@
           "type": "uint256"
         },
         {
-          "internalType": "uint256",
-          "name": "_newPriceUSD",
-          "type": "uint256"
+          "internalType": "address",
+          "name": "_newPriceFeed",
+          "type": "address"
         }
       ],
-      "name": "updatePaymentTokenPrice",
+      "name": "updatePriceFeed",
       "outputs": [],
       "stateMutability": "nonpayable",
       "type": "function"

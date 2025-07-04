@@ -34,9 +34,11 @@ export interface WalletState {
 
 export interface PaymentToken {
   token: string;
-  priceUSD: bigint;
+  priceFeed: string;
   enabled: boolean;
   decimals: number;
+  useStaticPrice: boolean;
+  staticPriceUSD: bigint;
 }
 
 export interface PresaleInfo {

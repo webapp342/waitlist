@@ -20,7 +20,7 @@ import AuthGuard from '@/components/AuthGuard';
 
 const USDT_ADDRESS = '0x690419A4f1B5320c914f41b44CE10EB0BAC70908';
 const BUSD_ADDRESS = '0xD7D767dB964C36B41EfAABC02669169eDF513eAb';
-const BBLIP_ADDRESS = '0xbB7Adc4303857A388ba3BFb52fe977f696A2Ca72';
+const BBLIP_ADDRESS = '0x65D25C1e3BD1D64a42E4Cc729695A7EfB1632a1C';
 
 const ASSETS = [
   { symbol: 'BBLIP', name: 'BBLIP Token', icon: '/logo.svg' },

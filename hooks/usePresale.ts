@@ -15,14 +15,6 @@ const ERC20_ABI = [
 
 const ERC20_INTERFACE = new Interface(ERC20_ABI);
 
-// Kontrat fiyatları (8 decimal)
-const TOKEN_PRICES: { tokenPriceUSD: string; [key: number]: string } = {
-  tokenPriceUSD: "10000000",     // $0.1
-  [TOKEN_IDS.bnb]: "65000000000",    // $650
-  [TOKEN_IDS.usdt]: "110000000",     // $1.10
-  [TOKEN_IDS.busd]: "110000000"      // $1.10
-};
-
 export const usePresale = () => {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
@@ -33,6 +25,7 @@ export const usePresale = () => {
   const [paymentTokens, setPaymentTokens] = useState<PaymentToken[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [tokenPrices, setTokenPrices] = useState<{ [key: number]: bigint }>({});
 
   const loadPresaleInfo = useCallback(async () => {
     if (!walletClient || !isConnected || !address) {
@@ -64,18 +57,28 @@ export const usePresale = () => {
         isPaused: paused
       });
 
-      // Load payment tokens
+      // Load payment tokens with new structure
       const tokens = [];
+      const prices: { [key: number]: bigint } = {};
+      
       for (let i = 0; i < 3; i++) {
         const token = await presaleContract.paymentTokens(i);
         tokens.push({
           token: token.token,
-          priceUSD: token.priceUSD,
+          priceFeed: token.priceFeed,
           enabled: token.enabled,
-          decimals: token.decimals
+          decimals: token.decimals,
+          useStaticPrice: token.useStaticPrice,
+          staticPriceUSD: token.staticPriceUSD
         });
+        
+        // Get real-time price for each token
+        const tokenPrice = await presaleContract.getTokenPriceUSD(i);
+        prices[i] = tokenPrice;
       }
+      
       setPaymentTokens(tokens);
+      setTokenPrices(prices);
 
     } catch (err) {
       console.error('Error loading presale info:', err);
@@ -85,7 +88,7 @@ export const usePresale = () => {
     }
   }, [walletClient, isConnected, address]);
 
-  const checkAllowance = async (tokenId: number, amount: string) => {
+  const checkAllowance = async (tokenId: number) => {
     if (!walletClient || !isConnected || tokenId === 0) return '0'; // BNB doesn't need approval
     
     try {
@@ -110,7 +113,7 @@ export const usePresale = () => {
   };
 
   const approveToken = async (tokenId: number, amount: string) => {
-    if (!walletClient || !isConnected) return;
+    if (!walletClient || !isConnected || tokenId === 0) return; // BNB doesn't need approval
     
     try {
       const provider = new ethers.BrowserProvider(walletClient as any);
@@ -124,12 +127,9 @@ export const usePresale = () => {
       // Create token contract instance
       const tokenContract = new Contract(tokenAddress, ERC20_ABI, signer);
       
-      // Approve
-      const amountInWei = ethers.parseUnits(amount, 18);
-      const tx = await tokenContract.approve(PRESALE_ADDRESSES.presale, amountInWei);
+      // Approve tokens - amount is already in wei format
+      const tx = await tokenContract.approve(PRESALE_ADDRESSES.presale, BigInt(amount));
       await tx.wait();
-      
-      return tx;
     } catch (err: any) {
       console.error('Approval failed:', err);
       if (err.code === 4001) {
@@ -147,13 +147,16 @@ export const usePresale = () => {
       const signer = await provider.getSigner();
       const presaleContract = new Contract(PRESALE_ADDRESSES.presale, presaleAbi.abi, signer);
       
+      // Convert amount to BigInt since it's already in wei format
+      const amountWei = BigInt(amount);
+      
       if (tokenId === 0) {
         // Buy with BNB
-        const tx = await presaleContract.buyWithBNB({ value: ethers.parseUnits(amount, 18) });
+        const tx = await presaleContract.buyWithBNB({ value: amountWei });
         await tx.wait();
       } else {
         // Buy with token
-        const tx = await presaleContract.buyWithToken(tokenId, ethers.parseUnits(amount, 18));
+        const tx = await presaleContract.buyWithToken(tokenId, amountWei);
         await tx.wait();
       }
       
@@ -176,13 +179,7 @@ export const usePresale = () => {
       const presaleContract = new Contract(PRESALE_ADDRESSES.presale, presaleAbi.abi, signer);
       
       const amountInWei = ethers.parseUnits(amount, 18);
-      let tokens;
-      
-      if (tokenId === TOKEN_IDS.bnb) {
-        tokens = await presaleContract.calculateTokensForBNB(amountInWei);
-      } else {
-        tokens = await presaleContract.calculateTokensForToken(tokenId, amountInWei);
-      }
+      const tokens = await presaleContract.calculateTokenAmount(tokenId, amountInWei);
       
       return tokens.toString();
     } catch (err) {
@@ -191,13 +188,21 @@ export const usePresale = () => {
     }
   };
 
-  const calculatePaymentAmount = (tokenId: number, desiredTokenAmount: string): string => {
-    if (!desiredTokenAmount) return '0';
+  const calculatePaymentAmount = async (tokenId: number, desiredTokenAmount: string): Promise<string> => {
+    if (!desiredTokenAmount || !presaleInfo) return '0';
+    
     try {
       const tokenAmountWei = ethers.parseUnits(desiredTokenAmount, 18);
-      const tokenPriceUSD = BigInt(TOKEN_PRICES.tokenPriceUSD);
+      const tokenPriceUSD = presaleInfo.tokenPriceUSD;
+      
+      // Calculate total USD cost
       const totalUsdCost = (tokenAmountWei * tokenPriceUSD) / BigInt(10 ** 18);
-      const paymentTokenPrice = BigInt(TOKEN_PRICES[tokenId]);
+      
+      // Get payment token price
+      const paymentTokenPrice = tokenPrices[tokenId];
+      if (!paymentTokenPrice) return '0';
+      
+      // Calculate payment amount
       const paymentAmount = (totalUsdCost * BigInt(10 ** 18)) / paymentTokenPrice;
       return paymentAmount.toString();
     } catch (err) {
@@ -226,6 +231,6 @@ export const usePresale = () => {
     calculateTokenAmount,
     calculatePaymentAmount,
     loadPresaleInfo,
-    TOKEN_PRICES
+    tokenPrices
   };
 }; 

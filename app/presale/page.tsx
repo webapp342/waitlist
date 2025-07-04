@@ -51,7 +51,7 @@ function PresalePageInner() {
     approveToken,
     buyTokens,
     calculatePaymentAmount,
-    TOKEN_PRICES
+    tokenPrices
   } = usePresale();
 
   // Set desired tokens from URL parameter
@@ -111,7 +111,7 @@ function PresalePageInner() {
         if (selectedToken !== TOKEN_IDS.bnb) {
           try {
             setIsCheckingAllowance(true);
-            const allowance = await checkAllowance(selectedToken, formatUnits(amount, 18));
+            const allowance = await checkAllowance(selectedToken);
             setHasAllowance(BigInt(allowance) >= BigInt(amount));
           } catch (err) {
             console.error('Error checking allowance:', err);
@@ -141,11 +141,11 @@ function PresalePageInner() {
     try {
       setIsApproving(true);
       setStatusMessage('Approving tokens...');
-      await approveToken(selectedToken, formatUnits(paymentAmount, 18));
+      await approveToken(selectedToken, paymentAmount);
       setStatusMessage('Tokens approved successfully!');
       
       // Re-check allowance
-      const allowance = await checkAllowance(selectedToken, formatUnits(paymentAmount, 18));
+      const allowance = await checkAllowance(selectedToken);
       setHasAllowance(BigInt(allowance) >= BigInt(paymentAmount));
     } catch (err: any) {
       console.error('Approval failed:', err);
@@ -165,7 +165,7 @@ function PresalePageInner() {
     try {
       setIsBuying(true);
       setStatusMessage(selectedToken === TOKEN_IDS.bnb ? 'Buying with BNB...' : 'Buying with tokens...');
-      await buyTokens(selectedToken, formatUnits(paymentAmount, 18));
+      await buyTokens(selectedToken, paymentAmount);
       setStatusMessage('Purchase successful!');
       setDesiredTokens('');
       setPaymentAmount('0');
@@ -181,7 +181,8 @@ function PresalePageInner() {
     }
   };
 
-  const formatPrice = (price: string): string => {
+  const formatPrice = (price: bigint | undefined): string => {
+    if (!price) return '0.00';
     return (Number(price) / 1e8).toFixed(2);
   };
 
@@ -359,7 +360,7 @@ function PresalePageInner() {
                   >
                     <Image src={token.icon} alt={token.name} width={32} height={32} className="mb-2" />
                     <span className="font-medium text-sm text-white">{token.name}</span>
-                    <span className="text-xs text-gray-400">${formatPrice(TOKEN_PRICES[token.id])}</span>
+                    <span className="text-xs text-gray-400">${formatPrice(tokenPrices[token.id])}</span>
                   </button>
                 ))}
               </div>
