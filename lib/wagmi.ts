@@ -63,24 +63,24 @@ if (typeof window === 'undefined') {
   console.log('📋 Project ID:', projectId ? 'Found' : 'Missing')
 }
 
-// BSC Testnet Configuration
-export const BSC_TESTNET_CHAIN_ID = '0x61'; // 97 in hex
-export const BSC_TESTNET_CONFIG = {
-  chainId: BSC_TESTNET_CHAIN_ID,
-  chainName: 'BSC Testnet',
+// BSC Mainnet Configuration
+export const BSC_MAINNET_CHAIN_ID = '0x38'; // 56 in hex
+export const BSC_MAINNET_CONFIG = {
+  chainId: BSC_MAINNET_CHAIN_ID,
+  chainName: 'BSC Mainnet',
   nativeCurrency: {
     name: 'BNB',
-    symbol: 'tBNB',
+    symbol: 'BNB',
     decimals: 18
   },
-  rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545'],
-  blockExplorerUrls: ['https://testnet.bscscan.com']
+  rpcUrls: ['https://bsc-dataseed1.binance.org'],
+  blockExplorerUrls: ['https://bscscan.com']
 };
 
-// Define chains with BSC Testnet as primary
+// Define chains with BSC Mainnet as primary
 const chains = [
-  bscTestnet,
   bsc,
+  bscTestnet,
   mainnet,
   arbitrum,
   polygon,

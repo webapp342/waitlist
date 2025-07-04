@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -39,8 +39,8 @@ const formatBalance = (balance: string | undefined) => {
 const COMMON_TOKENS = [
   { symbol: 'BNB', name: 'Binance Coin', address: 'NATIVE' },
   { symbol: 'BUSD', name: 'Binance USD', address: '0xe9e7cea3dedca5984780bafc599bd69add087d56' },
-  { symbol: 'USDT', name: 'Tether USD', address: '0x55d398326f99059ff775485246999027b3197955' },
-  { symbol: 'CAKE', name: 'PancakeSwap Token', address: '0x0e09fabb73bd3ade0a17ecc321fd13a19e81ce82' }
+  { symbol: 'USDT', name: 'Tether USD', address: '0x55d398326f99059ff775485246999027b3197955' }
+
 ] as const;
 
 export const TokenSelector: React.FC<TokenSelectorProps> = ({
@@ -55,11 +55,18 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
   const [isLoadingCustomToken, setIsLoadingCustomToken] = useState(false);
   const [customTokenError, setCustomTokenError] = useState<string | null>(null);
   const { tokens, addCustomToken, loadVisibleTokensBalances } = useSwap();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Load balances when token selector opens
   useEffect(() => {
     if (isOpen) {
       loadVisibleTokensBalances();
+      // Only focus input on desktop
+      if (typeof window !== 'undefined' && window.innerWidth >= 768) {
+        setTimeout(() => {
+          inputRef.current?.focus();
+        }, 100);
+      }
     }
   }, [isOpen, loadVisibleTokensBalances]);
 
@@ -110,7 +117,7 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[80vh] flex flex-col bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl border border-zinc-800 shadow-xl">
+      <DialogContent className="max-w-md min-h-[90vh] flex flex-col bottom-20 bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl border border-zinc-800 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-white">Select a token</DialogTitle>
         </DialogHeader>
@@ -118,6 +125,7 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
         <div className="relative mb-4">
           <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
           <Input
+            ref={inputRef}
             placeholder="Search name or paste address (0x...)"
             value={searchQuery}
             onChange={(e) => {
@@ -237,12 +245,7 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
           )}
         </div>
 
-        {/* Warning */}
-        <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-          <p className="text-sm text-red-200">
-            Warning: This swap interface uses BSC Mainnet. Always double-check token addresses and amounts before swapping.
-          </p>
-        </div>
+      
       </DialogContent>
     </Dialog>
   );

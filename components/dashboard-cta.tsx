@@ -44,7 +44,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
   // Get user's BNB balance
   const { data: balance } = useBalance({
     address: address,
-    chainId: 97, // BSC Testnet
+    chainId: 56, // BSC Mainnet
   });
 
   // Debug logging
@@ -58,14 +58,14 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
     });
   }, [chainId, chain, isConnected, chains]);
 
-  // Check if user is on the correct network (BSC Testnet - Chain ID 97)
+  // Check if user is on the correct network (BSC Mainnet - Chain ID 56)
   const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
-  const isOnBSCTestnet = actualChainId === 97; // BSC Testnet Chain ID
+  const isOnBSCMainnet = actualChainId === 56; // BSC Mainnet Chain ID
         
   // Save user to database when wallet is connected to correct network
   useEffect(() => {
     const saveUserToDatabase = async () => {
-      if (isConnected && address && isOnBSCTestnet) {
+      if (isConnected && address && isOnBSCMainnet) {
         try {
           await userService.addUser(address);
           console.log('User saved successfully');
@@ -79,7 +79,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
     };
 
     saveUserToDatabase();
-  }, [isConnected, address, isOnBSCTestnet]);
+  }, [isConnected, address, isOnBSCMainnet]);
 
   // Load user cards
   const loadUserCards = async (walletAddress: string) => {
@@ -129,7 +129,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
     try {
       // Try wagmi first
       try {
-        await switchChain({ chainId: 97 }); // BSC Testnet Chain ID
+        await switchChain({ chainId: 56 }); // BSC Mainnet Chain ID
         return;
       } catch (wagmiError: any) {
         console.log('Wagmi switch failed, trying manual method:', wagmiError);
@@ -141,7 +141,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
             // Try to switch first
             await ethereum.request({
               method: 'wallet_switchEthereumChain',
-              params: [{ chainId: '0x61' }], // 97 in hex
+              params: [{ chainId: '0x38' }], // 56 in hex
             });
           } catch (switchError: any) {
             // This error code indicates that the chain has not been added to MetaMask
@@ -150,15 +150,15 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
                 await ethereum.request({
                   method: 'wallet_addEthereumChain',
                   params: [{
-                  chainId: '0x61',
-                  chainName: 'BSC Testnet',
+                  chainId: '0x38',
+                  chainName: 'BSC Mainnet',
                   nativeCurrency: {
                     name: 'BNB',
                     symbol: 'tBNB',
                     decimals: 18
                   },
-                  rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545'],
-                  blockExplorerUrls: ['https://testnet.bscscan.com']
+                  rpcUrls: ['https://bsc-dataseed.binance.org'],
+                  blockExplorerUrls: ['https://bscscan.com']
                 }],
                 });
               } catch (addError) {
@@ -492,7 +492,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
   
 
       {/* User Cards Display - Only show when on correct network */}
-      {isOnBSCTestnet && (
+      {isOnBSCMainnet && (
         <motion.div variants={itemVariants} className="mt-8 w-full">
           {isLoadingCards ? (
             <div className="flex justify-center">
@@ -511,7 +511,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
    
 
       {/* Staking CTA for current active card */}
-      {isOnBSCTestnet && userCards.length > 0 && (
+      {isOnBSCMainnet && userCards.length > 0 && (
         <motion.div variants={itemVariants} className="mt-4">
           {!isCardReserved(userCards[currentCardIndex]?.card_type) ? (
             // Card Not Activated - Yellow Theme

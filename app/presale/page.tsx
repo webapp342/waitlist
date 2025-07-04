@@ -26,8 +26,8 @@ const PAYMENT_TOKENS = [
   { id: TOKEN_IDS.busd, name: 'BUSD', icon: '/busd.svg', color: 'from-blue-600 to-blue-400' },
 ];
 
-// BSC Testnet Chain ID
-const BSC_TESTNET_CHAIN_ID = 97;
+// BSC Mainnet Chain ID
+const BSC_MAINNET_CHAIN_ID = 56;
 
 function PresalePageInner() {
   const { isConnected, address, chain } = useAccount();
@@ -68,14 +68,14 @@ function PresalePageInner() {
     }
   }, [searchParams]);
 
-  // Check if user is on the correct network (BSC Testnet - Chain ID 97)
+  // Check if user is on the correct network (BSC Mainnet - Chain ID 56)
   const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
-  const isOnBSCTestnet = actualChainId === BSC_TESTNET_CHAIN_ID;
+  const isOnBSCMainnet = actualChainId === BSC_MAINNET_CHAIN_ID;
 
   // Save user to database when wallet is connected to correct network
   useEffect(() => {
     const saveUserToDatabase = async () => {
-      if (isConnected && address && isOnBSCTestnet) {
+      if (isConnected && address && isOnBSCMainnet) {
         try {
           await userService.addUser(address);
           console.log('User saved successfully from presale page');
@@ -86,7 +86,7 @@ function PresalePageInner() {
     };
 
     saveUserToDatabase();
-  }, [isConnected, address, isOnBSCTestnet]);
+  }, [isConnected, address, isOnBSCMainnet]);
 
   // Handle chain switching
   const handleSwitchChain = async () => {
@@ -94,15 +94,15 @@ function PresalePageInner() {
     
     try {
       setIsSwitchingChain(true);
-      setStatusMessage('Switching to BSC Testnet...');
-      await switchChain({ chainId: BSC_TESTNET_CHAIN_ID });
-      setStatusMessage('Successfully switched to BSC Testnet!');
+      setStatusMessage('Switching to BSC Mainnet...');
+      await switchChain({ chainId: BSC_MAINNET_CHAIN_ID });
+      setStatusMessage('Successfully switched to BSC Mainnet!');
     } catch (err: any) {
       console.error('Failed to switch chain:', err);
       if (err.code === 4001) {
         setError('Chain switch was cancelled by user');
       } else {
-        setError('Failed to switch to BSC Testnet. Please switch manually in your wallet.');
+        setError('Failed to switch to BSC Mainnet. Please switch manually in your wallet.');
       }
     } finally {
       setIsSwitchingChain(false);
@@ -128,7 +128,7 @@ function PresalePageInner() {
   // Calculate payment amount when desired tokens or selected token changes
   useEffect(() => {
     const updatePaymentAmount = async () => {
-      if (desiredTokens && isOnBSCTestnet) {
+      if (desiredTokens && isOnBSCMainnet) {
         const amount = await calculatePaymentAmount(selectedToken, desiredTokens);
         setPaymentAmount(amount);
         
@@ -156,12 +156,12 @@ function PresalePageInner() {
     };
 
     updatePaymentAmount();
-  }, [desiredTokens, selectedToken, calculatePaymentAmount, checkAllowance, isOnBSCTestnet]);
+  }, [desiredTokens, selectedToken, calculatePaymentAmount, checkAllowance, isOnBSCMainnet]);
 
   // Don't redirect if wallet is not connected - show the page with connect wallet option
 
   const handleApprove = async () => {
-    if (!paymentAmount || paymentAmount === '0' || !isOnBSCTestnet) return;
+    if (!paymentAmount || paymentAmount === '0' || !isOnBSCMainnet) return;
     
     try {
       setIsApproving(true);
@@ -185,7 +185,7 @@ function PresalePageInner() {
   };
 
   const handleBuy = async () => {
-    if (!paymentAmount || paymentAmount === '0' || !isOnBSCTestnet) return;
+    if (!paymentAmount || paymentAmount === '0' || !isOnBSCMainnet) return;
     
     try {
       setIsBuying(true);
@@ -272,17 +272,17 @@ function PresalePageInner() {
             </p>
           </div>
 
-          {/* Network Warning - Show when connected but not on BSC Testnet */}
-          {isConnected && !isOnBSCTestnet && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
+          {/* Network Warning - Show when connected but not on BSC Mainnet */}
+          {isConnected && !isOnBSCMainnet && (
+            <div className="w-full max-w-5xl mt-10 mb-10 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
               <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-lg bg-orange-500/20 border border-orange-500/30">
+                <div className="p-2 rounded-lg bg-orange-500/20">
                   <Network className="w-5 h-5 text-orange-400" />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-orange-200">Wrong Network</h3>
                   <p className="text-xs text-orange-300/80">
-                    You&apos;re connected to {chain?.name || "Unknown Network"}. Please switch to BSC Testnet to participate in the presale.
+                    You&apos;re connected to {chain?.name || "Unknown Network"}. Please switch to BSC Mainnet to participate in the presale.
                   </p>
                 </div>
               </div>
@@ -299,7 +299,7 @@ function PresalePageInner() {
                 ) : (
                   <div className="flex items-center gap-2">
                     <Network className="w-4 h-4" />
-                    Switch to BSC Testnet
+                    Switch to BSC Mainnet
                   </div>
                 )}
               </Button>
@@ -366,7 +366,7 @@ function PresalePageInner() {
           {/* Main Presale Card */}
           <div className={cn(
             "bg-[#0A0A0A]/90 backdrop-blur-xl rounded-3xl border border-yellow-400/10 p-6 md:p-8 mb-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10 transition-all duration-300",
-            !isOnBSCTestnet && isConnected && "opacity-50 pointer-events-none"
+            !isOnBSCMainnet && isConnected && "opacity-50 pointer-events-none"
           )}>
             
             {/* Presale Info Grid */}
@@ -397,7 +397,7 @@ function PresalePageInner() {
                   value={desiredTokens}
                   onChange={(e) => setDesiredTokens(e.target.value)}
                   className="h-12 md:h-14 text-lg font-semibold bg-black/60 border-yellow-400/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
-                  disabled={loading || presaleInfo?.isPaused || !isOnBSCTestnet}
+                  disabled={loading || presaleInfo?.isPaused || !isOnBSCMainnet}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
                   BBLP
@@ -413,13 +413,13 @@ function PresalePageInner() {
                   <button
                     key={token.id}
                     onClick={() => setSelectedToken(token.id)}
-                    disabled={!isOnBSCTestnet}
+                    disabled={!isOnBSCMainnet}
                     className={cn(
                       "p-3 md:p-4 rounded-xl flex flex-col items-center justify-center transition-all duration-300 border-2",
                       selectedToken === token.id 
                         ? 'bg-yellow-400/10 border-yellow-400/60 scale-105 shadow-lg' 
                         : 'bg-black/30 border-yellow-400/10 hover:border-yellow-400/30 hover:scale-102',
-                      !isOnBSCTestnet && "opacity-50 cursor-not-allowed"
+                      !isOnBSCMainnet && "opacity-50 cursor-not-allowed"
                     )}
                   >
                     <Image src={token.icon} alt={token.name} width={32} height={32} className="mb-2" />
@@ -428,10 +428,23 @@ function PresalePageInner() {
                   </button>
                 ))}
               </div>
+              {/* Show Enter Amount button if input is empty or zero */}
+              {(!desiredTokens || parseFloat(desiredTokens) <= 0) && (
+                <Button
+                  className={cn(
+                    "w-full mt-6 bg-zinc-800 text-zinc-400 cursor-not-allowed h-12 md:h-14 font-semibold",
+                    "transition-all duration-300"
+                  )}
+                  size="lg"
+                  disabled
+                >
+                  Enter Amount
+                </Button>
+              )}
             </div>
 
             {/* Payment Summary - Clean Design */}
-            {desiredTokens && paymentAmount !== '0' && isOnBSCTestnet && (
+            {desiredTokens && paymentAmount !== '0' && isOnBSCMainnet && (
               <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 border border-zinc-800 mb-6">
                 <div className="flex items-center gap-2 mb-4">
                   <DollarSign className="w-4 h-4 text-yellow-400" />
@@ -485,7 +498,7 @@ function PresalePageInner() {
                     Connect Wallet 
                   </div>
                 </Button>
-              ) : !isOnBSCTestnet ? (
+              ) : !isOnBSCMainnet ? (
                 /* Switch Network Button - Show when connected but wrong network */
                 <Button
                   className={cn(
@@ -504,7 +517,7 @@ function PresalePageInner() {
                   ) : (
                     <div className="flex items-center gap-2">
                       <Network className="w-4 h-4" />
-                      Switch to BSC Testnet
+                      Switch to BSC Mainnet
                     </div>
                   )}
                 </Button>
@@ -528,7 +541,6 @@ function PresalePageInner() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <Shield className="w-4 h-4" />
                           Approve {selectedTokenName}
                         </div>
                       )}
@@ -558,7 +570,6 @@ function PresalePageInner() {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <Zap className="w-4 h-4" />
                           Buy with {selectedTokenName}
                         </div>
                       )}
@@ -635,7 +646,7 @@ function PresalePageInner() {
                     </div>
                     <div>
                       <h4 className="text-sm font-semibold text-white mb-1">Network Requirement</h4>
-                      <p className="text-xs text-gray-400">Presale is available on BSC Testnet only</p>
+                      <p className="text-xs text-gray-400">Presale is available on BSC Mainnet only</p>
                     </div>
                   </div>
                 </div>

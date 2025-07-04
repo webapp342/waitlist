@@ -1,31 +1,31 @@
 // Contract addresses for different networks
 export const CONTRACTS = {
-  // BSC Testnet (Chain ID: 97)
-  97: {
-    STAKING: '0x43a13ADE5C431352fDDD8f9342E12252F5db631b',
-    TOKEN: '0x38f5e5902AA2FC1170653f764D5C0A79C7c0a254',
+  // BSC Mainnet (Chain ID: 56)
+  56: {
+    STAKING: '0xBC4E1c4f44858DFd3AFA82b2Bc5DD986297352E8',
+    TOKEN: '0x49EdC0FA13e650BC430D8bc23e4aaC6323B4f235',
   }
 };
 
 // Helper function to get contracts for current network
 export const getContractsForNetwork = (chainId: number) => {
-  return CONTRACTS[chainId as keyof typeof CONTRACTS] || CONTRACTS[97]; // Default to BSC Testnet
+  return CONTRACTS[chainId as keyof typeof CONTRACTS] || CONTRACTS[56]; // Default to BSC Mainnet
 };
 
-// BSC Testnet Chain ID
-export const BSC_TESTNET_CHAIN_ID = '0x61'; // 97 in hex
+// BSC Mainnet Chain ID
+export const BSC_MAINNET_CHAIN_ID = '0x38'; // 56 in hex
 
-// BSC Testnet Network Configuration
-export const BSC_TESTNET_CONFIG = {
-  chainId: BSC_TESTNET_CHAIN_ID,
-  chainName: 'BSC Testnet',
+// BSC Mainnet Network Configuration
+export const BSC_MAINNET_CONFIG = {
+  chainId: BSC_MAINNET_CHAIN_ID,
+  chainName: 'BSC Mainnet',
   nativeCurrency: {
     name: 'BNB',
     symbol: 'tBNB',
     decimals: 18
   },
-  rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545'],
-  blockExplorerUrls: ['https://testnet.bscscan.com']
+  rpcUrls: ['https://bsc-dataseed.binance.org/'],
+  blockExplorerUrls: ['https://bscscan.com']
 };
 
 // Hardhat Network Configuration

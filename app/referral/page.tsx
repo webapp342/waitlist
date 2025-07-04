@@ -82,7 +82,7 @@ export default function ReferralPage() {
 
   const copyReferralLink = () => {
     if (referralCode) {
-      const link = `https://waitlist-murex-nine.vercel.app?ref=${referralCode.code}`;
+      const link = `https://waitlist-murex-nine.vercel.app/?ref=${referralCode.code}`;
       navigator.clipboard.writeText(link);
       toast.success('Referral link copied to clipboard!');
     }
@@ -90,7 +90,7 @@ export default function ReferralPage() {
 
   const shareReferralLink = () => {
     if (referralCode) {
-      const link = `https://waitlist-murex-nine.vercel.app?ref=${referralCode.code}`;
+      const link = `https://waitlist-murex-nine.vercel.app/?ref=${referralCode.code}`;
       
       if (navigator.share) {
         navigator.share({
@@ -216,7 +216,7 @@ export default function ReferralPage() {
                 <div className="flex items-center justify-center gap-3 mb-4">
                   <div className="text-center">
                     <p className="text-lg md:text-xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-500">
-                    https://waitlist-murex-nine.vercel.app?ref={referralCode.code}
+                    https://waitlist-murex-nine.vercel.app/?ref={referralCode.code}
                     </p>
                   </div>
                 </div>

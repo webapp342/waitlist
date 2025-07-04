@@ -11,8 +11,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from "sonner";
 
-// BSC Testnet Chain ID
-const BSC_TESTNET_ID = 97;
+// BSC Mainnet Chain ID
+const BSC_MAINNET_CHAIN_ID = 56;
 
 export default function Form() {
   const { address, isConnected, chain } = useAccount();
@@ -56,8 +56,10 @@ export default function Form() {
     if (isConnected) {
       const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
       
-      // Check if user is on BSC Testnet
-      if (actualChainId === BSC_TESTNET_ID) {
+      // Check if user is on BSC Mainnet
+      const isOnBSCMainnet = actualChainId === BSC_MAINNET_CHAIN_ID;
+      
+      if (isOnBSCMainnet) {
         // User is on correct network, redirect to dashboard
         const timer = setTimeout(() => {
           setIsRedirecting(true);
@@ -120,7 +122,7 @@ export default function Form() {
       {isConnected && !isRedirecting && (
         <motion.div variants={itemVariants} className="mt-2">
           <div className="text-center text-xs text-zinc-400">
-            Required: BSC Testnet (Chain ID: 97)
+            Required: BSC Mainnet (Chain ID: 56)
           </div>
         </motion.div>
       )}

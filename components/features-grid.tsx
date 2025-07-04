@@ -32,7 +32,7 @@ const firstSectionFeatures: Feature[] = [
   {
     icon: Smartphone,
     title: 'Mobile First',
-    description: 'Manage everything from our intuitive mobile app. Apple Pay & Google Pay ready'
+    description: 'Mobile apps coming soon. For now, enjoy our full-featured web application!'
   },
   {
     icon: DollarSign,

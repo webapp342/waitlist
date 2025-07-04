@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input';
 import { TokenSelector, TokenButton } from './TokenSelector';
 import { SwapSettings } from './SwapSettings';
 import { useSwap } from '@/hooks/useSwap';
-import { useAccount } from 'wagmi';
-import { ArrowUpDown, Loader2, AlertTriangle, ExternalLink, Settings } from 'lucide-react';
+import { useAccount, useSwitchChain } from 'wagmi';
+import { ArrowUpDown, Loader2, AlertTriangle, ExternalLink, Settings, Network } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { Token } from '@/types/swap';
 import { PANCAKESWAP_CONTRACTS } from '@/config/swap';
 import { ethers } from 'ethers';
+import WalletModal from '@/components/WalletModal';
 
 // Enhanced styles from stake page
 const cardStyles = `
@@ -22,8 +23,6 @@ const cardStyles = `
   backdrop-blur-xl shadow-xl
 `;
 
-
-
 const shimmerStyles = `
   [&]:before:absolute [&]:before:inset-0 
   [&]:before:bg-gradient-to-r [&]:before:from-transparent [&]:before:via-yellow-200/10 [&]:before:to-transparent
@@ -31,7 +30,7 @@ const shimmerStyles = `
   relative overflow-hidden
 `;
 
-const TabButton = ({ active, children }: { active?: boolean, children: React.ReactNode }) => (
+const TabButton = ({ active, children, onClick }: { active?: boolean, children: React.ReactNode, onClick?: () => void }) => (
   <button
     className={cn(
       "px-3 py-1.5 lg:px-4 lg:py-2 text-sm font-medium  rounded-lg",
@@ -39,13 +38,15 @@ const TabButton = ({ active, children }: { active?: boolean, children: React.Rea
         ? "bg-yellow-400/10 text-yellow-400 border border-yellow-400/20" 
         : "text-gray-400 hover:text-yellow-400/70 hover:bg-yellow-400/5"
     )}
+    onClick={onClick}
   >
     {children}
   </button>
 );
 
 export const SwapInterface: React.FC = () => {
-  const { isConnected, address } = useAccount();
+  const { isConnected, address, chain } = useAccount();
+  const { switchChain } = useSwitchChain();
   
   const {
     swapState,
@@ -69,8 +70,34 @@ export const SwapInterface: React.FC = () => {
   const [showOutputTokenSelector, setShowOutputTokenSelector] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [isSwapping, setIsSwapping] = useState(false);
+  const [showWalletModal, setShowWalletModal] = useState(false);
+  const [isSwitchingChain, setIsSwitchingChain] = useState(false);
 
+  // BSC Mainnet Chain ID
+  const BSC_MAINNET_CHAIN_ID = 56;
 
+  // Check if user is on the correct network (BSC Mainnet - Chain ID 56)
+  const actualChainId = chain?.id ? Number(chain.id) : undefined;
+  const isOnBSCMainnet = actualChainId === BSC_MAINNET_CHAIN_ID;
+
+  // Handle chain switching
+  const handleSwitchChain = async () => {
+    if (!switchChain) return;
+    
+    try {
+      setIsSwitchingChain(true);
+      await switchChain({ chainId: BSC_MAINNET_CHAIN_ID });
+    } catch (err: any) {
+      console.error('Failed to switch chain:', err);
+      if (err.code === 4001) {
+        toast.error('Chain switch was cancelled by user');
+      } else {
+        toast.error('Failed to switch to BSC Mainnet. Please switch manually in your wallet.');
+      }
+    } finally {
+      setIsSwitchingChain(false);
+    }
+  };
 
   const handleInputAmountChange = (value: string) => {
     // Only allow numbers and decimals
@@ -87,7 +114,7 @@ export const SwapInterface: React.FC = () => {
     // If it's native BNB, leave some for gas
     if (swapState.inputToken.address === 'NATIVE' || swapState.inputToken.symbol === 'BNB') {
       const balanceNum = parseFloat(balance);
-      const gasReserve = Math.min(0.01, balanceNum * 0.1); // Leave 0.01 BNB or 10% for gas
+      const gasReserve = 0.001; // Leave 0.001 BNB for gas
       const maxAmount = Math.max(0, balanceNum - gasReserve);
       updateInputAmount(maxAmount.toFixed(8));
     } else {
@@ -164,7 +191,7 @@ export const SwapInterface: React.FC = () => {
   };
 
   const isSwapDisabled = () => {
-    if (!isConnected || !isCorrectNetwork || !swapState.inputToken || !swapState.outputToken || !swapState.inputAmount || isSwapping) {
+    if (!swapState.inputToken || !swapState.outputToken || !swapState.inputAmount || isSwapping) {
       return true;
     }
 
@@ -196,8 +223,6 @@ export const SwapInterface: React.FC = () => {
   };
 
   const getSwapButtonText = () => {
-    if (!isConnected) return 'Connect Wallet';
-    if (!isCorrectNetwork) return 'Switch to BSC Mainnet';
     if (!swapState.inputToken || !swapState.outputToken) return 'Select tokens';
     
     const inputAmount = parseFloat(swapState.inputAmount);
@@ -215,7 +240,7 @@ export const SwapInterface: React.FC = () => {
 
   const shouldShowApprove = () => {
     return isConnected && 
-           isCorrectNetwork && 
+           isOnBSCMainnet && 
            swapState.inputToken && 
            swapState.inputAmount && 
            parseFloat(swapState.inputAmount) > 0 &&
@@ -263,8 +288,6 @@ export const SwapInterface: React.FC = () => {
     return `${impact}%`;
   };
 
-
-
   return (
     <div className={cn("w-full")}>
       <div className="relative z-10">
@@ -272,9 +295,9 @@ export const SwapInterface: React.FC = () => {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1 lg:gap-2">
             <TabButton active>Swap</TabButton>
-            <TabButton>Limit</TabButton>
-            <TabButton>DCA</TabButton>
-            <TabButton>Cross-Chain</TabButton>
+            <TabButton onClick={() => toast('Coming soon')}>Limit</TabButton> 
+            <TabButton onClick={() => toast('Coming soon')}>DCA</TabButton>
+            <TabButton onClick={() => toast('Coming soon')}>Cross-Chain</TabButton>
           </div>
           <Button
             variant="ghost"
@@ -406,26 +429,68 @@ export const SwapInterface: React.FC = () => {
               </div>
             )}
 
-            {/* Action Button */}
-            <Button
-              className={cn(
-                "w-full h-11 text-black font-medium rounded-xl mt-4",
-                (!isSwapDisabled() || !isCorrectNetwork)
-                  ? "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 hover:from-yellow-300 hover:via-yellow-200 hover:to-yellow-300"
-                  : "bg-zinc-800/50 text-gray-400 cursor-not-allowed"
-              )}
-              disabled={isSwapDisabled() && isCorrectNetwork}
-              onClick={!isCorrectNetwork ? switchToBSCMainnet : (shouldShowApprove() ? handleApprove : handleSwap)}
-            >
-              {isSwapping ? (
-                <div className="flex items-center justify-center">
-                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                  Swapping...
-                </div>
+            {/* Action Buttons - Smart Visibility */}
+            <div className="space-y-3 mt-4">
+              {!isConnected ? (
+                /* Connect Wallet Button - Show when wallet is not connected */
+                <Button
+                  className={cn(
+                    "w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold shadow-lg h-12",
+                    "transition-all duration-300"
+                  )}
+                  size="lg"
+                  onClick={() => setShowWalletModal(true)}
+                >
+                  <div className="flex items-center gap-2">
+                    Connect Wallet 
+                  </div>
+                </Button>
+              ) : !isOnBSCMainnet ? (
+                /* Switch Network Button - Show when connected but wrong network */
+                <Button
+                  className={cn(
+                    "w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg h-12",
+                    "transition-all duration-300"
+                  )}
+                  size="lg"
+                  onClick={handleSwitchChain}
+                  disabled={isSwitchingChain}
+                >
+                  {isSwitchingChain ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Switching Network...
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <Network className="w-4 h-4" />
+                      Switch to BSC Mainnet
+                    </div>
+                  )}
+                </Button>
               ) : (
-                getSwapButtonText()
+                /* Swap/Approve Button - Show when connected and on correct network */
+                <Button
+                  className={cn(
+                    "w-full h-12 text-black font-medium rounded-xl",
+                    (!isSwapDisabled() || shouldShowApprove())
+                      ? "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 hover:from-yellow-300 hover:via-yellow-200 hover:to-yellow-300"
+                      : "bg-zinc-800/50 text-gray-400 cursor-not-allowed"
+                  )}
+                  disabled={isSwapDisabled() && !shouldShowApprove()}
+                  onClick={shouldShowApprove() ? handleApprove : handleSwap}
+                >
+                  {isSwapping ? (
+                    <div className="flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                      Swapping...
+                    </div>
+                  ) : (
+                    getSwapButtonText()
+                  )}
+                </Button>
               )}
-            </Button>
+            </div>
           </div>
         </div>
 
@@ -460,6 +525,12 @@ export const SwapInterface: React.FC = () => {
           onClose={() => setShowSettings(false)}
           settings={swapState.settings}
           onUpdate={updateSettings}
+        />
+
+        {/* Wallet Modal */}
+        <WalletModal
+          open={showWalletModal}
+          onClose={() => setShowWalletModal(false)}
         />
       </div>
     </div>

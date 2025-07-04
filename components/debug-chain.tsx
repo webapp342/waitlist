@@ -3,7 +3,7 @@
 import { useAccount, useChainId, useChains } from 'wagmi';
 import { useEffect } from 'react';
 
-const BSC_TESTNET_CHAIN_ID = 97;
+const BSC_MAINNET_CHAIN_ID = 56;
 
 export default function DebugChain() {
   const { address, isConnected, chain, connector } = useAccount();
@@ -19,7 +19,7 @@ export default function DebugChain() {
       console.log('connector:', connector);
       console.log('address:', address);
       console.log('configured chains:', chains);
-      console.log('Is BSC Testnet:', (chain?.id || chainId) === BSC_TESTNET_CHAIN_ID);
+      console.log('Is BSC Mainnet:', (chain?.id || chainId) === BSC_MAINNET_CHAIN_ID);
       console.log('======================');
     }
   }, [isConnected, chainId, chain, connector, address, chains]);
@@ -33,10 +33,10 @@ export default function DebugChain() {
       <div>chain?.id: {chain?.id}</div>
       <div>chain?.name: {chain?.name}</div>
       <div>connector: {connector?.name}</div>
-      <div className={`font-bold ${(chain?.id || chainId) === BSC_TESTNET_CHAIN_ID ? 'text-green-400' : 'text-red-400'}`}>
-        BSC Testnet: {(chain?.id || chainId) === BSC_TESTNET_CHAIN_ID ? 'YES ✅' : 'NO ❌'}
+      <div className={`font-bold ${(chain?.id || chainId) === BSC_MAINNET_CHAIN_ID ? 'text-green-400' : 'text-red-400'}`}>
+        BSC Mainnet: {(chain?.id || chainId) === BSC_MAINNET_CHAIN_ID ? 'YES ✅' : 'NO ❌'}
       </div>
-      <div className="text-xs mt-2 opacity-70">Required: Chain ID 97</div>
+      <div className="text-xs mt-2 opacity-70">Required: Chain ID 56</div>
     </div>
   );
 } 

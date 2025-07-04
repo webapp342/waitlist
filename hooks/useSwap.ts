@@ -53,12 +53,12 @@ export const useSwap = () => {
   const BBLP_TOKEN = {
     name: 'BBLP Token',
     symbol: 'BBLP',
-    address: '0xBBLP_TOKEN_ADDRESS', // Gerçek adres ile değiştirilmeli
+    address: '0x49EdC0FA13e650BC430D8bc23e4aaC6323B4f235', // Updated to real address
     decimals: 18,
     chainId: BSC_MAINNET_CHAIN_ID,
     logoURI: '/logo.svg',
-    comingSoon: true,
-    disabled: true
+    comingSoon: true, // Keep as coming soon
+    disabled: true    // Keep as disabled
   };
 
   // Load token list

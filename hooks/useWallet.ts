@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
-import { CONTRACTS, getContractsForNetwork, STAKING_ABI, TOKEN_ABI, BSC_TESTNET_CHAIN_ID, BSC_TESTNET_CONFIG,  HARDHAT_CONFIG, NETWORK_CONFIG } from '@/config/contracts';
+import { CONTRACTS, getContractsForNetwork, STAKING_ABI, TOKEN_ABI, BSC_MAINNET_CHAIN_ID, BSC_MAINNET_CONFIG,  HARDHAT_CONFIG, NETWORK_CONFIG } from '@/config/contracts';
 import { UserData, WalletState, BNBFeeInfo } from '@/types';
 import { useAccount, useConnect, useDisconnect, useWalletClient } from 'wagmi';
 import { walletConnect } from 'wagmi/connectors';
@@ -98,29 +98,29 @@ export const useWallet = () => {
   const switchToTargetNetwork = useCallback(async () => {
     const currentChainId = await getCurrentNetwork();
     
-    // Check if we're already on BSC testnet
-    if (currentChainId === 97) {
-      console.log('✅ Already on BSC testnet');
+    // Check if we're already on BSC Mainnet
+    if (currentChainId === 56) {
+      console.log('✅ Already on BSC Mainnet');
       return;
     }
     
-    // Try to switch to BSC testnet
+    // Try to switch to BSC Mainnet
     try {
-      console.log('🔄 Attempting to switch to BSC testnet...');
-      await switchToNetwork('0x61', {
-        chainId: '0x61',
-        chainName: 'BSC Testnet',
+      console.log('🔄 Attempting to switch to BSC Mainnet...');
+      await switchToNetwork('0x38', {
+        chainId: '0x38',
+        chainName: 'BSC Mainnet',
         nativeCurrency: {
           name: 'BNB',
           symbol: 'tBNB',
           decimals: 18
         },
-        rpcUrls: ['https://data-seed-prebsc-1-s1.binance.org:8545'],
-        blockExplorerUrls: ['https://testnet.bscscan.com']
+        rpcUrls: ['https://bsc-dataseed.binance.org/'],
+        blockExplorerUrls: ['https://bscscan.com']
       });
     } catch (error) {
-      console.error('❌ Failed to switch to BSC testnet');
-      setError('Please manually switch to BSC Testnet (Chain ID: 97)');
+      console.error('❌ Failed to switch to BSC Mainnet');
+      setError('Please manually switch to BSC Mainnet (Chain ID: 56)');
     }
   }, [getCurrentNetwork, switchToNetwork]);
 
@@ -267,13 +267,13 @@ export const useWallet = () => {
           const signer = await signerProvider.getSigner();
 
           // --- READ-ONLY provider (no wallet — prevents unwanted pop-ups) ---
-          const PUBLIC_BSC_TESTNET_RPC = 'https://data-seed-prebsc-1-s1.binance.org:8545';
-          const readProvider = new ethers.JsonRpcProvider(PUBLIC_BSC_TESTNET_RPC);
+          const PUBLIC_BSC_MAINNET_RPC = 'https://bsc-dataseed.binance.org/';
+          const readProvider = new ethers.JsonRpcProvider(PUBLIC_BSC_MAINNET_RPC);
 
           // Always use BSC Testnet contract addresses for read/write (adjust if multi-chain later)
-          const networkContracts = getContractsForNetwork(97);
+          const networkContracts = getContractsForNetwork(56);
 
-          console.log('🌐 Contracts (BSC Testnet):', networkContracts);
+          console.log('🌐 Contracts (BSC Mainnet):', networkContracts);
 
           // READ-ONLY contract instances (attached to public RPC)
           const stakingRead = new ethers.Contract(

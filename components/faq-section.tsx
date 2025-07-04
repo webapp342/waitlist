@@ -8,27 +8,27 @@ import Container from './container'
 const faqs = [
   {
     question: 'How does Bblip Card work without KYC?',
-    answer: 'Bblip Card operates on a decentralized infrastructure where your crypto wallet serves as your identity. We use smart contracts and blockchain technology to verify ownership without collecting personal data.'
+    answer: 'Bblip Card leverages a unique regulatory-compliant escrow protocol: when you connect your wallet, our system issues a virtual card linked to a pooled, licensed entity that acts as a legal intermediary. This structure satisfies regulatory requirements without collecting your personal data. All spending is authorized by your wallet signature, so you enjoy true KYC-free payments—legally and instantly.'
   },
   {
     question: 'What are the card limits?',
-    answer: 'Card limits depend on your staking tier. Bronze cards start at $1,000/day, Silver at $5,000/day, and Black cards have $25,000/day spending limits. ATM withdrawals are limited to $1,000/day across all tiers.'
+    answer: 'Card limits depend on your staking tier. Bronze and Silver cards are virtual only, with daily spending limits of $200 and $1,000 respectively. Black Card is available as both virtual and physical, with a $25,000/day spending limit. ATM withdrawals (only with Black Card) are limited to $10,000/day. Only Black Card holders are eligible for a physical card and ATM access; all other tiers are virtual-only.'
   },
   {
     question: 'Which cryptocurrencies can I spend?',
-    answer: 'Currently, you can spend BBLP, BNB, USDT, USDC, and ETH. We automatically convert your crypto to fiat at the point of sale using real-time exchange rates with zero markup.'
+    answer: 'Currently, you can spend BBLP, BNB, USDT, and BUSD. Ethereum, Solana, and Bitcoin network support is coming soon! We automatically convert your crypto to fiat at the point of sale using real-time exchange rates with zero markup.'
   },
   {
     question: 'How fast can I get my card?',
-    answer: 'Virtual cards are issued instantly upon staking. Physical cards are shipped within 7-10 business days worldwide. Express shipping (2-3 days) is available for Black tier members.'
+    answer: 'Virtual cards are issued instantly upon staking. Physical delivery is only available for Black Card holders. Card production is completed within 1 business day and shipped to your delivery address. Shipping time may vary depending on your location.'
   },
   {
     question: 'Is my crypto safe?',
-    answer: 'Yes. Bblip uses non-custodial technology, meaning you always maintain control of your private keys. Your crypto stays in your wallet until the moment of transaction.'
+    answer: 'Yes. Bblip uses non-custodial technology, meaning you always maintain control of your private keys. Your crypto stays in your wallet until the moment of transaction. When you make a purchase, you receive a notification and must approve the exact amount in your wallet—just like other secure checkout systems. Nothing leaves your wallet without your explicit permission, ensuring 100% self-custody at all times.'
   },
   {
     question: 'What happens to my staked tokens?',
-    answer: 'Staked tokens remain in a smart contract earning rewards. You can unstake anytime instantly with no cooldown period or penalties. Complete flexibility for your staking strategy.'
+    answer: 'Staking is the core of the Bblip ecosystem. Without staking, users cannot access card services. When you stake your tokens, they are securely held in a smart contract, earning a competitive 32% APY. This not only provides you with attractive staking rewards, but also unlocks the freedom to spend with your Bblip Card—no KYC required. You can unstake instantly at any time, with no cooldowns or penalties, ensuring maximum flexibility and control over your assets.'
   }
 ]
 

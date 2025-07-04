@@ -100,7 +100,7 @@ export default function TokenomicsSection() {
                   </div>
                   <div className="text-right">
                     <span className="text-sm font-semibold text-yellow-200">{allocation.percentage}%</span>
-                    <div className="text-xs text-zinc-500">{(allocation.percentage * 2.2).toFixed(1)}M</div>
+                    <div className="text-xs text-zinc-500">{(allocation.percentage * 1).toFixed(1)}M BBLP</div>
                   </div>
                 </div>
               ))}
@@ -123,7 +123,7 @@ export default function TokenomicsSection() {
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-zinc-400">Initial Circulating</span>
-                <span className="text-sm font-semibold text-yellow-200">35%</span>
+                <span className="text-sm font-semibold text-yellow-200">35M BBLP</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm text-zinc-400">Launch Price</span>

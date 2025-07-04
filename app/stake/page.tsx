@@ -27,8 +27,8 @@ const CARD_REQUIREMENTS = {
   BLACK: 3500
 };
 
-// BSC Testnet Chain ID
-const BSC_TESTNET_CHAIN_ID = 97;
+// BSC Mainnet Chain ID
+const BSC_MAINNET_CHAIN_ID = 56;
 
 // Enhanced styles
 const glowStyles = `
@@ -157,9 +157,9 @@ function StakeContent() {
     }
   }, [searchParams]);
 
-  // Check if user is on the correct network (BSC Testnet - Chain ID 97)
+  // Check if user is on the correct network (BSC Mainnet - Chain ID 56)
   const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
-  const isOnBSCTestnet = actualChainId === BSC_TESTNET_CHAIN_ID;
+  const isOnBSCMainnet = actualChainId === BSC_MAINNET_CHAIN_ID;
 
   // Handle chain switching
   const handleSwitchChain = async () => {
@@ -168,13 +168,13 @@ function StakeContent() {
     try {
       setIsSwitchingChain(true);
       setSwitchChainError(null);
-      await switchChain({ chainId: BSC_TESTNET_CHAIN_ID });
+      await switchChain({ chainId: BSC_MAINNET_CHAIN_ID });
     } catch (err: any) {
       console.error('Failed to switch chain:', err);
       if (err.code === 4001) {
         setSwitchChainError('Chain switch was cancelled by user');
       } else {
-        setSwitchChainError('Failed to switch to BSC Testnet. Please switch manually in your wallet.');
+        setSwitchChainError('Failed to switch to BSC Mainnet. Please switch manually in your wallet.');
       }
     } finally {
       setIsSwitchingChain(false);
@@ -200,7 +200,7 @@ function StakeContent() {
   // Save user to database when wallet is connected to correct network
   useEffect(() => {
     const saveUserToDatabase = async () => {
-      if (isConnected && address && isOnBSCTestnet) {
+      if (isConnected && address && isOnBSCMainnet) {
         try {
           await userService.addUser(address);
           console.log('User saved successfully from stake page');
@@ -211,12 +211,12 @@ function StakeContent() {
     };
 
     saveUserToDatabase();
-  }, [isConnected, address, isOnBSCTestnet]);
+  }, [isConnected, address, isOnBSCMainnet]);
 
   // Load stake logs when wallet is connected
   useEffect(() => {
     const loadStakeLogs = async () => {
-      if (isConnected && address && isOnBSCTestnet) {
+      if (isConnected && address && isOnBSCMainnet) {
         try {
           const logs = await stakeLogsService.getUserStakeLogs(address);
           setStakeLogs(logs);
@@ -228,7 +228,7 @@ function StakeContent() {
     };
 
     loadStakeLogs();
-  }, [isConnected, address, userData.stakes, isOnBSCTestnet]); // Reload when stakes change
+  }, [isConnected, address, userData.stakes, isOnBSCMainnet]); // Reload when stakes change
 
   // Format token amounts from wei to ether
   const formatTokenAmount = useCallback((amount: string, decimals: number = 8) => {
@@ -624,7 +624,7 @@ function StakeContent() {
     if (targetCard) {
       return `Insufficient balance. You need ${difference.toFixed(2)} more BBLP to activate your ${targetCard} card (min. ${CARD_REQUIREMENTS[targetCard]} BBLP stake required).`;
     }
-    
+      
     return `Insufficient balance. You need ${difference.toFixed(2)} more BBLP.`;
   };
 
@@ -676,17 +676,17 @@ function StakeContent() {
             </p>
           </div>
 
-          {/* Network Warning - Show when connected but not on BSC Testnet */}
-          {isConnected && !isOnBSCTestnet && (
-            <div className="mb-6 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
+          {/* Network Warning - Show when connected but not on BSC Mainnet */}
+          {isConnected && !isOnBSCMainnet && (
+            <div className="w-full max-w-5xl mt-1 mb-10 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
               <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 rounded-lg bg-orange-500/20 border border-orange-500/30">
+                <div className="p-2 rounded-lg bg-orange-500/20">
                   <Network className="w-5 h-5 text-orange-400" />
                 </div>
                 <div>
                   <h3 className="text-sm font-semibold text-orange-200">Wrong Network</h3>
                   <p className="text-xs text-orange-300/80">
-                    You&apos;re connected to {chain?.name || 'Unknown Network'}. Please switch to BSC Testnet to stake your tokens.
+                    You&apos;re connected to {chain?.name || 'Unknown Network'}. Please switch to BSC Mainnet to stake your tokens.
                   </p>
                 </div>
               </div>
@@ -703,7 +703,7 @@ function StakeContent() {
                 ) : (
                   <div className="flex items-center gap-2">
                     <Network className="w-4 h-4" />
-                    Switch to BSC Testnet
+                    Switch to BSC Mainnet
                   </div>
                 )}
               </Button>
@@ -723,7 +723,7 @@ function StakeContent() {
           {/* Main Staking Card */}
           <div className={cn(
             "bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-3xl border border-zinc-800 p-6 md:p-8 mb-6 shadow-xl transition-all duration-300",
-            !isOnBSCTestnet && isConnected && "opacity-50 pointer-events-none"
+            !isOnBSCMainnet && isConnected && "opacity-50 pointer-events-none"
           )}>
             
             {/* Portfolio Overview Header */}
@@ -793,7 +793,7 @@ function StakeContent() {
                   value={stakeAmount}
                   onChange={(e) => setStakeAmount(e.target.value)}
                   className="h-12 md:h-14 text-lg font-semibold bg-black/60 border-yellow-400/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
-                  disabled={walletState.loading || !isOnBSCTestnet}
+                  disabled={walletState.loading || !isOnBSCMainnet}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
                   BBLP
@@ -818,11 +818,10 @@ function StakeContent() {
                 onClick={() => setShowWalletModal(true)}
               >
                 <div className="flex items-center justify-center w-full gap-2">
-                  <Zap className="w-4 h-4" />
-                  <span className="text-sm md:text-base">Connect Wallet to Stake</span>
+                  <span className="text-sm md:text-base">Connect Wallet</span>
                 </div>
               </Button>
-            ) : !isOnBSCTestnet ? (
+            ) : !isOnBSCMainnet ? (
               <Button
                 onClick={handleSwitchChain}
                 disabled={isSwitchingChain}
@@ -843,7 +842,7 @@ function StakeContent() {
                 ) : (
                   <div className="flex items-center justify-center w-full gap-2">
                     <Network className="w-4 h-4" />
-                    <span className="text-sm md:text-base">Switch to BSC Testnet</span>
+                    <span className="text-sm md:text-base">Switch to BSC Mainnet</span>
                   </div>
                 )}
               </Button>
@@ -861,12 +860,14 @@ function StakeContent() {
                 >
                   {walletState.loading ? (
                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : !stakeAmount || parseFloat(stakeAmount) <= 0 ? (
+                    <AlertCircle className="w-4 h-4 mr-2" />
                   ) : !hasEnoughBalance() ? (
                     <AlertCircle className="w-4 h-4 mr-2" />
                   ) : (
                     <Zap className="w-4 h-4 mr-2" />
                   )}
-                  {!hasEnoughBalance() ? 'Insufficient Balance' : 'Stake Now'}
+                  {!stakeAmount || parseFloat(stakeAmount) <= 0 ? 'Enter Amount' : !hasEnoughBalance() ? 'Insufficient Balance' : 'Stake Now'}
                 </Button>
 
                 {stakeAmount && !hasEnoughBalance() && (
@@ -919,7 +920,7 @@ function StakeContent() {
           {isConnected && userData.pendingRewards && Number(userData.pendingRewards) > 0 && (
             <div className={cn(
               "bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-green-500/30 p-4 md:p-6 mb-6 shadow-xl shadow-green-500/10 transition-all duration-300",
-              !isOnBSCTestnet && "opacity-50 pointer-events-none"
+              !isOnBSCMainnet && "opacity-50 pointer-events-none"
             )}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -940,14 +941,14 @@ function StakeContent() {
                 
                 <Button
                   onClick={handleClaimRewards}
-                  disabled={walletState.loading || !isOnBSCTestnet}
+                  disabled={walletState.loading || !isOnBSCMainnet}
                   className={cn(
                     "font-semibold text-black px-4 md:px-6",
                     "bg-gradient-to-r from-green-400 via-green-300 to-green-400",
                     "hover:from-green-300 hover:via-green-200 hover:to-green-300",
                     "shadow-lg shadow-green-400/25 hover:shadow-green-400/40",
                     "transition-all duration-300 transform hover:scale-105",
-                    !isOnBSCTestnet && "opacity-50 cursor-not-allowed"
+                    !isOnBSCMainnet && "opacity-50 cursor-not-allowed"
                   )}
                   size="sm"
                 >
@@ -1043,7 +1044,7 @@ function StakeContent() {
                       </div>
                       <div>
                         <h4 className="text-sm font-semibold text-white mb-1">Network Requirement</h4>
-                        <p className="text-xs text-gray-400 leading-relaxed">Staking is available on BSC Testnet only</p>
+                        <p className="text-xs text-gray-400 leading-relaxed">Staking is available on BSC Mainnet only</p>
                       </div>
                     </div>
                   </div>
@@ -1056,7 +1057,7 @@ function StakeContent() {
           {isConnected && userData.stakes && userData.stakes.length > 0 && (
             <div className={cn(
               "py-5 rounded-3xl p-0 shadow-xl transition-all duration-300",
-              !isOnBSCTestnet && "opacity-50 pointer-events-none"
+              !isOnBSCMainnet && "opacity-50 pointer-events-none"
             )}>
               {/* Active Stakes Header */}
               <div className="flex items-center gap-3 mb-6">
@@ -1131,7 +1132,7 @@ function StakeContent() {
                         
                         <Button
                           onClick={() => handleUnstake(stake.stakeId)}
-                          disabled={walletState.loading || !canUnstake || !isOnBSCTestnet}
+                          disabled={walletState.loading || !canUnstake || !isOnBSCMainnet}
                           className={cn(
                             "font-semibold text-black px-4 md:px-6",
                             "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400",

@@ -19,12 +19,12 @@ import { userService } from '@/lib/supabase';
 import AuthGuard from '@/components/AuthGuard';
 import { useChainId } from 'wagmi';
 
-const USDT_ADDRESS = '0x690419A4f1B5320c914f41b44CE10EB0BAC70908';
-const BUSD_ADDRESS = '0xD7D767dB964C36B41EfAABC02669169eDF513eAb';
+const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
+const BUSD_ADDRESS = '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56';
 const BBLP_ADDRESS = '0x38f5e5902AA2FC1170653f764D5C0A79C7c0a254';
 
-// BSC Testnet Chain ID
-const BSC_TESTNET_CHAIN_ID = 97;
+// BSC Mainnet Chain ID
+const BSC_MAINNET_CHAIN_ID = 56;
 
 const ASSETS = [
   { symbol: 'BBLP', name: 'BBLP Token', icon: '/logo.svg' },
@@ -60,9 +60,9 @@ function DashboardContent() {
   const [isSwitchingChain, setIsSwitchingChain] = useState(false);
   const [switchChainError, setSwitchChainError] = useState<string | null>(null);
 
-  // Check if user is on the correct network (BSC Testnet - Chain ID 97)
+  // Check if user is on the correct network (BSC Mainnet - Chain ID 56)
   const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
-  const isOnBSCTestnet = actualChainId === BSC_TESTNET_CHAIN_ID;
+  const isOnBSCMainnet = actualChainId === BSC_MAINNET_CHAIN_ID;
 
   // Handle chain switching
   const handleSwitchChain = async () => {
@@ -71,13 +71,13 @@ function DashboardContent() {
     try {
       setIsSwitchingChain(true);
       setSwitchChainError(null);
-      await switchChain({ chainId: BSC_TESTNET_CHAIN_ID });
+      await switchChain({ chainId: BSC_MAINNET_CHAIN_ID });
     } catch (err: any) {
       console.error('Failed to switch chain:', err);
       if (err.code === 4001) {
         setSwitchChainError('Chain switch was cancelled by user');
       } else {
-        setSwitchChainError('Failed to switch to BSC Testnet. Please switch manually in your wallet.');
+        setSwitchChainError('Failed to switch to BSC Mainnet. Please switch manually in your wallet.');
       }
     } finally {
       setIsSwitchingChain(false);
@@ -93,9 +93,9 @@ function DashboardContent() {
   }, [switchChainError]);
 
   // Fetch token balances for the connected wallet - only on correct network
-  const { data: usdtBalance, refetch: refetchUSDT } = useBalance(address && isOnBSCTestnet ? { address, token: USDT_ADDRESS } : { address: undefined });
-  const { data: busdBalance, refetch: refetchBUSD } = useBalance(address && isOnBSCTestnet ? { address, token: BUSD_ADDRESS } : { address: undefined });
-  const { data: bblpBalance, refetch: refetchBBLP } = useBalance(address && isOnBSCTestnet ? { address, token: BBLP_ADDRESS } : { address: undefined });
+  const { data: usdtBalance, refetch: refetchUSDT } = useBalance(address && isOnBSCMainnet ? { address, token: USDT_ADDRESS } : { address: undefined });
+  const { data: busdBalance, refetch: refetchBUSD } = useBalance(address && isOnBSCMainnet ? { address, token: BUSD_ADDRESS } : { address: undefined });
+  const { data: bblpBalance, refetch: refetchBBLP } = useBalance(address && isOnBSCMainnet ? { address, token: BBLP_ADDRESS } : { address: undefined });
 
   // Clear any existing toasts on dashboard load
   useEffect(() => {
@@ -138,7 +138,7 @@ function DashboardContent() {
   // Load stake logs when wallet is connected and on correct network
   useEffect(() => {
     const loadStakeLogs = async () => {
-      if (isConnected && address && isOnBSCTestnet) {
+      if (isConnected && address && isOnBSCMainnet) {
         try {
           const logs = await stakeLogsService.getUserStakeLogs(address);
           setStakeLogs(logs);
@@ -150,12 +150,12 @@ function DashboardContent() {
     };
 
     loadStakeLogs();
-  }, [isConnected, address, isOnBSCTestnet]);
+  }, [isConnected, address, isOnBSCMainnet]);
 
   // Load referral data when wallet is connected and on correct network
   useEffect(() => {
     const loadReferralData = async () => {
-      if (isConnected && address && isOnBSCTestnet) {
+      if (isConnected && address && isOnBSCMainnet) {
         try {
           // Get user first
           const user = await userService.getUserByWallet(address);
@@ -189,7 +189,7 @@ function DashboardContent() {
     };
 
     loadReferralData();
-  }, [isConnected, address, isOnBSCTestnet]);
+  }, [isConnected, address, isOnBSCMainnet]);
 
   // Calculate total USD value for all assets
   const bnbUsd = userData?.bnbBalance && bnbPrice ? parseFloat(userData.bnbBalance) * bnbPrice : 0;
@@ -200,8 +200,8 @@ function DashboardContent() {
     const totalUsd = bnbUsd + usdtUsd + busdUsd + bblpUsd + rBblpUsd;
 
   const handleRefresh = async () => {
-    if (!isOnBSCTestnet) {
-      toast.error('Please switch to BSC Testnet to refresh portfolio');
+    if (!isOnBSCMainnet) {
+      toast.error('Please switch to BSC Mainnet to refresh portfolio');
       return;
     }
     
@@ -309,8 +309,8 @@ function DashboardContent() {
       <section className="flex flex-col items-center mt-10 px-4 sm:px-6 lg:px-8 w-full max-w-7xl mx-auto">
         <Header />
 
-        {/* Network Warning - Show when connected but not on BSC Testnet */}
-        {isConnected && !isOnBSCTestnet && (
+        {/* Network Warning - Show when connected but not on BSC Mainnet */}
+        {isConnected && !isOnBSCMainnet && (
           <div className="w-full max-w-5xl mt-20 -mb-10 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 rounded-lg bg-orange-500/20 border border-orange-500/30">
@@ -319,7 +319,7 @@ function DashboardContent() {
               <div>
                 <h3 className="text-sm font-semibold text-orange-200">Wrong Network</h3>
                 <p className="text-xs text-orange-300/80">
-                  You&apos;re connected to {chain?.name || "Unknown Network"}. Please switch to BSC Testnet to access all features.
+                  You&apos;re connected to {chain?.name || "Unknown Network"}. Please switch to BSC Mainnet to access all features.
                 </p>
               </div>
             </div>
@@ -336,7 +336,7 @@ function DashboardContent() {
               ) : (
                 <div className="flex items-center gap-2">
                   <Network className="w-4 h-4" />
-                  Switch to BSC Testnet
+                  Switch to BSC Mainnet
                 </div>
               )}
             </Button>
@@ -358,7 +358,7 @@ function DashboardContent() {
         {/* Main Dashboard Content */}
         <div className={cn(
           "w-full max-w-5xl mt-8 space-y-4 transition-all duration-300",
-          !isOnBSCTestnet && isConnected && "opacity-50 pointer-events-none"
+          !isOnBSCMainnet && isConnected && "opacity-50 pointer-events-none"
         )}>
           {/* Dashboard Header - Simplified */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
@@ -369,9 +369,9 @@ function DashboardContent() {
                 onClick={handleRefresh}
                 className={cn(
                   "text-zinc-400 hover:text-yellow-400 transition-colors",
-                  (!isOnBSCTestnet || isRefreshing) && "opacity-50 cursor-not-allowed"
+                  (!isOnBSCMainnet || isRefreshing) && "opacity-50 cursor-not-allowed"
                 )}
-                disabled={isRefreshing || !isOnBSCTestnet}
+                disabled={isRefreshing || !isOnBSCMainnet}
               >
                 <RefreshCw className={cn("w-5 h-5", isRefreshing && "animate-spin")} />
               </button>
@@ -388,7 +388,7 @@ function DashboardContent() {
         
 
 
-              {!isOnBSCTestnet ? (
+              {!isOnBSCMainnet ? (
                 <Button
                   onClick={handleSwitchChain}
                   disabled={isSwitchingChain}

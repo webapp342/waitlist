@@ -33,12 +33,12 @@ const thirdSectionFeatures: Feature[] = [
   {
     icon: Lock,
     title: 'Smart Contract Security',
-    description: 'Audited smart contracts with multi-signature governance and time-locks'
+    description: 'Smart contracts with multi-signature governance and time-locks'
   },
   {
     icon: Coins,
     title: 'Staking Rewards',
-    description: 'Earn passive income through staking. Up to 12% APY with flexible lock periods'
+    description: 'Earn passive income through staking. Up to 32% APY with flexible staking periods'
   },
   {
     icon: Zap,
