@@ -116,6 +116,9 @@ export default function ReferralLeaderboard() {
                         <p className="text-white font-medium">
                           {user.walletAddress.slice(0, 6)}...{user.walletAddress.slice(-4)}
                         </p>
+                        {user.isCurrentUser && (
+                          <span className="text-xs bg-yellow-400/20 text-yellow-400 px-2 py-0.5 rounded-full">You</span>
+                        )}
                       </div>
                       <p className="text-xs text-gray-500">Referrer</p>
                     </div>

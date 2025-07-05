@@ -1071,36 +1071,38 @@ export const referralService = {
         totals[referredId] += referredAmount;
       }
 
-      // Sıralı diziye çevir
-      const sorted = Object.entries(totals)
-        .map(([userId, total]) => ({ userId: Number(userId), total }))
-        .sort((a, b) => b.total - a.total)
+      // Tüm kullanıcıları çek
+      const { data: allUsers } = await supabase.from('users').select('id, wallet_address');
+
+      // Her kullanıcı için toplamı bul veya 0 olarak ata
+      const userTotals = (allUsers || []).map(user => ({
+        userId: user.id,
+        walletAddress: user.wallet_address,
+        total: totals[user.id] || 0
+      }));
+
+      // Sırala
+      const sorted = userTotals.sort((a, b) => b.total - a.total);
 
       // İlk 5 ve kendi sırası
-      const topUsers = []
-      let currentUserRank = null
+      const topUsers = [];
+      let currentUserRank = null;
 
       for (let i = 0; i < sorted.length; i++) {
-        const entry = sorted[i]
-        // Kullanıcı wallet adresini çek
-        const { data: user } = await supabase
-          .from('users')
-          .select('wallet_address')
-          .eq('id', entry.userId)
-          .single()
+        const entry = sorted[i];
         const obj = {
           rank: i + 1,
           userId: entry.userId,
-          walletAddress: user?.wallet_address || '',
+          walletAddress: entry.walletAddress || '',
           totalRewards: entry.total.toString()
-        }
-        if (i < 5) topUsers.push(obj)
-        if (user?.wallet_address?.toLowerCase() === walletAddress.toLowerCase()) {
-          currentUserRank = { ...obj, isCurrentUser: true }
+        };
+        if (i < 5) topUsers.push(obj);
+        if (entry.walletAddress?.toLowerCase() === walletAddress.toLowerCase()) {
+          currentUserRank = { ...obj, isCurrentUser: true };
         }
       }
 
-      return { topUsers, currentUserRank }
+      return { topUsers, currentUserRank };
     } catch (error) {
       console.error('Error in getLeaderboard:', error)
       return { topUsers: [], currentUserRank: null }
