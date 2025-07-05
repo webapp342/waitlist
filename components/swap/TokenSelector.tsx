@@ -117,7 +117,7 @@ export const TokenSelector: React.FC<TokenSelectorProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md min-h-[90vh] flex flex-col bottom-20 bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl border border-zinc-800 shadow-xl">
+      <DialogContent className="max-w-md min-h-[80vh] flex flex-col bottom-20 bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl border border-zinc-800 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-lg font-semibold text-white">Select a token</DialogTitle>
         </DialogHeader>
