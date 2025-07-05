@@ -13,7 +13,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePresale } from '@/hooks/usePresale';
 import { TOKEN_IDS } from '@/config/presale';
-import { formatUnits } from 'ethers';
+import { formatUnits, parseEther } from 'ethers';
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
 import { Info, ChevronDown, ChevronUp, TrendingUp, Shield, Clock, DollarSign, Zap, Network, ArrowUpDown } from 'lucide-react';
 import WalletModal from '@/components/WalletModal';
@@ -240,7 +240,9 @@ function PresalePageInner() {
     
     try {
       setIsBuying(true);
-      await buyTokens(TOKEN_IDS.bnb, bnbAmount);
+      // Convert BNB amount to wei format
+      const bnbAmountWei = parseEther(bnbAmount);
+      await buyTokens(TOKEN_IDS.bnb, bnbAmountWei.toString());
       setStatusMessage('Purchase successful!');
       setBnbAmount('');
       setBblpAmount('');
