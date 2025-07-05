@@ -311,7 +311,7 @@ function DashboardContent() {
 
         {/* Network Warning - Show when connected but not on BSC Mainnet */}
         {isConnected && !isOnBSCMainnet && (
-          <div className="w-full max-w-5xl mt-20 -mb-10 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
+          <div className="w-full max-w-5xl mt-20 mb-10 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 rounded-lg bg-orange-500/20 border border-orange-500/30">
                 <Network className="w-5 h-5 text-orange-400" />
