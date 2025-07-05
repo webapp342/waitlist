@@ -1,13 +1,11 @@
 'use client'
 
 import { motion, PanInfo, useAnimation, useMotionValue, useTransform } from "framer-motion";
-import TextBlur from "@/components/ui/text-blur";
-import AnimatedShinyText from "@/components/ui/shimmer-text";
 import { EnhancedButton } from "@/components/ui/enhanced-btn";
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
 import { useAccount, useChainId, useSwitchChain, useChains, useBalance } from 'wagmi';
-import { FaTriangleExclamation, FaCreditCard, FaRegCopy, FaCheck } from "react-icons/fa6";
-import { Info, CheckCircle, Settings } from "lucide-react";
+import {  FaRegCopy, FaCheck } from "react-icons/fa6";
+import { Info, CheckCircle } from "lucide-react";
 import { toast } from "sonner";
 import { useEffect, useState } from 'react';
 import { userService, cardService, Card } from '@/lib/supabase';
@@ -484,7 +482,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
 
   return (
     <motion.div
-      className="flex w-full max-w-2xl flex-col mt-10 gap-2"
+      className="flex w-full max-w-2xl flex-col -mt-10 gap-2"
       variants={containerVariants}
       initial="hidden"
       animate="visible">
@@ -512,10 +510,10 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
 
       {/* Staking CTA for current active card */}
       {isOnBSCMainnet && userCards.length > 0 && (
-        <motion.div variants={itemVariants} className="mt-4">
+        <motion.div variants={itemVariants} >
           {!isCardReserved(userCards[currentCardIndex]?.card_type) ? (
             // Card Not Activated - Yellow Theme
-            <div className="bg-gradient-to-r from-yellow-500/5 to-orange-500/5 backdrop-blur-xl rounded-2xl border border-yellow-500/20 p-4 shadow-lg">
+            <div className="p-4 shadow-lg">
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
                   <Info className="w-4 h-4 text-yellow-400" />
@@ -526,14 +524,18 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
                     Stake {getRequiredStakeAmount().toLocaleString()} BBLP to activate your {userCards[currentCardIndex]?.card_type} card
                   </p>
                 </div>
-                <EnhancedButton
+              
+              </div>
+              <div className="flex items-center justify-center">
+              <EnhancedButton
                   onClick={handleStakeClick}
-                  size="sm" variant="ghost" className="text-yellow-300 hover:text-yellow-200 hover:bg-yellow-500/10"
+                   variant="ghost" className="text-yellow-300 w-full hover:text-yellow-200 mt-2 bg-yellow-500/10"
                 >
-                  Activate Now
+                  Activate Now 
                 </EnhancedButton>
               </div>
             </div>
+            
           ) : (
             // Card Activated - Green Theme
             <div className="bg-gradient-to-r from-green-500/5 to-emerald-500/5 backdrop-blur-xl rounded-2xl border border-green-500/20 p-4 shadow-lg">

@@ -722,7 +722,7 @@ function StakeContent() {
 
           {/* Main Staking Card */}
           <div className={cn(
-            "bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-3xl border border-zinc-800 p-6 md:p-8 mb-6 shadow-xl transition-all duration-300",
+            "bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-3xl border border-zinc-800 px-4 py-6 md:p-8 mb-6 shadow-xl transition-all duration-300",
             !isOnBSCMainnet && isConnected && "opacity-50 pointer-events-none"
           )}>
             
@@ -745,7 +745,7 @@ function StakeContent() {
                   <p className="text-xs text-gray-500">Available</p>
                 </div>
                 <p className="text-lg md:text-2xl font-bold text-white mb-1">{formatTokenAmount(userData.tokenBalance, 2)}</p>
-                <p className="text-xs md:text-sm text-gray-400">BBLP Balance</p>
+                <p className="text-xs md:text-sm text-gray-400">BBLP </p>
               </div>
 
               <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-3 md:p-6 rounded-xl md:rounded-2xl border border-yellow-500/30 shadow-xl shadow-yellow-500/5">
@@ -754,7 +754,7 @@ function StakeContent() {
                   <p className="text-xs text-gray-500">Staked</p>
                 </div>
                 <p className="text-lg md:text-2xl font-bold text-yellow-400 mb-1">{formatTokenAmount(userData.stakedAmount, 2)}</p>
-                <p className="text-xs md:text-sm text-gray-400">Total Staked</p>
+                <p className="text-xs md:text-sm text-gray-400">BBLP</p>
               </div>
 
               <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-3 md:p-6 rounded-xl md:rounded-2xl border border-green-500/30 shadow-xl shadow-green-500/5">

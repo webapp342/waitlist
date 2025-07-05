@@ -295,9 +295,9 @@ export const SwapInterface: React.FC = () => {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-1 lg:gap-2">
             <TabButton active>Swap</TabButton>
-            <TabButton onClick={() => toast('Coming soon')}>Limit</TabButton> 
-            <TabButton onClick={() => toast('Coming soon')}>DCA</TabButton>
-            <TabButton onClick={() => toast('Coming soon')}>Cross-Chain</TabButton>
+            <TabButton onClick={() => toast('Coming soon...')}>Limit</TabButton> 
+            <TabButton onClick={() => toast('Coming soon...')}>DCA</TabButton>
+            <TabButton onClick={() => toast('Coming soon...')}>Cross-Chain</TabButton>
           </div>
           <Button
             variant="ghost"

@@ -406,7 +406,7 @@ function PresalePageInner() {
                     <span className="text-zinc-500 font-bold text-sm">03</span>
                   </div>
                   <div className="text-center">
-                    <h3 className="text-sm font-semibold text-zinc-400 mb-1">Public Launch</h3>
+                    <h3 className="text-sm font-semibold text-zinc-400 mb-1">Public Sale</h3>
                     <p className="text-xs text-zinc-500 mb-2">Coming Soon</p>
                     <p className="text-lg font-bold text-zinc-400">$0.14</p>
                   </div>
