@@ -1044,62 +1044,63 @@ export const referralService = {
 
   // Get referral leaderboard
   async getLeaderboard(walletAddress: string) {
-    // Check if Supabase is properly configured
     if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('Supabase not configured, returning empty leaderboard')
       return { topUsers: [], currentUserRank: null }
     }
 
     try {
-      // Get current user
-      const currentUser = await userService.getUserByWallet(walletAddress)
-      if (!currentUser) {
-        return { topUsers: [], currentUserRank: null }
+      // Tüm referral_rewards'ı çek
+      const { data: rewards, error } = await supabase
+        .from('referral_rewards')
+        .select('referrer_id, referred_id, referrer_reward_amount, referred_reward_amount')
+
+      if (error) throw error
+
+      // Her kullanıcı için toplam BBLP hesapla (hem referrer hem referred)
+      const totals: Record<number, number> = {}
+      for (const row of rewards || []) {
+        const referrerId = row.referrer_id;
+        const referredId = row.referred_id;
+        const referrerAmount = parseFloat(row.referrer_reward_amount || '0');
+        const referredAmount = parseFloat(row.referred_reward_amount || '0');
+
+        if (!totals[referrerId]) totals[referrerId] = 0;
+        if (!totals[referredId]) totals[referredId] = 0;
+
+        totals[referrerId] += referrerAmount;
+        totals[referredId] += referredAmount;
       }
 
-      // Get all referral codes with user data, sorted by total_rewards_earned
-      const { data: allReferralCodes, error } = await supabase
-        .from('referral_codes')
-        .select(`
-          id,
-          user_id,
-          total_rewards_earned,
-          users!referral_codes_user_id_fkey (
-            id,
-            wallet_address
-          )
-        `)
-        .order('total_rewards_earned', { ascending: false, nullsFirst: false })
+      // Sıralı diziye çevir
+      const sorted = Object.entries(totals)
+        .map(([userId, total]) => ({ userId: Number(userId), total }))
+        .sort((a, b) => b.total - a.total)
 
-      if (error) {
-        console.error('Error fetching leaderboard data:', error)
-        throw error
+      // İlk 5 ve kendi sırası
+      const topUsers = []
+      let currentUserRank = null
+
+      for (let i = 0; i < sorted.length; i++) {
+        const entry = sorted[i]
+        // Kullanıcı wallet adresini çek
+        const { data: user } = await supabase
+          .from('users')
+          .select('wallet_address')
+          .eq('id', entry.userId)
+          .single()
+        const obj = {
+          rank: i + 1,
+          userId: entry.userId,
+          walletAddress: user?.wallet_address || '',
+          totalRewards: entry.total.toString()
+        }
+        if (i < 5) topUsers.push(obj)
+        if (user?.wallet_address?.toLowerCase() === walletAddress.toLowerCase()) {
+          currentUserRank = { ...obj, isCurrentUser: true }
+        }
       }
 
-      // Filter out entries with 0 rewards and map to leaderboard entries
-      const leaderboardEntries = (allReferralCodes || [])
-        .filter(code => parseFloat(code.total_rewards_earned || '0') > 0)
-        .map((code, index) => ({
-          rank: index + 1,
-          userId: code.user_id,
-          walletAddress: (code as any).users?.wallet_address || '',
-          totalRewards: code.total_rewards_earned || '0'
-        }))
-
-      // Get top 5 users
-      const topUsers = leaderboardEntries.slice(0, 5)
-
-      // Find current user's rank
-      const currentUserEntry = leaderboardEntries.find(entry => entry.userId === currentUser.id)
-      const currentUserRank = currentUserEntry ? {
-        ...currentUserEntry,
-        isCurrentUser: true
-      } : null
-
-      return {
-        topUsers,
-        currentUserRank
-      }
+      return { topUsers, currentUserRank }
     } catch (error) {
       console.error('Error in getLeaderboard:', error)
       return { topUsers: [], currentUserRank: null }
