@@ -15,15 +15,14 @@ import { usePresale } from '@/hooks/usePresale';
 import { TOKEN_IDS } from '@/config/presale';
 import { formatUnits } from 'ethers';
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
-import { Info, ChevronDown, ChevronUp, TrendingUp, Shield, Clock, DollarSign, Zap, Network } from 'lucide-react';
+import { Info, ChevronDown, ChevronUp, TrendingUp, Shield, Clock, DollarSign, Zap, Network, ArrowUpDown } from 'lucide-react';
 import WalletModal from '@/components/WalletModal';
 import { userService, cardService } from '@/lib/supabase';
 import { useChainId } from 'wagmi';
+import { useWallet } from '@/hooks/useWallet';
 
 const PAYMENT_TOKENS = [
   { id: TOKEN_IDS.bnb, name: 'BNB', icon: '/bnb.svg', color: 'from-yellow-600 to-yellow-400' },
-  { id: TOKEN_IDS.usdt, name: 'USDT', icon: '/usdt.svg', color: 'from-green-600 to-green-400' },
-  { id: TOKEN_IDS.busd, name: 'BUSD', icon: '/busd.svg', color: 'from-blue-600 to-blue-400' },
 ];
 
 // BSC Mainnet Chain ID
@@ -47,6 +46,10 @@ function PresalePageInner() {
   const [isCheckingAllowance, setIsCheckingAllowance] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [isSwitchingChain, setIsSwitchingChain] = useState(false);
+  const [bnbAmount, setBnbAmount] = useState('');
+  const [bblpAmount, setBblpAmount] = useState('');
+  const [inputMode, setInputMode] = useState<'BNB' | 'BBLP'>('BBLP');
+  const { userData } = useWallet();
   
   const { 
     presaleInfo, 
@@ -65,6 +68,9 @@ function PresalePageInner() {
     const amountParam = searchParams.get('amount');
     if (amountParam && !isNaN(Number(amountParam)) && Number(amountParam) > 0) {
       setDesiredTokens(amountParam);
+      // Also set the BBLP amount directly for the input field
+      setBblpAmount(amountParam);
+      setInputMode('BBLP');
     }
   }, [searchParams]);
 
@@ -158,6 +164,51 @@ function PresalePageInner() {
     updatePaymentAmount();
   }, [desiredTokens, selectedToken, calculatePaymentAmount, checkAllowance, isOnBSCMainnet]);
 
+  // Presale price (assume presaleInfo?.tokenPriceUSD is in 1e8 USD, and BNB price is in USD)
+  const presalePrice = 0.10; // fallback
+  const bnbPriceUSD = tokenPrices && tokenPrices[TOKEN_IDS.bnb] ? Number(tokenPrices[TOKEN_IDS.bnb]) / 1e8 : 0;
+  const bblpPriceInBNB = bnbPriceUSD > 0 ? presalePrice / bnbPriceUSD : 0;
+
+  // Update BBLP when BNB changes
+  useEffect(() => {
+    if (inputMode === 'BNB') {
+      const bnb = parseFloat(bnbAmount);
+      if (!isNaN(bnb) && bnb > 0 && bblpPriceInBNB > 0) {
+        setBblpAmount((bnb / bblpPriceInBNB).toFixed(4));
+      } else {
+        setBblpAmount('');
+      }
+    }
+    // eslint-disable-next-line
+  }, [bnbAmount, bblpPriceInBNB]);
+
+  // Update BNB when BBLP changes
+  useEffect(() => {
+    if (inputMode === 'BBLP') {
+      const bblp = parseFloat(bblpAmount);
+      if (!isNaN(bblp) && bblp > 0 && bblpPriceInBNB > 0) {
+        setBnbAmount((bblp * bblpPriceInBNB).toFixed(6));
+      } else {
+        setBnbAmount('');
+      }
+    }
+    // eslint-disable-next-line
+  }, [bblpAmount, bblpPriceInBNB]);
+
+  // Max button for BNB
+  const handleMaxBNB = () => {
+    // Assume userData.bnbBalance is available and in string format
+    if (userData && userData.bnbBalance) {
+      setInputMode('BNB');
+      setBnbAmount(userData.bnbBalance);
+    }
+  };
+
+  // Flip input mode
+  const handleFlip = () => {
+    setInputMode(inputMode === 'BNB' ? 'BBLP' : 'BNB');
+  };
+
   // Don't redirect if wallet is not connected - show the page with connect wallet option
 
   const handleApprove = async () => {
@@ -185,15 +236,14 @@ function PresalePageInner() {
   };
 
   const handleBuy = async () => {
-    if (!paymentAmount || paymentAmount === '0' || !isOnBSCMainnet) return;
+    if (!bnbAmount || parseFloat(bnbAmount) <= 0 || !isOnBSCMainnet) return;
     
     try {
       setIsBuying(true);
-      setStatusMessage(selectedToken === TOKEN_IDS.bnb ? 'Buying with BNB...' : 'Buying with tokens...');
-      await buyTokens(selectedToken, paymentAmount);
+      await buyTokens(TOKEN_IDS.bnb, bnbAmount);
       setStatusMessage('Purchase successful!');
-      setDesiredTokens('');
-      setPaymentAmount('0');
+      setBnbAmount('');
+      setBblpAmount('');
     } catch (err: any) {
       console.error('Purchase failed:', err);
       if (err.message.includes('User rejected')) {
@@ -268,7 +318,7 @@ function PresalePageInner() {
               Buy BBLP
             </h1>
             <p className="text-gray-400 text-sm md:text-base">
-              Join the presale and get BBLP at the <span className="text-yellow-200 font-semibold">best price!</span>
+              Buy BBLP tokens at the best price using BNB. Limited supply!
             </p>
           </div>
 
@@ -307,8 +357,8 @@ function PresalePageInner() {
           )}
 
           {/* Presale Progress Stepper */}
-          <div className="mb-8">
-            <div className="bg-black backdrop-blur-xl rounded-2xl border border-zinc-800 p-6 shadow-xl">
+          <div className="mb-4">
+            <div className="bg-black backdrop-blur-xl rounded-2xl border border-zinc-800 p-1 shadow-xl">
               <div className="flex items-center justify-between relative">
                 {/* Enhanced Progress Line */}
                 <div className="absolute top-1/2 left-12 right-12 h-1 bg-zinc-800 rounded-full -translate-y-1/2 z-0"></div>
@@ -365,113 +415,161 @@ function PresalePageInner() {
 
           {/* Main Presale Card */}
           <div className={cn(
-            "bg-[#0A0A0A]/90 backdrop-blur-xl rounded-3xl border border-yellow-400/10 p-6 md:p-8 mb-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10 transition-all duration-300",
+            "bg-[#0A0A0A]/90 backdrop-blur-xl rounded-3xl border border-yellow-400/10 p-4 md:p-8 mb-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10 transition-all duration-300",
             !isOnBSCMainnet && isConnected && "opacity-50 pointer-events-none"
           )}>
             
-            {/* Presale Info Grid */}
-            <div className="grid grid-cols-2 gap-4 mb-8">
-              <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/10">
-                <p className="text-lg font-bold text-yellow-200">$0.10</p>
-                <p className="text-xs text-gray-400">Token Price</p>
-              </div>
         
-              <div className="text-center p-4 rounded-xl bg-black/60 border border-yellow-400/10">
-                <p className="text-lg font-bold text-yellow-200">Presale</p>
-                <p className="text-xs text-gray-400">Round 2</p>
-              </div>
-            </div>
 
-            {/* Token Amount Input */}
-            <div className="mb-6">
-              <div className="flex items-center justify-between mb-3">
-                <label className="text-sm font-medium text-gray-300">Tokens to Purchase</label>
-              </div>
-              
-              <div className="relative">
-                <Input
-                   type="number"
-                   inputMode="numeric"
-                   pattern="[0-9]*"
-                   placeholder="1000"
-                  value={desiredTokens}
-                  onChange={(e) => setDesiredTokens(e.target.value)}
-                  className="h-12 md:h-14 text-lg font-semibold bg-black/60 border-yellow-400/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
-                  disabled={loading || presaleInfo?.isPaused || !isOnBSCMainnet}
-                />
-                <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                  BBLP
+            {/* Swap-like Card UI */}
+            <div className="max-w-lg mx-auto bg-black/30 rounded-2xl  shadow-lg">
+
+
+
+              {/* BNB Input */}
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                <label className="text-sm text-gray-400 mb-1 block">Pay with BNB</label>
+
+                <button
+                    onClick={handleMaxBNB}
+                    className="ml-3 px-2 py-1 text-xs rounded text-sm  text-yellow-300 "
+                    type="button"
+                  >
+                    Use Max
+                  </button>
+                </div>
+
+                
+                <div className="flex items-center bg-black/20 rounded-xl border border-zinc-800 p-3">
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    min="0"
+                    step="any"
+                    placeholder="0.00"
+                    value={bnbAmount}
+                    onChange={e => {
+                      const value = e.target.value;
+                      // Only allow numbers, decimal point, and backspace
+                      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                      setInputMode('BNB');
+                      setBnbAmount(value);
+                    }
+                  }}
+                    className="bg-transparent border-none text-lg font-semibold flex-1"
+                  />
+                  <span className="ml-2">
+                    <Image src="/bnb.svg" alt="BNB" width={24} height={24} />
+                  </span>
+               
                 </div>
               </div>
-            </div>
 
-            {/* Payment Token Selection */}
-            <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-300 mb-3">Choose Payment Method</label>
-              <div className="grid grid-cols-3 gap-3">
-                {PAYMENT_TOKENS.map((token) => (
-                  <button
-                    key={token.id}
-                    onClick={() => setSelectedToken(token.id)}
-                    disabled={!isOnBSCMainnet}
-                    className={cn(
-                      "p-3 md:p-4 rounded-xl flex flex-col items-center justify-center transition-all duration-300 border-2",
-                      selectedToken === token.id 
-                        ? 'bg-yellow-400/10 border-yellow-400/60 scale-105 shadow-lg' 
-                        : 'bg-black/30 border-yellow-400/10 hover:border-yellow-400/30 hover:scale-102',
-                      !isOnBSCMainnet && "opacity-50 cursor-not-allowed"
-                    )}
-                  >
-                    <Image src={token.icon} alt={token.name} width={32} height={32} className="mb-2" />
-                    <span className="font-medium text-sm text-white">{token.name}</span>
-                    <span className="text-xs text-gray-400">${formatPrice(tokenPrices[token.id])}</span>
-                  </button>
-                ))}
+          
+
+              {/* BBLP Input */}
+              <div className="mb-4">
+                <label className="text-sm text-gray-400 mb-1 block">Receive BBLP</label>
+                <div className="flex items-center bg-black/20 rounded-xl border border-zinc-800 p-3">
+                  <Input
+                    type="text"
+                    inputMode="decimal"
+                    min="0"
+                    step="any"
+                    placeholder="0.00"
+                    value={bblpAmount}
+                    onChange={e => {
+                      const value = e.target.value;
+                      // Only allow numbers, decimal point, and backspace
+                      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                        setInputMode('BBLP');
+                        setBblpAmount(value);
+                        }
+                      }}
+                    className="bg-transparent border-none text-lg font-semibold flex-1"
+                  />
+                  <span className="ml-2">
+                    <Image src="/logo.svg" alt="BBLP" width={24} height={24} />
+                  </span>
+                </div>
               </div>
-              {/* Show Enter Amount button if input is empty or zero */}
-              {(!desiredTokens || parseFloat(desiredTokens) <= 0) && (
-                <Button
-                  className={cn(
-                    "w-full mt-6 bg-zinc-800 text-zinc-400 cursor-not-allowed h-12 md:h-14 font-semibold",
-                    "transition-all duration-300"
-                  )}
-                  size="lg"
-                  disabled
-                >
-                  Enter Amount
-                </Button>
+
+              {/* Payment Summary */}
+              {bnbAmount && parseFloat(bnbAmount) > 0 && bblpAmount && parseFloat(bblpAmount) > 0 && (
+                <div className="mb-4 p-3 rounded-xl border border-zinc-800/50 bg-black/20">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Image src="/bnb.svg" alt="BNB" width={20} height={20} />
+                      <span className="text-sm text-gray-400">You Pay</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-white">{parseFloat(bnbAmount).toFixed(6)} BNB</div>
+                      <div className="text-xs text-gray-500">
+                        ${bnbPriceUSD > 0 ? (parseFloat(bnbAmount) * bnbPriceUSD).toFixed(2) : 'Calculating...'} USD
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-center my-2">
+                    <div className="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center">
+                      <svg className="w-3 h-3 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Image src="/logo.svg" alt="BBLP" width={20} height={20} />
+                      <span className="text-sm text-gray-400">You Receive</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-lg font-bold text-green-400">{parseFloat(bblpAmount).toFixed(4)} BBLP</div>
+                      <div className="text-xs text-gray-500">
+                        ${(parseFloat(bblpAmount) * 0.10).toFixed(2)} USD
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Buy Button */}
+              <Button
+                className="w-full h-12  bg-gradient-to-r from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white font-semibold shadow-lg"
+                size="lg"
+                disabled={!bnbAmount || parseFloat(bnbAmount) <= 0 || isBuying || !isOnBSCMainnet || !isConnected}
+                onClick={handleBuy}
+              >
+                {isBuying ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Buying with BNB...
+                  </div>
+                ) : (
+                  `Buy with BNB`
+                )}
+              </Button>
+
+              {/* Exchange Rate Info */}
+              {bnbPriceUSD > 0 && (
+                <div className="   ">
+                  <div className="flex items-center justify-center text-center mt-1 text-xs">
+                    <div className="flex text-center gap-2">
+                      <span className="text-gray-400 font-medium">1 BNB = {(1 / bblpPriceInBNB).toFixed(2)} BBLP (${bnbPriceUSD.toFixed(2)} USD)</span>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
-
-            {/* Payment Summary - Clean Design */}
-            {desiredTokens && paymentAmount !== '0' && isOnBSCMainnet && (
-              <div className="p-4 rounded-xl bg-gradient-to-br from-zinc-900/50 to-zinc-950/50 border border-zinc-800 mb-6">
-                <div className="flex items-center gap-2 mb-4">
-                  <DollarSign className="w-4 h-4 text-yellow-400" />
-                  <h3 className="text-sm font-medium text-white">Payment Summary</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="text-center p-3 bg-black/30 rounded-lg border border-zinc-800">
-                    <p className="text-xs text-gray-500 mb-1">Amount</p>
-                    <p className="text-lg font-bold text-white">{desiredTokens}</p>
-                    <p className="text-xs text-gray-400">BBLP Tokens</p>
-                  </div>
-                  <div className="text-center p-3 bg-black/30 rounded-lg border border-zinc-800">
-                    <p className="text-xs text-gray-500 mb-1">Total Cost</p>
-                    <p className="text-lg font-bold text-white">{Number(formatUnits(paymentAmount, 18)).toFixed(6)}</p>
-                    <p className="text-xs text-gray-400">{selectedTokenName}</p>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Status Messages */}
             {(error || statusMessage) && (
               <div className={cn(
-                "w-full mb-4 p-3 rounded-xl text-center font-medium border flex items-center justify-center gap-2",
+                " mt-4 p-2   text-center font-medium  flex items-center justify-center gap-2",
                 error 
-                  ? 'bg-red-500/10 text-red-300 border-red-500/20' 
-                  : 'bg-green-500/10 text-green-300 border-green-500/20'
+                  ? ' text-red-300 ' 
+                  : ' text-green-300 '
               )}>
                 {error ? (
                   <Info className="w-4 h-4" />
@@ -481,103 +579,6 @@ function PresalePageInner() {
                 {error || statusMessage}
               </div>
             )}
-
-            {/* Action Buttons - Smart Visibility */}
-            <div className="space-y-3">
-              {!isConnected ? (
-                /* Connect Wallet Button - Show when wallet is not connected */
-                <Button
-                  className={cn(
-                    "w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold shadow-lg h-12 md:h-14",
-                    "transition-all duration-300"
-                  )}
-                  size="lg"
-                  onClick={() => setShowWalletModal(true)}
-                >
-                  <div className="flex items-center gap-2">
-                    Connect Wallet 
-                  </div>
-                </Button>
-              ) : !isOnBSCMainnet ? (
-                /* Switch Network Button - Show when connected but wrong network */
-                <Button
-                  className={cn(
-                    "w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg h-12 md:h-14",
-                    "transition-all duration-300"
-                  )}
-                  size="lg"
-                  onClick={handleSwitchChain}
-                  disabled={isSwitchingChain}
-                >
-                  {isSwitchingChain ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Switching Network...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Network className="w-4 h-4" />
-                      Switch to BSC Mainnet
-                    </div>
-                  )}
-                </Button>
-              ) : (
-                <>
-                  {/* Approve Button - Only show when token is not BNB, has no allowance, and not currently approving/buying */}
-                  {selectedToken !== TOKEN_IDS.bnb && !hasAllowance && paymentAmount !== '0' && !isBuying && (
-                    <Button
-                      className={cn(
-                        "w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-semibold shadow-lg h-12 md:h-14",
-                        "transition-all duration-300"
-                      )}
-                      size="lg"
-                      disabled={isApproving || !desiredTokens || isCheckingAllowance}
-                      onClick={handleApprove}
-                    >
-                      {(isApproving || isCheckingAllowance) ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
-                          {isCheckingAllowance ? `Checking allowance...` : `Approving ${selectedTokenName}...`}
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          Approve {selectedTokenName}
-                        </div>
-                      )}
-                    </Button>
-                  )}
-
-                  {/* Buy Button - Only show when approved or BNB, and not currently approving */}
-                  {(selectedToken === TOKEN_IDS.bnb || hasAllowance) && paymentAmount !== '0' && !isApproving && (
-                    <Button
-                      className={cn(
-                        "w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold shadow-lg h-12 md:h-14",
-                        "transition-all duration-300"
-                      )}
-                      size="lg"
-                      disabled={
-                        isBuying || 
-                        !desiredTokens || 
-                        paymentAmount === '0' ||
-                        isCheckingAllowance
-                      }
-                      onClick={handleBuy}
-                    >
-                      {(isBuying || isCheckingAllowance) ? (
-                        <div className="flex items-center gap-2">
-                          <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                          {isCheckingAllowance ? `Checking allowance...` : `Processing Purchase...`}
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          Buy with {selectedTokenName}
-                        </div>
-                      )}
-                    </Button>
-                  )}
-                </>
-              )}
-            </div>
           </div>
 
           {/* Presale Details Accordion - Professional */}
@@ -610,7 +611,7 @@ function PresalePageInner() {
             {showDetails && (
               <div className="px-6 pb-4 border-t border-zinc-800">
                 <div className="space-y-4 pt-4">
-                  <div className="flex items-start gap-3 p-3 bg-black/20 rounded-lg">
+                  <div className="flex items-start gap-3  rounded-lg">
                     <div className="p-1.5 rounded-lg bg-yellow-400/10 border border-yellow-400/20">
                       <TrendingUp className="w-4 h-4 text-yellow-400" />
                     </div>
@@ -620,17 +621,9 @@ function PresalePageInner() {
                     </div>
                   </div>
                   
-                  <div className="flex items-start gap-3 p-3 bg-black/20 rounded-lg">
-                    <div className="p-1.5 rounded-lg bg-green-500/10 border border-green-500/20">
-                      <Shield className="w-4 h-4 text-green-400" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-white mb-1">Secure Purchase</h4>
-                      <p className="text-xs text-gray-400">Multiple payment options with smart contract security</p>
-                    </div>
-                  </div>
+           
                   
-                  <div className="flex items-start gap-3 p-3 bg-black/20 rounded-lg">
+                  <div className="flex items-start gap-3  rounded-lg">
                     <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
                       <Clock className="w-4 h-4 text-blue-400" />
                     </div>
@@ -640,7 +633,7 @@ function PresalePageInner() {
                     </div>
                   </div>
                   
-                  <div className="flex items-start gap-3 p-3 bg-black/20 rounded-lg">
+                  <div className="flex items-start gap-3  rounded-lg">
                     <div className="p-1.5 rounded-lg bg-orange-500/10 border border-orange-500/20">
                       <Network className="w-4 h-4 text-orange-400" />
                     </div>

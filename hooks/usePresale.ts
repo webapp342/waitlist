@@ -171,7 +171,7 @@ export const usePresale = () => {
       if (errMsg.includes('transfer amount exceeds balance')) {
         throw new Error('Insufficient balance: Your wallet does not have enough balance.');
       }
-      throw new Error('Insufficient balance: Your wallet does not have enough balance.');
+      throw new Error('Insufficient BNB balance');
     }
   };
 
