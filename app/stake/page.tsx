@@ -381,7 +381,7 @@ function StakeContent() {
       console.error('Unstaking error:', error);
       setCurrentTransaction({
         status: 'failed',
-        message: 'Unstake failed. Please try again.',
+        message: 'Insufficient BNB for gas fee. Required: 0.012 BNB',
         type: 'unstake'
       });
       
