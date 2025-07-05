@@ -6,9 +6,8 @@ import { useEffect, useState } from 'react';
 import Particles from "@/components/ui/particles";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
-import { Copy, Share2, Users, Gift, ArrowLeft, Trophy, Coins, CheckCircle, TrendingUp, Zap } from 'lucide-react';
+import { Copy, Share2, Users, Coins, CheckCircle } from 'lucide-react';
 import { cn } from "@/lib/utils";
-import Link from 'next/link';
 import { referralService, ReferralCode, Referral } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { userService } from '@/lib/supabase';
@@ -169,37 +168,23 @@ export default function ReferralPage() {
         </div>
 
         {/* Stats Cards */}
-        <div className="w-full max-w-4xl mb-8">
-          <div className="grid grid-cols-3 gap-3 md:gap-6">
+        <div className="w-full max-w-4xl mb-2">
+          <div className="grid grid-cols-2 gap-2 md:gap-6">
             {/* Total Referrals */}
             <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-4 md:p-6 shadow-lg text-center">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-blue-500/20 to-blue-600/20 border border-blue-500/30 flex items-center justify-center mx-auto mb-3">
-                <Users className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
-              </div>
+              
               <div className="text-2xl md:text-3xl font-bold text-white mb-1">{referralStats.totalReferrals}</div>
               <div className="text-xs md:text-sm text-gray-400 font-medium">Total Referrals</div>
-              <div className="text-xs text-gray-500 mt-1">Friends joined</div>
             </div>
 
             {/* Total Earned */}
             <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-4 md:p-6 shadow-lg text-center">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 border border-yellow-500/30 flex items-center justify-center mx-auto mb-3">
-                <Coins className="w-5 h-5 md:w-6 md:h-6 text-yellow-400" />
-              </div>
+          
               <div className="text-2xl md:text-3xl font-bold text-white mb-1">{parseFloat(referralStats.totalRewards).toFixed(0)}</div>
-              <div className="text-xs md:text-sm text-gray-400 font-medium">BBLP Earned</div>
-              <div className="text-xs text-gray-500 mt-1">Total rewards</div>
+              <div className="text-xs md:text-sm text-gray-400 font-medium">rBBLP Earned</div>
             </div>
 
-            {/* Highest Tier */}
-            <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-4 md:p-6 shadow-lg text-center">
-              <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-br from-green-500/20 to-green-600/20 border border-green-500/30 flex items-center justify-center mx-auto mb-3">
-                <Trophy className="w-5 h-5 md:w-6 md:h-6 text-green-400" />
-              </div>
-              <div className="text-2xl md:text-3xl font-bold text-white mb-1">Tier {highestTier}</div>
-              <div className="text-xs md:text-sm text-gray-400 font-medium">Highest Level</div>
-              <div className="text-xs text-gray-500 mt-1">Achieved</div>
-            </div>
+           
           </div>
         </div>
 
@@ -249,13 +234,14 @@ export default function ReferralPage() {
         )}
 
         {/* How It Works */}
-        <div className="w-full max-w-4xl mb-8">
-          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-6 shadow-lg">
-            <div className="text-center mb-6">
+        <div className="w-full max-w-4xl mb-2">
+        <div className="text-center mb-2">
               <h2 className="text-xl md:text-2xl font-bold text-white mb-2">How It Works</h2>
               <p className="text-gray-400 text-sm">Simple steps to earn rewards together</p>
             </div>
 
+          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-2 shadow-lg">
+           
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               <div className="text-center">
                 <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-yellow-400/20 to-yellow-500/20 border border-yellow-400/30 flex items-center justify-center mx-auto mb-4">
@@ -297,15 +283,16 @@ export default function ReferralPage() {
         </div>
 
         {/* Reward Tiers */}
-        <div className="w-full max-w-4xl mb-8">
-          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 shadow-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-zinc-800/50">
+        <div className="w-full max-w-4xl mb-2">
+        <div className="px-6 py-4 border-b text-center border-zinc-800/50">
               <h3 className="text-xl md:text-2xl font-bold text-white">Reward Tiers</h3>
               <p className="text-sm text-gray-400 mt-1">Higher stakes = Higher rewards for both</p>
             </div>
+          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 shadow-lg overflow-hidden">
+          
             
-            <div className="p-6">
-              <div className="space-y-4">
+            <div className="p-2">
+              <div className="space-y-2">
                 {[
                   { tier: 1, stake: '100', you: '10', friend: '5', color: 'bg-green-500/10 border-green-500/20 text-green-400' },
                   { tier: 2, stake: '500', you: '50', friend: '25', color: 'bg-blue-500/10 border-blue-500/20 text-blue-400' },
@@ -343,12 +330,13 @@ export default function ReferralPage() {
         </div>
 
         {/* Recent Referrals or No Referrals State */}
-        <div className="w-full max-w-4xl mb-8">
-          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 shadow-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-zinc-800/50">
+        <div className="w-full max-w-4xl mb-2">
+        <div className="px-6 py-4 border-b text-center border-zinc-800/50">
               <h3 className="text-xl font-bold text-white">Your Referrals</h3>
               <p className="text-sm text-gray-400 mt-1">Friends who joined using your link</p>
             </div>
+          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 shadow-lg overflow-hidden">
+          
             
             <div className="p-6">
               {referrals.length > 0 ? (

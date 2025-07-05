@@ -1074,11 +1074,21 @@ export const referralService = {
       // Tüm kullanıcıları çek
       const { data: allUsers } = await supabase.from('users').select('id, wallet_address');
 
+      // Her kullanıcı için davet edilen sayısını çek
+      const { data: allReferrals } = await supabase.from('referrals').select('referrer_id');
+      const referralCounts: Record<number, number> = {};
+      for (const row of allReferrals || []) {
+        const referrerId = row.referrer_id;
+        if (!referralCounts[referrerId]) referralCounts[referrerId] = 0;
+        referralCounts[referrerId] += 1;
+      }
+
       // Her kullanıcı için toplamı bul veya 0 olarak ata
       const userTotals = (allUsers || []).map(user => ({
         userId: user.id,
         walletAddress: user.wallet_address,
-        total: totals[user.id] || 0
+        total: totals[user.id] || 0,
+        invitedCount: referralCounts[user.id] || 0
       }));
 
       // Sırala
@@ -1094,7 +1104,8 @@ export const referralService = {
           rank: i + 1,
           userId: entry.userId,
           walletAddress: entry.walletAddress || '',
-          totalRewards: entry.total.toString()
+          totalRewards: entry.total.toString(),
+          invitedCount: entry.invitedCount
         };
         if (i < 5) topUsers.push(obj);
         if (entry.walletAddress?.toLowerCase() === walletAddress.toLowerCase()) {
