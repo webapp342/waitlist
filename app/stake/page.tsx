@@ -916,6 +916,13 @@ function StakeContent() {
             )}
           </div>
 
+
+
+          <div className="flex text-center justify-center items-center gap-2 mt-2 mb-8">
+  <span className="text-xs text-gray-400">Secured by</span>
+  <Image src="/idhiQehyPF_logos.svg" alt="Fireblocks Logo" width={120} height={14} className="h-4 w-auto" />
+</div>
+
           {/* Rewards Available - Only show when wallet is connected */}
           {isConnected && userData.pendingRewards && Number(userData.pendingRewards) > 0 && (
             <div className={cn(

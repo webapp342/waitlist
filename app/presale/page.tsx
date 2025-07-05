@@ -583,6 +583,13 @@ function PresalePageInner() {
             )}
           </div>
 
+
+
+          <div className="flex text-center justify-center items-center gap-2 mt-2 mb-8">
+  <span className="text-xs text-gray-400">Secured by</span>
+  <Image src="/idhiQehyPF_logos.svg" alt="Fireblocks Logo" width={120} height={14} className="h-4 w-auto" />
+</div>
+
           {/* Presale Details Accordion - Professional */}
           <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-xl border border-zinc-800 overflow-hidden mb-20">
             <button
