@@ -476,7 +476,7 @@ function DashboardContent() {
           </div>
 
           {/* Assets Table - Enhanced for Desktop */}
-          <div className="bg-gradient-to-br from-zinc-900/90  to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 shadow-2xl overflow-hidden animate-fade-in-up">
+          <div className="bg-gradient-to-br from-zinc-900/90  to-zinc-950/90 backdrop-blur-xl rounded-xl border border-zinc-800 shadow-2xl overflow-hidden ">
             {/* Assets List - Enhanced */}
             <div className="divide-y divide-zinc-800/50">
               {ASSETS.map((asset, index) => {
@@ -486,13 +486,13 @@ function DashboardContent() {
                 return (
                   <div
                     key={asset.symbol}
-                    className="px-6 py-5 hover:bg-zinc-800/30 transition-all duration-200 cursor-pointer group animate-fade-in"
+                    className="px-2 py-2 "
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div className="flex items-center justify-between">
                       {/* Asset Info */}
-                      <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-xl bg-gradient-to-br from-zinc-800 to-zinc-900 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg">
+                      <div className="flex items-center gap-2">
+                        <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-lg  flex items-center justify-center   shadow-lg">
                           <Image 
                             src={asset.icon} 
                             alt={asset.symbol} 
@@ -509,7 +509,7 @@ function DashboardContent() {
 
                       {/* Balance & Change */}
                       <div className="text-right">
-                        <p className="font-bold text-lg lg:text-xl text-white">
+                        <p className="font-bold text-l lg:text-xl text-white mr-2">
                           ${data.usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                         </p>
                     
@@ -657,7 +657,7 @@ function DashboardContent() {
               <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 mb-8 shadow-lg overflow-hidden">
                 <div className="flex flex-col lg:flex-row lg:items-stretch">
                   {/* Left Side - Info */}
-                  <div className="flex-1 p-6 lg:p-8 lg:border-r border-zinc-800">
+                  <div className="flex-1 p-4 lg:p-8 lg:border-r border-zinc-800">
                     <div className="flex items-center gap-3 mb-6">
                       <div className="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
                         <Gift className="w-6 h-6 text-yellow-400" />
@@ -676,7 +676,7 @@ function DashboardContent() {
                       </div>
                       <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
                         <p className="text-2xl font-bold text-yellow-400 mb-1">{parseFloat(referralStats.totalRewards).toFixed(0)}</p>
-                        <p className="text-xs text-gray-400">BBLP Earned</p>
+                        <p className="text-xs text-gray-400">rBBLP Earned</p>
                       </div>
                       <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
                         <p className="text-2xl font-bold text-yellow-400 mb-1">5</p>
@@ -731,7 +731,6 @@ function DashboardContent() {
                   <div className="lg:w-64 flex items-center justify-center p-6 lg:p-8 bg-black/20">
                     <Link href="/referral" className="w-full">
                       <Button className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 group">
-                        <Trophy className="w-4 h-4 mr-2 group-hover:rotate-12 transition-transform" />
                         View Referral Program
                       </Button>
                     </Link>
