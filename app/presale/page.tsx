@@ -417,7 +417,7 @@ function PresalePageInner() {
 
           {/* Main Presale Card */}
           <div className={cn(
-            "bg-[#0A0A0A]/90 backdrop-blur-xl rounded-3xl border border-yellow-400/10 p-4 md:p-8 mb-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10 transition-all duration-300",
+            "bg-[#0A0A0A]/90 backdrop-blur-xl rounded-xl border border-yellow-400/10 p-4 md:p-8 mb-6 shadow-[0_0_50px_-12px] shadow-yellow-400/10 transition-all duration-300",
             !isOnBSCMainnet && isConnected && "opacity-50 pointer-events-none"
           )}>
             
