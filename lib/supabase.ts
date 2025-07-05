@@ -1040,5 +1040,69 @@ export const referralService = {
     } catch (error) {
       console.error('Error in updateReferralCodeStats:', error)
     }
+  },
+
+  // Get referral leaderboard
+  async getLeaderboard(walletAddress: string) {
+    // Check if Supabase is properly configured
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, returning empty leaderboard')
+      return { topUsers: [], currentUserRank: null }
+    }
+
+    try {
+      // Get current user
+      const currentUser = await userService.getUserByWallet(walletAddress)
+      if (!currentUser) {
+        return { topUsers: [], currentUserRank: null }
+      }
+
+      // Get all referral codes with user data, sorted by total_rewards_earned
+      const { data: allReferralCodes, error } = await supabase
+        .from('referral_codes')
+        .select(`
+          id,
+          user_id,
+          total_rewards_earned,
+          users!referral_codes_user_id_fkey (
+            id,
+            wallet_address
+          )
+        `)
+        .order('total_rewards_earned', { ascending: false, nullsFirst: false })
+
+      if (error) {
+        console.error('Error fetching leaderboard data:', error)
+        throw error
+      }
+
+      // Filter out entries with 0 rewards and map to leaderboard entries
+      const leaderboardEntries = (allReferralCodes || [])
+        .filter(code => parseFloat(code.total_rewards_earned || '0') > 0)
+        .map((code, index) => ({
+          rank: index + 1,
+          userId: code.user_id,
+          walletAddress: (code as any).users?.wallet_address || '',
+          totalRewards: code.total_rewards_earned || '0'
+        }))
+
+      // Get top 5 users
+      const topUsers = leaderboardEntries.slice(0, 5)
+
+      // Find current user's rank
+      const currentUserEntry = leaderboardEntries.find(entry => entry.userId === currentUser.id)
+      const currentUserRank = currentUserEntry ? {
+        ...currentUserEntry,
+        isCurrentUser: true
+      } : null
+
+      return {
+        topUsers,
+        currentUserRank
+      }
+    } catch (error) {
+      console.error('Error in getLeaderboard:', error)
+      return { topUsers: [], currentUserRank: null }
+    }
   }
 } 

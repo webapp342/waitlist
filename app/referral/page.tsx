@@ -13,6 +13,7 @@ import { referralService, ReferralCode, Referral } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { userService } from '@/lib/supabase';
 import Image from 'next/image';
+import ReferralLeaderboard from '@/components/ReferralLeaderboard';
 
 export default function ReferralPage() {
   const { isConnected, address } = useAccount();
@@ -201,6 +202,9 @@ export default function ReferralPage() {
             </div>
           </div>
         </div>
+
+        {/* Leaderboard */}
+        <ReferralLeaderboard />
 
         {/* Your Referral Link */}
         {referralCode && (
