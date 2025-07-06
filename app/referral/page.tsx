@@ -204,7 +204,7 @@ export default function ReferralPage() {
                 <p className="text-xs text-gray-400 mb-3 text-center">Your unique referral link</p>
                 <div className="flex items-center justify-center gap-3 mb-4">
                   <div className="text-center">
-                    <p className="text-lg md:text-xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-500">
+                    <p className="text-base md:text-xl font-mono font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-yellow-500">
                     https://bblip.io/?ref={referralCode.code}
                     </p>
                   </div>
