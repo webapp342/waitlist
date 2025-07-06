@@ -149,7 +149,7 @@ export const config = createConfig({
     walletConnect({ 
       projectId,
       metadata: {
-        name: 'Bblip',
+        name: 'Bblip Labs',
         description: 'Spend Any Crypto, Anywhere',
         url: typeof window !== 'undefined' ? window.location.origin : 'https://bblip.io',
         icons: [
