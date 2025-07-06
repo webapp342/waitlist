@@ -151,8 +151,8 @@ export const config = createConfig({
       metadata: {
         name: 'Bblip',
         description: 'Bblip Wallet Connect',
-        url: 'https://bblip.io',
-        icons: ['https://bblip.io/logo.svg']
+        url: 'https://www.bblip.io',
+        icons: ['https://www.bblip.io/logo.svg']
       }
     }),
   ],
