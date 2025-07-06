@@ -1,0 +1,7 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="128" fill="#111111"/>
+  <g transform="translate(106, 106)">
+    <path d="M71.529 246.807a89.501 89.501 0 1 1 89.5-155.057l-44.75 77.529zM215.029 47.75a89.5 89.5 0 0 1 41.583 54.194 89.504 89.504 0 0 1-63.11 109.308 89.5 89.5 0 0 1-67.724-8.916l44.751-77.528z" fill="#F7FF9B"/>
+  </g>
+  <text x="256" y="420" font-family="Arial, sans-serif" font-size="72" font-weight="bold" text-anchor="middle" fill="#F7FF9B">Bblip</text>
+</svg> 
