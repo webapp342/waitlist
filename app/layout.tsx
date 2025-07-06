@@ -9,9 +9,73 @@ import { Providers } from "@/components/providers";
 const FigtreeFont = Figtree({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Next.js + Notion — Waitlist Template",
-  description:
-    "A simple Next.js waitlist template with Notion as CMS and Resend to send emails created with React Email and Upstash Redis for rate limiting. Deployed on Vercel.",
+  title: "Bblip - Spend Any Crypto, Anywhere | Virtual & Physical Crypto Cards",
+  description: "Transform your crypto into spendable currency with Bblip's virtual and physical cards. Accepted at 40M+ merchants worldwide, zero hidden fees, and instant virtual cards. No KYC required for early adopters.",
+  keywords: [
+    "crypto cards",
+    "virtual cards",
+    "physical crypto cards", 
+    "spend cryptocurrency",
+    "crypto payment cards",
+    "debit cards crypto",
+    "crypto to fiat",
+    "blockchain cards",
+    "crypto spending",
+    "digital currency cards"
+  ],
+  authors: [{ name: "Bblip Team" }],
+  creator: "Bblip",
+  publisher: "Bblip",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL('https://bblip.com'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: "Bblip - Spend Any Crypto, Anywhere",
+    description: "Transform your crypto into spendable currency with virtual and physical cards. Accepted at 40M+ merchants worldwide with zero hidden fees.",
+    url: 'https://bblip.com',
+    siteName: 'Bblip',
+    images: [
+      {
+        url: '/opengraph-image.png',
+        width: 1280,
+        height: 832,
+        alt: 'Bblip Crypto Cards - Spend Any Crypto, Anywhere',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Bblip - Spend Any Crypto, Anywhere',
+    description: 'Transform your crypto into spendable currency with virtual and physical cards. Accepted at 40M+ merchants worldwide.',
+    images: ['/twitter-image.png'],
+    creator: '@bblip',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: 'your-google-verification-code',
+    yandex: 'your-yandex-verification-code',
+    yahoo: 'your-yahoo-verification-code',
+  },
+  category: 'Finance',
+  classification: 'Cryptocurrency Payment Platform',
 };
 
 export default function RootLayout({
@@ -21,22 +85,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <meta property="og:image" content="/opengraph-image.png" />
-      <meta property="og:image:type" content="image/png" />
-      <meta property="og:image:width" content="1280" />
-      <meta property="og:image:height" content="832" />
-      <meta
-        property="og:site_name"
-        content="Next.js + Notion — Waitlist Template"
-      />
-      <meta
-        property="og:url"
-        content="https://waitlist-murex-nine.vercel.app/"
-      />
-      <meta name="twitter:image" content="/twitter-image.png" />
-      <meta name="twitter:image:type" content="image/png" />
-      <meta name="twitter:image:width" content="1280" />
-      <meta name="twitter:image:height" content="832" />
+
       <body className={FigtreeFont.className}>
         <Providers>
           {children}

@@ -2,7 +2,6 @@
 
 import CTA from "@/components/cta";
 import Testimonials from "@/components/testimonials";
-import Form from "@/components/form";
 import Logos from "@/components/logos";
 import Particles from "@/components/ui/particles";
 import Header from "@/components/header";
