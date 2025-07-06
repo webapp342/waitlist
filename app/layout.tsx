@@ -31,14 +31,14 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://bblip.com'),
+  metadataBase: new URL('https://bblip.io'),
   alternates: {
     canonical: '/',
   },
   openGraph: {
     title: "Bblip - Spend Any Crypto, Anywhere",
     description: "Transform your crypto into spendable currency with virtual and physical cards. Accepted at 40M+ merchants worldwide with zero hidden fees.",
-    url: 'https://bblip.com',
+    url: 'https://bblip.io',
     siteName: 'Bblip',
     images: [
       {

@@ -17,7 +17,11 @@ const nextConfig = {
       {
         protocol: 'https',
         hostname: '**.trustwallet.com',
-      }
+      },
+      {
+        protocol: 'https',
+        hostname: 'bblip.io',
+      },
     ],
   },
   async headers() {
