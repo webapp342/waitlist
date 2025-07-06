@@ -151,10 +151,10 @@ export const config = createConfig({
       metadata: {
         name: 'Bblip',
         description: 'Spend Any Crypto, Anywhere',
-        url: typeof window !== 'undefined' ? window.location.origin : 'https://bblip.com',
+        url: typeof window !== 'undefined' ? window.location.origin : 'https://bblip.io',
         icons: [
-          typeof window !== 'undefined' ? `${window.location.origin}/bblip-logo.svg` : 'https://bblip.com/bblip-logo.svg',
-          typeof window !== 'undefined' ? `${window.location.origin}/logo.svg` : 'https://bblip.com/logo.svg'
+          typeof window !== 'undefined' ? `${window.location.origin}/bblip-logo.svg` : 'https://bblip.io/bblip-logo.svg',
+          typeof window !== 'undefined' ? `${window.location.origin}/logo.svg` : 'https://bblip.io/logo.svg'
         ]
       }
     }),
