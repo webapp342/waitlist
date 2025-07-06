@@ -21,7 +21,7 @@ export default function Footer() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <motion.a 
-                href="https://x.com/bblip"
+                href="https://x.com/BblipLabs"
                 target="_blank"
                 rel="noopener noreferrer"
                 initial={{ opacity: 0, y: 20 }}
@@ -51,7 +51,7 @@ export default function Footer() {
               </motion.a>
 
               <motion.a 
-                href="https://x.com/bblip"
+                href="https://x.com/BblipLabs"
                 target="_blank"
                 rel="noopener noreferrer"
                 initial={{ opacity: 0, y: 20 }}
@@ -67,7 +67,7 @@ export default function Footer() {
                       </svg>
                       <span className="text-2xl font-semibold text-white">Stay connected with Bblip</span>
                     </div>
-                    <p className="text-gray-400">Follow @bblip on X for the latest updates</p>
+                    <p className="text-gray-400">Follow @BblipLabs on X for the latest updates</p>
                   </div>
 
                   <div className="flex items-center gap-2 text-purple-400 group-hover:text-purple-300 transition-colors">
