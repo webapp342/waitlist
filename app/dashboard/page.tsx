@@ -690,13 +690,13 @@ function DashboardContent() {
                         <div className="flex-1 min-w-0">
                           <p className="text-xs text-gray-400 mb-1">Your referral link</p>
                           <p className="text-sm font-mono text-white truncate">
-                            https://waitlist-murex-nine.vercel.app?ref={referralCode.code}
+                            https://bblip.io?ref={referralCode.code}
                           </p>
                         </div>
                         <div className="flex gap-2">
                           <button
                             onClick={() => {
-                              navigator.clipboard.writeText(`https://waitlist-murex-nine.vercel.app?ref=${referralCode.code}`);
+                              navigator.clipboard.writeText(`https://bblip.io?ref=${referralCode.code}`);
                               toast.success('Referral link copied!');
                             }}
                             className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200"
@@ -710,10 +710,10 @@ function DashboardContent() {
                                 navigator.share({
                                                                   title: 'Join BBLP',
                                 text: 'Join BBLP and earn rewards when you stake! Use my referral link:',
-                                  url: `https://waitlist-murex-nine.vercel.app?ref=${referralCode.code}`
+                                  url: `https://bblip.io?ref=${referralCode.code}`
                                 });
                               } else {
-                                navigator.clipboard.writeText(`https://waitlist-murex-nine.vercel.app?ref=${referralCode.code}`);
+                                navigator.clipboard.writeText(`https://bblip.io?ref=${referralCode.code}`);
                                 toast.success('Referral link copied!');
                               }
                             }}
