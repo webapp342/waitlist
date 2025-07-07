@@ -731,7 +731,7 @@ function DashboardContent() {
                   <div className="lg:w-64 flex items-center justify-center p-6 lg:p-8 bg-black/20">
                     <Link href="/referral" className="w-full">
                       <Button className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 group">
-                        View Referral Program
+                        Claim $1,000 USDT Airdrop
                       </Button>
                     </Link>
                   </div>
