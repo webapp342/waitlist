@@ -89,7 +89,7 @@ export default function WhitepaperPage() {
 
       // Executive Summary
       addSectionHeader('EXECUTIVE SUMMARY')
-      addWrappedText('BBLIP represents a paradigm shift in cryptocurrency spending, offering the world\'s first truly decentralized, KYC-free crypto card ecosystem. By combining cutting-edge blockchain technology with user-friendly interfaces, BBLIP enables anyone to spend their cryptocurrency anywhere in the world without traditional banking restrictions.')
+      addWrappedText('BBLIP represents a paradigm shift in cryptocurrency spending, offering the world&apos;s first truly decentralized, KYC-free crypto card ecosystem. By combining cutting-edge blockchain technology with user-friendly interfaces, BBLIP enables anyone to spend their cryptocurrency anywhere in the world without traditional banking restrictions.')
       
       yPosition += 5
       addWrappedText('Key Highlights:', 12, [204, 153, 0]) // Dark yellow
@@ -315,7 +315,7 @@ export default function WhitepaperPage() {
             <h2 className="text-3xl md:text-4xl font-bold mb-8 text-yellow-400">Executive Summary</h2>
             <div className="prose prose-invert max-w-none">
               <p className="text-lg text-zinc-300 mb-6">
-                BBLIP represents a paradigm shift in cryptocurrency spending, offering the world's first truly decentralized, 
+                BBLIP represents a paradigm shift in cryptocurrency spending, offering the world&apos;s first truly decentralized, 
                 KYC-free crypto card ecosystem. By combining cutting-edge blockchain technology with user-friendly interfaces, 
                 BBLIP enables anyone to spend their cryptocurrency anywhere in the world without traditional banking restrictions.
               </p>
