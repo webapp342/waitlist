@@ -137,6 +137,7 @@ function StakeContent() {
   const [currentTransaction, setCurrentTransaction] = useState<StakeTransaction | null>(null);
   const [isSwitchingChain, setIsSwitchingChain] = useState(false);
   const [switchChainError, setSwitchChainError] = useState<string | null>(null);
+  const [countdowns, setCountdowns] = useState<{ [key: string]: { days: number; hours: number; minutes: number; seconds: number } }>({});
   
   const { 
     walletState, 
@@ -148,6 +149,44 @@ function StakeContent() {
     emergencyWithdraw,
     getAllowance
   } = useWallet();
+
+  // Countdown timer for unstake lock period (30 days)
+  useEffect(() => {
+    const updateCountdowns = () => {
+      const currentTime = Math.floor(Date.now() / 1000);
+      const newCountdowns: { [key: string]: { days: number; hours: number; minutes: number; seconds: number } } = {};
+      
+      userData.stakes.forEach((stake: any) => {
+        const stakeTimestamp = Number(stake.timestamp);
+        const lockPeriod = 30 * 24 * 60 * 60; // 30 days in seconds
+        const endTime = stakeTimestamp + lockPeriod;
+        const remainingTime = endTime - currentTime;
+        
+        if (remainingTime > 0) {
+          const days = Math.floor(remainingTime / (24 * 60 * 60));
+          const hours = Math.floor((remainingTime % (24 * 60 * 60)) / (60 * 60));
+          const minutes = Math.floor((remainingTime % (60 * 60)) / 60);
+          const seconds = remainingTime % 60;
+          
+          newCountdowns[stake.stakeId] = { days, hours, minutes, seconds };
+        }
+      });
+      
+      setCountdowns(newCountdowns);
+    };
+
+    updateCountdowns();
+    const interval = setInterval(updateCountdowns, 1000);
+    
+    return () => clearInterval(interval);
+  }, [userData.stakes]);
+
+  // Check if unstake is allowed (30 days passed)
+  const canUnstake = (stakeTimestamp: number) => {
+    const currentTime = Math.floor(Date.now() / 1000);
+    const lockPeriod = 30 * 24 * 60 * 60; // 30 days in seconds
+    return (currentTime - stakeTimestamp) >= lockPeriod;
+  };
 
   // Set stake amount from URL parameter
   useEffect(() => {
@@ -344,16 +383,17 @@ function StakeContent() {
       if (stake) {
         const stakeTimestamp = Number(stake.timestamp);
         const currentTime = Math.floor(Date.now() / 1000);
+        const lockPeriod = 30 * 24 * 60 * 60; // 30 days in seconds
         const stakingPeriod = currentTime - stakeTimestamp;
-        const minPeriod = Number(userData.minimumStakingPeriod);
         
-        if (stakingPeriod < minPeriod) {
-          const remainingTime = minPeriod - stakingPeriod;
+        if (stakingPeriod < lockPeriod) {
+          const remainingTime = lockPeriod - stakingPeriod;
           const remainingDays = Math.ceil(remainingTime / 86400);
+          const remainingHours = Math.ceil((remainingTime % 86400) / 3600);
           setErrorModal({
             isOpen: true,
             title: 'Cannot Unstake Yet',
-            message: `You need to wait ${remainingDays} more days before unstaking. This helps maintain the stability of the staking pool.`
+            message: `You need to wait ${remainingDays} days and ${remainingHours} hours before unstaking. This 30-day lock period helps maintain the stability of the staking pool.`
           });
           return;
         }
@@ -1081,10 +1121,11 @@ function StakeContent() {
                   const stakeAmount = formatTokenAmount(stake.amount);
                   const stakeDate = new Date(Number(stake.timestamp) * 1000);
                   const currentTime = Math.floor(Date.now() / 1000);
+                  const lockPeriod = 30 * 24 * 60 * 60; // 30 days in seconds
                   const stakingPeriod = currentTime - Number(stake.timestamp);
-                  const minPeriod = Number(userData.minimumStakingPeriod);
-                  const canUnstake = stakingPeriod >= minPeriod;
-                  const remainingTime = minPeriod - stakingPeriod;
+                  const canUnstakeNow = canUnstake(Number(stake.timestamp));
+                  const countdown = countdowns[stake.stakeId];
+                  const remainingTime = lockPeriod - stakingPeriod;
                   const remainingDays = Math.ceil(remainingTime / 86400);
 
                   return (
@@ -1109,18 +1150,18 @@ function StakeContent() {
                           <div className="flex items-center gap-2 mb-1">
                             <div className={cn(
                               "w-2 h-2 rounded-full",
-                              canUnstake ? "bg-green-400 animate-pulse" : "bg-orange-400"
+                              canUnstakeNow ? "bg-green-400 animate-pulse" : "bg-orange-400"
                             )}></div>
                             <span className={cn(
                               "text-sm font-semibold",
-                              canUnstake ? "text-green-400" : "text-orange-400"
+                              canUnstakeNow ? "text-green-400" : "text-orange-400"
                             )}>
-                              {canUnstake ? 'Ready' : 'Locked'}
+                              {canUnstakeNow ? 'Ready' : 'Locked'}
                             </span>
                           </div>
-                          {!canUnstake && (
+                          {!canUnstakeNow && countdown && (
                             <p className="text-xs text-gray-500">
-                              {remainingDays} days remaining
+                              {countdown.days}d {countdown.hours}h {countdown.minutes}m {countdown.seconds}s
                             </p>
                           )}
                         </div>
@@ -1130,16 +1171,16 @@ function StakeContent() {
                         <div className="flex items-center gap-2 text-sm text-gray-400">
                           <Clock className="w-4 h-4" />
                           <span>
-                            {canUnstake 
+                            {canUnstakeNow 
                               ? `Staked for ${Math.floor(stakingPeriod / 86400)} days`
-                              : `${remainingDays} days until unlock`
+                              : `30-day lock period active`
                             }
                           </span>
                         </div>
                         
                         <Button
                           onClick={() => handleUnstake(stake.stakeId)}
-                          disabled={walletState.loading || !canUnstake || !isOnBSCMainnet}
+                          disabled={walletState.loading || !canUnstakeNow || !isOnBSCMainnet}
                           className={cn(
                             "font-semibold text-black px-4 md:px-6",
                             "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400",
@@ -1164,15 +1205,37 @@ function StakeContent() {
                         </Button>
                       </div>
 
-                      {!canUnstake && (
+                      {!canUnstakeNow && (
                         <div className="mt-4 p-3 rounded-xl bg-orange-500/10 border border-orange-500/20">
                           <div className="flex items-start gap-3">
                             <div className="p-1 rounded bg-orange-400/20 mt-0.5">
                               <Info className="w-3 h-3 text-orange-400" />
                             </div>
-                            <p className="text-sm text-orange-300 leading-relaxed">
-                              This stake is still in the minimum lock period. You can unstake in {remainingDays} days.
-                            </p>
+                            <div className="flex-1">
+                              <p className="text-sm text-orange-300 leading-relaxed mb-2">
+                                You can unstake after the lock period ends.
+                              </p>
+                              {countdown && (
+                                <div className="flex items-center gap-4 text-xs text-orange-200">
+                                  <div className="flex items-center gap-1">
+                                    <span className="font-semibold">{countdown.days}</span>
+                                    <span>days</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="font-semibold">{countdown.hours}</span>
+                                    <span>hours</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="font-semibold">{countdown.minutes}</span>
+                                    <span>min</span>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <span className="font-semibold">{countdown.seconds}</span>
+                                    <span>sec</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}
