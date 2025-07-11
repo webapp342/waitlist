@@ -30,7 +30,8 @@ export default function HeroSection() {
           <div className="inline-flex items-center gap-2 px-4 py-2 mb-0 bg-yellow-400/10 border border-yellow-400/30 rounded-full">
           <AlertCircle className="w-5 h-5 text-yellow-400" />
 
-            <span className="text-sm text-yellow-200 font-medium">Presale is live! </span>
+            <span className="text-sm text-yellow-200 font-medium">           Earn Instant $76 USDT Per Referral
+            </span>
           </div>
           
         

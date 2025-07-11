@@ -1,21 +1,34 @@
 'use client';
 
-import { useAccount } from 'wagmi';
+import { useAccount, useChainId, useSwitchChain } from 'wagmi';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import Particles from "@/components/ui/particles";
 import Header from "@/components/header";
 import { Button } from "@/components/ui/button";
-import { Copy, Share2, Users, Coins, CheckCircle } from 'lucide-react';
+import { Copy, Share2, Users, Coins, CheckCircle, AlertTriangle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import { referralService, ReferralCode, Referral } from '@/lib/supabase';
 import { toast } from 'sonner';
 import { userService } from '@/lib/supabase';
 import Image from 'next/image';
 import ReferralLeaderboard from '@/components/ReferralLeaderboard';
+import { format } from 'date-fns';
+
+interface ClaimHistory {
+  transaction_hash: string;
+  amount_claimed: string;
+  created_at: string;
+  status: string;
+}
+
+// BSC Mainnet Chain ID
+const BSC_MAINNET_CHAIN_ID = 56;
 
 export default function ReferralPage() {
   const { isConnected, address } = useAccount();
+  const chainId = useChainId();
+  const { switchChain } = useSwitchChain();
   const router = useRouter();
   const [referralCode, setReferralCode] = useState<ReferralCode | null>(null);
   const [referrals, setReferrals] = useState<Referral[]>([]);
@@ -29,6 +42,50 @@ export default function ReferralPage() {
     tier5Rewards: '0'
   });
   const [loading, setLoading] = useState(true);
+  const [claimLoading, setClaimLoading] = useState(false);
+  const [claimableAmount, setClaimableAmount] = useState('0');
+
+  const refreshStats = async () => {
+    if (address) {
+      try {
+        const user = await userService.getUserByWallet(address);
+        if (user) {
+          const stats = await referralService.getUserReferralStats(address);
+          setReferralStats({
+            totalReferrals: stats.totalReferrals,
+            totalRewards: stats.totalRewards,
+            tier1Rewards: stats.tier1Rewards || '0',
+            tier2Rewards: stats.tier2Rewards || '0',
+            tier3Rewards: stats.tier3Rewards || '0',
+            tier4Rewards: stats.tier4Rewards || '0',
+            tier5Rewards: stats.tier5Rewards || '0'
+          });
+        }
+      } catch (error) {
+        console.error('Error refreshing stats:', error);
+      }
+    }
+  };
+
+  // Check if user is on BSC Mainnet
+  const isOnBSCMainnet = chainId === BSC_MAINNET_CHAIN_ID;
+
+  // Handle BSC Mainnet switch
+  const switchToBSCMainnet = async () => {
+    if (!switchChain) return;
+    
+    try {
+      await switchChain({ chainId: BSC_MAINNET_CHAIN_ID });
+      toast.success('Switched to BSC Mainnet successfully!');
+    } catch (error: any) {
+      console.error('Failed to switch to BSC Mainnet:', error);
+      if (error.code === 4001) {
+        toast.error('Network switch was cancelled');
+      } else {
+        toast.error('Failed to switch to BSC Mainnet. Please switch manually.');
+      }
+    }
+  };
 
   useEffect(() => {
     if (!isConnected) {
@@ -37,7 +94,7 @@ export default function ReferralPage() {
     }
 
     const loadReferralData = async () => {
-      if (address) {
+      if (address && isOnBSCMainnet) {
         try {
           setLoading(true);
           
@@ -74,11 +131,14 @@ export default function ReferralPage() {
         } finally {
           setLoading(false);
         }
+      } else if (!isOnBSCMainnet && isConnected) {
+        // If not on BSC Mainnet, just stop loading
+        setLoading(false);
       }
     };
 
     loadReferralData();
-  }, [isConnected, address, router]);
+  }, [isConnected, address, router, isOnBSCMainnet]);
 
   const copyReferralLink = () => {
     if (referralCode) {
@@ -104,6 +164,108 @@ export default function ReferralPage() {
         navigator.clipboard.writeText(link);
         toast.success('Referral link copied to clipboard!');
       }
+    }
+  };
+
+  const handleClaimUSDT = async () => {
+    if (!address) {
+      toast.error('Please connect your wallet');
+      return;
+    }
+
+    if (!isOnBSCMainnet) {
+      toast.error('Please switch to BSC Mainnet to claim USDT');
+      return;
+    }
+
+    const earnedUSDT = parseFloat(referralStats.totalRewards) / 10;
+    if (earnedUSDT <= 0) {
+      toast.error('No USDT available to claim');
+      return;
+    }
+
+    setClaimLoading(true);
+    try {
+      // Step 1: Set claimable amount on contract
+      const response = await fetch('/api/claim', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ walletAddress: address }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to set claimable amount');
+      }
+
+      // If amount was already set, proceed to claim
+      if (data.message === 'Claimable amount already set') {
+        toast.info('Claimable amount already set, proceeding to claim...');
+      } else {
+        toast.success('Claimable amount set successfully!');
+      }
+
+      // Step 2: Call smart contract claimUSDT function
+      const { ethers } = await import('ethers');
+      
+      if (!window.ethereum) {
+        throw new Error('Please install MetaMask');
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      // BSC Mainnet Claim Contract Address
+      const contractAddress = "0xbfE9400203C02e7b6cD4c38c832EC170308E4fb1"; 
+      
+      if (!contractAddress) {
+        throw new Error('Contract address not configured');
+      }
+
+      const contractABI = [
+        "function claimUSDT() external",
+        "function getClaimableAmount(address user) external view returns (uint256)"
+      ];
+
+      const contract = new ethers.Contract(contractAddress, contractABI, signer);
+      
+      // Execute claim transaction
+      toast.info('Please confirm the transaction in your wallet...');
+      const tx = await contract.claimUSDT();
+      
+      toast.info('Transaction submitted. Waiting for confirmation...');
+      const receipt = await tx.wait();
+
+      // Step 3: Reset rewards in database after successful claim
+      const resetResponse = await fetch('/api/claim/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          walletAddress: address,
+          transactionHash: receipt.hash,
+          amount: earnedUSDT.toString()
+        }),
+      });
+
+      if (!resetResponse.ok) {
+        console.error('Failed to reset rewards in database');
+      }
+      
+      // Refresh stats after successful claim
+      await refreshStats();
+      
+      toast.success('USDT claimed successfully! 🎉');
+
+    } catch (error: any) {
+      console.error('Error in claim process:', error);
+      toast.error(error.message || 'Failed to claim USDT');
+    } finally {
+      setClaimLoading(false);
     }
   };
 
@@ -153,8 +315,33 @@ export default function ReferralPage() {
 
   
 
+        {/* BSC Network Info Banner */}
+        {isConnected && !isOnBSCMainnet && (
+          <div className="w-full max-w-4xl mb-4 mt-20 pt-6">
+            <div className="bg-gradient-to-r from-orange-500/10 to-orange-600/10 border border-orange-500/20 rounded-xl p-4">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="w-5 h-5 text-orange-400 flex-shrink-0" />
+                <div>
+                  <h4 className="font-bold text-orange-400 mb-1">BSC Network Required</h4>
+                  <p className="text-sm text-orange-300">Switch to BSC Mainnet to claim your USDT rewards.</p>
+                </div>
+                <Button
+                  onClick={switchToBSCMainnet}
+                  size="sm"
+                  className="bg-orange-500 hover:bg-orange-600 text-white ml-auto"
+                >
+                  Switch Network
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Hero Section */}
-        <div className="w-full max-w-4xl mb-8 mt-20 pt-10 text-center">
+        <div className={cn(
+          "w-full max-w-4xl mb-8 text-center",
+          isConnected && !isOnBSCMainnet ? "mt-4 pt-4" : "mt-20 pt-10"
+        )}>
           <div className="inline-flex items-center gap-3 mb-4">
           
             <h1 className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400">
@@ -177,11 +364,45 @@ export default function ReferralPage() {
               <div className="text-xs md:text-sm text-gray-400 font-medium">Total Referrals</div>
             </div>
 
-            {/* Total Earned */}
-            <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-4 md:p-6 shadow-lg text-center">
-          
-              <div className="text-2xl md:text-3xl font-bold text-white mb-1">{parseFloat(referralStats.totalRewards).toFixed(0)}</div>
-              <div className="text-xs md:text-sm text-gray-400 font-medium">rBBLP Earned</div>
+            {/* Total Earned with Claim Button */}
+            <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-4 md:p-6 shadow-lg">
+              <div className="text-center mb-3">
+                <div className="text-2xl md:text-3xl font-bold text-white mb-1">{((parseFloat(referralStats.totalRewards) / 10) % 1 === 0) ? (parseFloat(referralStats.totalRewards) / 10).toFixed(0) : (parseFloat(referralStats.totalRewards) / 10).toFixed(1)}</div>
+                <div className="text-xs md:text-sm text-gray-400 font-medium">USDT Earned</div>
+              </div>
+              
+              {/* Network Check & Claim Button */}
+              {!isOnBSCMainnet ? (
+                <Button
+                  onClick={switchToBSCMainnet}
+                  className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold text-xs md:text-sm py-2 px-3 rounded-lg shadow-lg hover:shadow-orange-500/20 transition-all duration-200"
+                >
+                  <AlertTriangle className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                  Switch to BSC Testnet
+                </Button>
+              ) : parseFloat(referralStats.totalRewards) > 0 ? (
+                <Button
+                  onClick={handleClaimUSDT}
+                  disabled={claimLoading}
+                  className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold text-xs md:text-sm py-2 px-3 rounded-lg shadow-lg hover:shadow-green-500/20 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {claimLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 md:h-4 md:w-4 border-t-2 border-b-2 border-white mr-2"></div>
+                      Claiming...
+                    </>
+                  ) : (
+                    <>
+                      <Coins className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
+                      Claim USDT Test
+                    </>
+                  )}
+                </Button>
+              ) : (
+                <div className="w-full text-center text-xs md:text-sm text-gray-400 py-2">
+                  No USDT available to claim
+                </div>
+              )}
             </div>
 
            
@@ -314,11 +535,11 @@ export default function ReferralPage() {
                       <div className="flex gap-6">
                         <div className="text-center">
                           <p className="text-xs text-gray-400">You</p>
-                          <p className="font-bold text-white">+{tier.you}</p>
+                          <p className="font-bold text-white">+{((parseFloat(tier.you) / 10) % 1 === 0) ? (parseFloat(tier.you) / 10).toFixed(0) : (parseFloat(tier.you) / 10).toFixed(1)} USDT</p>
                         </div>
                         <div className="text-center">
                           <p className="text-xs text-gray-400">Friend</p>
-                          <p className="font-bold text-white">+{tier.friend}</p>
+                          <p className="font-bold text-white">+{((parseFloat(tier.friend) / 10) % 1 === 0) ? (parseFloat(tier.friend) / 10).toFixed(0) : (parseFloat(tier.friend) / 10).toFixed(1)} USDT</p>
                         </div>
                       </div>
                     </div>
@@ -392,6 +613,9 @@ export default function ReferralPage() {
           </div>
         </div>
 
+        {/* Claim History */}
+        {address && <ClaimHistoryTable address={address} />}
+
       </section>
 
       <Particles
@@ -402,5 +626,104 @@ export default function ReferralPage() {
         refresh
       />
     </main>
+  );
+} 
+
+function ClaimHistoryTable({ address }: { address: string }) {
+  const [claimHistory, setClaimHistory] = useState<ClaimHistory[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchClaimHistory = async () => {
+      try {
+        const response = await fetch(`/api/claim/history?wallet=${address}`);
+        const data = await response.json();
+        setClaimHistory(data.history || []);
+      } catch (error) {
+        console.error('Error fetching claim history:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (address) {
+      fetchClaimHistory();
+    }
+  }, [address]);
+
+  if (!address) return null;
+  if (loading) return (
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+      <div className="text-center py-8 text-gray-400">Loading claim history...</div>
+    </div>
+  );
+  if (claimHistory.length === 0) return (
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+      <div className="text-center py-8 text-gray-400">No claim history found</div>
+    </div>
+  );
+
+  return (
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+      <div className="bg-black/50 backdrop-blur-xl border border-white/5 rounded-2xl p-6">
+        <h2 className="text-2xl font-bold text-white mb-6">Claim History</h2>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-white/5">
+            <thead>
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Date
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Amount (USDT)
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Transaction
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
+                  Status
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/5">
+              {claimHistory.map((claim) => (
+                <tr key={claim.transaction_hash} className="hover:bg-white/5 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                    {format(new Date(claim.created_at), 'MMM d, yyyy HH:mm')}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span className="text-yellow-400 font-medium">
+                      {parseFloat(claim.amount_claimed).toFixed(2)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <a
+                      href={`https://testnet.bscscan.com/tx/${claim.transaction_hash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 transition-colors"
+                    >
+                      {claim.transaction_hash.slice(0, 8)}...{claim.transaction_hash.slice(-6)}
+                    </a>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={cn(
+                      "px-3 py-1 text-xs font-medium rounded-full",
+                      claim.status === 'completed' 
+                        ? "bg-green-400/10 text-green-400"
+                        : claim.status === 'pending'
+                        ? "bg-yellow-400/10 text-yellow-400"
+                        : "bg-red-400/10 text-red-400"
+                    )}>
+                      {claim.status}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
   );
 } 

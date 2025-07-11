@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Trophy, Crown, Medal, Award, Users, Sparkles, ArrowUp } from 'lucide-react';
+import { Trophy, Crown, Medal, Award, Users, Sparkles, ArrowUp, Clock, CalendarDays, Target, Gift } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { referralService } from '@/lib/supabase';
 import { useAccount } from 'wagmi';
@@ -67,6 +67,38 @@ export default function ReferralLeaderboard() {
   const [topUsers, setTopUsers] = useState<LeaderboardEntry[]>([]);
   const [currentUserRank, setCurrentUserRank] = useState<LeaderboardEntry | null>(null);
   const [loading, setLoading] = useState(true);
+  const [timeLeft, setTimeLeft] = useState({
+    days: 0,
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+
+  // Countdown to July 31, 2024
+  useEffect(() => {
+    const targetDate = new Date('2025-07-31T23:59:59Z');
+    
+    const updateCountdown = () => {
+      const now = new Date();
+      const difference = targetDate.getTime() - now.getTime();
+      
+      if (difference > 0) {
+        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
+        
+        setTimeLeft({ days, hours, minutes, seconds });
+      } else {
+        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0 });
+      }
+    };
+
+    updateCountdown();
+    const interval = setInterval(updateCountdown, 1000);
+    
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const loadLeaderboard = async () => {
@@ -119,17 +151,67 @@ export default function ReferralLeaderboard() {
     <div className="w-full max-w-4xl mb-8 px-0 sm:px-0">
       <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 shadow-lg overflow-hidden">
         {/* Header Section */}
-        <div className="px-4 sm:px-6 py-4 border-b border-zinc-800/50 bg-gradient-to-r from-zinc-900 via-zinc-900/50 to-zinc-900">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-            <div>
-              <div className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-yellow-400" />
-                <h3 className="text-lg sm:text-xl md:text-2xl font-bold text-white">Global Leaderboard</h3>
+        <div className="px-3 sm:px-6 py-4 sm:py-6 border-b border-zinc-800/50 bg-gradient-to-br from-zinc-900 via-zinc-900/80 to-zinc-950">
+          <div className="flex flex-col gap-4">
+            {/* Title and Season Info */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-yellow-400 to-yellow-600 flex items-center justify-center">
+                  <Trophy className="w-4 h-4 sm:w-6 sm:h-6 text-black" />
+                </div>
+                <div>
+                  <h3 className="text-lg sm:text-2xl md:text-3xl font-bold text-white">Global Leaderboard</h3>
+                  <div className="flex items-center gap-2 mt-0.5 sm:mt-1">
+                    <span className="bg-gradient-to-r from-yellow-400 to-yellow-600 text-black px-2 py-0.5 rounded-full text-xs font-bold">Season 1</span>
+                    <span className="text-xs text-gray-400 hidden sm:inline">Competition Period</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex items-center gap-2 mt-2">
-                <p className="text-xs sm:text-sm text-gray-400">Total Prize Pool:</p>
-                <p className="text-xs sm:text-sm font-semibold text-yellow-400">2,000 USDT</p>
-                <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 text-yellow-400" />
+              
+              {/* Countdown */}
+              <div className="bg-gradient-to-r from-red-500/10 to-red-600/10 border border-red-500/20 rounded-xl p-3 w-full sm:w-auto">
+                <div className="flex items-center gap-2 mb-2 justify-center sm:justify-start">
+                  <Clock className="w-3 h-3 sm:w-4 sm:h-4 text-red-400" />
+                  <span className="text-xs sm:text-sm font-semibold text-red-400">Season Ends In</span>
+                </div>
+                <div className="grid grid-cols-4 gap-1 sm:gap-2 text-center">
+                  <div className="bg-red-500/20 rounded-lg px-1 py-1 sm:px-2 sm:py-1">
+                    <div className="text-base sm:text-xl font-bold text-white">{timeLeft.days}</div>
+                    <div className="text-xs text-red-300">Days</div>
+                  </div>
+                  <div className="bg-red-500/20 rounded-lg px-1 py-1 sm:px-2 sm:py-1">
+                    <div className="text-base sm:text-xl font-bold text-white">{timeLeft.hours}</div>
+                    <div className="text-xs text-red-300">Hours</div>
+                  </div>
+                  <div className="bg-red-500/20 rounded-lg px-1 py-1 sm:px-2 sm:py-1">
+                    <div className="text-base sm:text-xl font-bold text-white">{timeLeft.minutes}</div>
+                    <div className="text-xs text-red-300">Min</div>
+                  </div>
+                  <div className="bg-red-500/20 rounded-lg px-1 py-1 sm:px-2 sm:py-1">
+                    <div className="text-base sm:text-xl font-bold text-white">{timeLeft.seconds}</div>
+                    <div className="text-xs text-red-300">Sec</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Simple Call to Action */}
+            <div className="bg-gradient-to-r from-blue-500/10 to-purple-600/10 border border-blue-500/20 rounded-xl p-3 sm:p-4">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                  <Target className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
+                </div>
+                <div>
+                  <h4 className="text-base sm:text-lg font-bold text-white mb-1">Race to Top 5!</h4>
+                  <p className="text-sm text-gray-300 mb-2">
+                    Climb the leaderboard and secure your bonus rewards. <span className="text-green-400 font-semibold">These are additional prizes on top of your regular earnings!</span>
+                  </p>
+                  <div className="flex items-center gap-2 text-xs text-blue-300">
+                    <CalendarDays className="w-3 h-3" />
+                    <span>Competition ends July 31, 2025</span>
+                    <span className="text-yellow-400 font-semibold ml-2">• 2,000 USDT Prize Pool</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -157,8 +239,8 @@ export default function ReferralLeaderboard() {
                         <span className="text-xs bg-yellow-400/20 text-yellow-400 px-1.5 py-0.5 rounded-full font-medium">You</span>
                       </div>
                       <span className="text-xs sm:text-lg font-bold text-white whitespace-nowrap">
-                        {parseFloat(user.totalRewards).toLocaleString()}
-                        <span className="text-xs sm:text-sm text-gray-400 ml-1">rBBLP</span>
+                        {((parseFloat(user.totalRewards) / 10) % 1 === 0) ? (parseFloat(user.totalRewards) / 10).toLocaleString() : (parseFloat(user.totalRewards) / 10).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                        <span className="text-xs sm:text-sm text-gray-400 ml-1">USDT</span>
                       </span>
                     </div>
                     <div className="flex items-center gap-1 mt-0.5 text-[11px] sm:text-xs text-yellow-400/80 font-normal">
@@ -180,8 +262,8 @@ export default function ReferralLeaderboard() {
                       </div>
                       <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                         <p className="text-sm sm:text-lg font-bold text-white whitespace-nowrap">
-                          {parseFloat(user.totalRewards).toLocaleString()}
-                          <span className="text-xs sm:text-sm text-gray-400 ml-1">rBBLP</span>
+                          {((parseFloat(user.totalRewards) / 10) % 1 === 0) ? (parseFloat(user.totalRewards) / 10).toLocaleString() : (parseFloat(user.totalRewards) / 10).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                          <span className="text-xs sm:text-sm text-gray-400 ml-1">USDT</span>
                         </p>
                       </div>
                     </div>
@@ -202,9 +284,11 @@ export default function ReferralLeaderboard() {
                             </span>
                           )}
                           {getUsdtReward(user.rank) > 0 && (
-                            <span className="bg-yellow-400/10 rounded px-1.5 py-0.5 flex items-center gap-1 text-xs sm:text-sm font-semibold text-yellow-400">
+                            <span className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 border border-yellow-400/30 rounded-lg px-2 py-1 flex items-center gap-1 text-xs sm:text-sm font-bold text-yellow-400 shadow-lg">
                               <Trophy className="w-3 h-3" />
-                              {getUsdtReward(user.rank).toLocaleString()} USDT
+                              <span className="text-yellow-300">+</span>
+                              <span className="text-yellow-400">Bonus</span>
+                              <span className="text-white">{getUsdtReward(user.rank).toLocaleString()} USDT</span>
                             </span>
                           )}
                         </div>
@@ -251,14 +335,14 @@ export default function ReferralLeaderboard() {
                   </div>
                   <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
                     <p className="text-sm sm:text-lg font-bold text-white whitespace-nowrap">
-                      {parseFloat(currentUserRank.totalRewards).toLocaleString()}
-                      <span className="text-xs sm:text-sm text-gray-400 ml-1">rBBLP</span>
+                      {((parseFloat(currentUserRank.totalRewards) / 10) % 1 === 0) ? (parseFloat(currentUserRank.totalRewards) / 10).toLocaleString() : (parseFloat(currentUserRank.totalRewards) / 10).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}
+                      <span className="text-xs sm:text-sm text-gray-400 ml-1">USDT</span>
                     </p>
                   </div>
                 </div>
                 <div className="flex flex-row items-center justify-between gap-2 mt-0.5 mb-0 w-full">
                   <span className="text-[11px] sm:text-xs text-gray-400 font-normal min-w-[60px]">
-                    {currentUserRank.invitedCount > 0 ? `${currentUserRank.invitedCount} invited` : 'Invite Friends to be top and win 1,000 USDT in prizes'}
+                    {currentUserRank.invitedCount > 0 ? `${currentUserRank.invitedCount} invited` : 'Climb to Top 5 and win bonus USDT prizes!'}
                   </span>
                   <div className="flex flex-row items-center gap-2 ml-auto">
                     {currentUserRank.rank <= 3 && (
@@ -271,7 +355,14 @@ export default function ReferralLeaderboard() {
                         Top {currentUserRank.rank}
                       </span>
                     )}
-                 
+                    {currentUserRank.rank <= 5 && getUsdtReward(currentUserRank.rank) > 0 && (
+                      <span className="bg-gradient-to-r from-yellow-400/20 to-yellow-600/20 border border-yellow-400/30 rounded-lg px-2 py-1 flex items-center gap-1 text-xs font-bold text-yellow-400 shadow-lg">
+                        <Trophy className="w-3 h-3" />
+                        <span className="text-yellow-300">+</span>
+                        <span className="text-yellow-400">Bonus</span>
+                        <span className="text-white">{getUsdtReward(currentUserRank.rank).toLocaleString()} USDT</span>
+                      </span>
+                    )}
                   </div>
                 </div>
                
@@ -282,13 +373,21 @@ export default function ReferralLeaderboard() {
           {/* No data state */}
           {topUsers.length === 0 && (
             <div className="text-center py-8 sm:py-12">
-              <div className="w-14 h-14 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-br from-yellow-400/10 to-yellow-600/10 border border-yellow-400/20 flex items-center justify-center mx-auto mb-4 sm:mb-6">
-                <Trophy className="w-8 h-8 sm:w-10 sm:h-10 text-yellow-400" />
+              <div className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-yellow-400/10 to-yellow-600/10 border border-yellow-400/20 flex items-center justify-center mx-auto mb-6">
+                <Trophy className="w-8 h-8 sm:w-12 sm:h-12 text-yellow-400" />
               </div>
-              <h4 className="text-lg sm:text-xl font-bold text-white mb-2">No Leaderboard Data Yet</h4>
-              <p className="text-gray-400 text-xs sm:text-sm max-w-md mx-auto">
-                Be the first to earn rBBLP through referrals and claim the top spot with 1,000 USDT in prizes!
+              <h4 className="text-xl sm:text-2xl font-bold text-white mb-3">Season 1 Competition</h4>
+              <p className="text-gray-400 text-sm sm:text-base max-w-lg mx-auto mb-4">
+                Be the first to climb the leaderboard and claim your bonus rewards! These are additional prizes on top of your regular referral earnings.
               </p>
+              <div className="bg-gradient-to-r from-yellow-400/10 to-yellow-600/10 border border-yellow-400/20 rounded-xl p-4 max-w-md mx-auto">
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <Gift className="w-4 h-4 text-yellow-400" />
+                  <span className="text-sm font-bold text-yellow-400">Bonus Prize Pool</span>
+                </div>
+                <p className="text-2xl font-bold text-white">2,000 USDT</p>
+                <p className="text-xs text-gray-400 mt-1">Distributed to Top 5 referrers</p>
+              </div>
             </div>
           )}
         </div>

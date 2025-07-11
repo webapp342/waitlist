@@ -28,9 +28,8 @@ const BSC_MAINNET_CHAIN_ID = 56;
 
 const ASSETS = [
   { symbol: 'BBLP', name: 'BBLP Token', icon: '/logo.svg' },
-  { symbol: 'rBBLP', name: 'Referral BBLP', icon: '/logo.svg' },
+  { symbol: 'USDT', name: 'Tether USD', icon: '/usdt.svg' },
   { symbol: 'BNB', name: 'Binance Coin', icon: '/bnb.svg'  },
-  { symbol: 'USDT', name: 'Tether USD', icon: '/usdt.svg'  },
   { symbol: 'BUSD', name: 'Binance USD', icon: '/busd.svg' }
 ];
 
@@ -196,7 +195,7 @@ function DashboardContent() {
   const usdtUsd = usdtBalance ? parseFloat(usdtBalance.formatted) * 1 : 0;
   const busdUsd = busdBalance ? parseFloat(busdBalance.formatted) * 1 : 0;
       const bblpUsd = bblpBalance ? parseFloat(bblpBalance.formatted) * 0.10 : 0;
-    const rBblpUsd = referralStats ? parseFloat(referralStats.totalRewards) * 0.10 : 0;
+    const rBblpUsd = referralStats ? parseFloat(referralStats.totalRewards) / 10 : 0; // Divide by 10 for USDT
     const totalUsd = bnbUsd + usdtUsd + busdUsd + bblpUsd + rBblpUsd;
 
   const handleRefresh = async () => {
@@ -232,8 +231,8 @@ function DashboardContent() {
         };
       case 'USDT':
         return {
-          balance: usdtBalance ? parseFloat(usdtBalance.formatted) : 0,
-          usdValue: usdtUsd,
+          balance: (usdtBalance ? parseFloat(usdtBalance.formatted) : 0) + (referralStats ? parseFloat(referralStats.totalRewards) / 10 : 0), // Add wallet USDT + referral rewards
+          usdValue: usdtUsd + rBblpUsd, // Add both USDT balances
           price: 1.00,
           change: '+0.01%',
           changeValue: 0.01
@@ -250,14 +249,6 @@ function DashboardContent() {
         return {
           balance: bblpBalance ? parseFloat(bblpBalance.formatted) : 0,
           usdValue: bblpUsd,
-          price: 0.10,
-          change: '+15.67%',
-          changeValue: 15.67
-        };
-      case 'rBBLP':
-        return {
-          balance: referralStats ? parseFloat(referralStats.totalRewards) : 0,
-          usdValue: rBblpUsd,
           price: 0.10,
           change: '+15.67%',
           changeValue: 15.67
@@ -468,7 +459,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs lg:text-sm text-yellow-400/80 mb-1">Referral Earnings</p>
-                  <p className="text-lg lg:text-xl font-bold text-yellow-400">{parseFloat(referralStats.totalRewards).toFixed(0)} rBBLP</p>
+                  <p className="text-lg lg:text-xl font-bold text-yellow-400">{(parseFloat(referralStats.totalRewards) / 10).toFixed(2)} USDT</p>
                 </div>
                 <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-yellow-400 group-hover:scale-110 transition-transform" />
               </div>
@@ -651,90 +642,81 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* Referral Section - Better Desktop Layout */}
+          {/* Referral Section - Compact Professional Design */}
           {isConnected && referralCode && (
             <div>
               <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 mb-8 shadow-lg overflow-hidden">
-                <div className="flex flex-col lg:flex-row lg:items-stretch">
-                  {/* Left Side - Info */}
-                  <div className="flex-1 p-4 lg:p-8 lg:border-r border-zinc-800">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
-                        <Gift className="w-6 h-6 text-yellow-400" />
-                      </div>
-                      <div>
-                        <h3 className="text-xl font-bold text-white">Earn with Referrals</h3>
-                        <p className="text-sm text-gray-400">Invite friends, earn rewards together</p>
-                      </div>
+                <div className="p-6 lg:p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
+                      <Gift className="w-6 h-6 text-yellow-400" />
                     </div>
-                    
-                    {/* Quick Stats */}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
-                        <p className="text-2xl font-bold text-white mb-1">{referralStats.totalReferrals}</p>
-                        <p className="text-xs text-gray-400">Friends Referred</p>
-                      </div>
-                      <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
-                        <p className="text-2xl font-bold text-yellow-400 mb-1">{parseFloat(referralStats.totalRewards).toFixed(0)}</p>
-                        <p className="text-xs text-gray-400">rBBLP Earned</p>
-                      </div>
-                      <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
-                        <p className="text-2xl font-bold text-yellow-400 mb-1">5</p>
-                        <p className="text-xs text-gray-400">Reward Tiers</p>
-                      </div>
+                    <div>
+                      <h3 className="text-xl font-bold text-white">Earn with Referrals</h3>
+                      <p className="text-sm text-gray-400">Invite friends, earn rewards together</p>
                     </div>
-                    
-                    {/* Referral Link */}
-                    <div className="mt-6 bg-black/20 rounded-xl p-4 border border-zinc-800">
-                      <div className="flex items-center justify-between gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs text-gray-400 mb-1">Your referral link</p>
-                          <p className="text-sm font-mono text-white truncate">
-                            https://bblip.io?ref={referralCode.code}
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => {
+                  </div>
+                  
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-2 gap-4 mb-6">
+                    <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
+                      <p className="text-2xl font-bold text-white mb-1">{referralStats.totalReferrals}</p>
+                      <p className="text-xs text-gray-400">Friends Referred</p>
+                    </div>
+                    <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
+                      <p className="text-2xl font-bold text-yellow-400 mb-1">{(parseFloat(referralStats.totalRewards) / 10).toFixed(2)}</p>
+                      <p className="text-xs text-gray-400">USDT Earned</p>
+                    </div>
+                  </div>
+                  
+                  {/* Referral Link */}
+                  <div className="bg-black/20 rounded-xl p-4 border border-zinc-800 mb-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-400 mb-1">Your referral link</p>
+                        <p className="text-sm font-mono text-white truncate">
+                          https://bblip.io?ref={referralCode.code}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            navigator.clipboard.writeText(`https://bblip.io?ref=${referralCode.code}`);
+                            toast.success('Referral link copied!');
+                          }}
+                          className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200"
+                          aria-label="Copy referral link"
+                        >
+                          <Copy className="w-4 h-4 text-yellow-400" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (navigator.share) {
+                              navigator.share({
+                                title: 'Join BBLP',
+                                text: 'Join BBLP and earn rewards when you stake! Use my referral link:',
+                                url: `https://bblip.io?ref=${referralCode.code}`
+                              });
+                            } else {
                               navigator.clipboard.writeText(`https://bblip.io?ref=${referralCode.code}`);
                               toast.success('Referral link copied!');
-                            }}
-                            className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200"
-                            aria-label="Copy referral link"
-                          >
-                            <Copy className="w-4 h-4 text-yellow-400" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (navigator.share) {
-                                navigator.share({
-                                                                  title: 'Join BBLP',
-                                text: 'Join BBLP and earn rewards when you stake! Use my referral link:',
-                                  url: `https://bblip.io?ref=${referralCode.code}`
-                                });
-                              } else {
-                                navigator.clipboard.writeText(`https://bblip.io?ref=${referralCode.code}`);
-                                toast.success('Referral link copied!');
-                              }
-                            }}
-                            className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200"
-                            aria-label="Share referral link"
-                          >
-                            <Share2 className="w-4 h-4 text-yellow-400" />
-                          </button>
-                        </div>
+                            }
+                          }}
+                          className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200"
+                          aria-label="Share referral link"
+                        >
+                          <Share2 className="w-4 h-4 text-yellow-400" />
+                        </button>
                       </div>
                     </div>
                   </div>
                   
-                  {/* Right Side - CTA */}
-                  <div className="lg:w-64 flex items-center justify-center p-6 lg:p-8 bg-black/20">
-                    <Link href="/referral" className="w-full">
-                      <Button className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 group">
-                        Claim $1,000 USDT Airdrop
-                      </Button>
-                    </Link>
-                  </div>
+                  {/* Claim Button - Full Width */}
+                  <Link href="/referral" className="block">
+                    <Button className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 group py-3">
+                      Claim $1,000 USDT Bonus
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>

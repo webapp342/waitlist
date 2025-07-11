@@ -86,28 +86,53 @@ export default function CTAFinal() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-[#1B3129] text-[#4ADE80] text-sm font-medium px-4 py-2 rounded-full mb-8"
+              className="bg-gradient-to-r from-yellow-500/20 to-orange-500/20 text-yellow-400 text-sm font-medium px-4 py-2 rounded-full mb-8 border border-yellow-500/30"
             >
-              2x Staking Rewards at Early Access
+             Instant Withdrawal Earnings to Your Wallet
             </motion.div>
 
             <motion.h2
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-4xl md:text-5xl lg:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-600 font-bold mb-4"
+              className="text-4xl md:text-5xl lg:text-6xl text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-600 font-bold mb-6"
             >
-              Join the Revolution.
+             Invite Friends, Earn Together
             </motion.h2>
+
+           
+
+            {/* Referral Benefits */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.15 }}
+              className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 w-full max-w-4xl"
+            >
+              <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 border border-yellow-500/20 rounded-xl p-4">
+                <h3 className="font-semibold text-white mb-1">Instant Withdrawal</h3>
+                <p className="text-sm text-zinc-400">Withdraw $76 USDT directly to your wallet immediately</p>
+              </div>
+              <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 rounded-xl p-4">
+                <h3 className="font-semibold text-white mb-1">No Lockups</h3>
+                <p className="text-sm text-zinc-400">Your earnings is always available - withdraw anytime</p>
+              </div>
+              <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 rounded-xl p-4">
+                <h3 className="font-semibold text-white mb-1">Real Money</h3>
+                <p className="text-sm text-zinc-400">Earn actual USDT that you can spend anywhere</p>
+              </div>
+            </motion.div>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="text-zinc-400 text-lg mb-8"
+              className="text-zinc-400 text-lg mb-8 max-w-2xl"
             >
-              Get your card in under a minute.
+              No waiting, no lockups! Earn $76 USDT per every referral and withdraw instantly to your wallet. 
+              Real money, real time - start earning passive income today!
             </motion.p>
 
             <motion.div
@@ -126,7 +151,7 @@ export default function CTAFinal() {
                 </div>
               </div>
               <span className="text-zinc-400">
-                <strong className="text-white">2,847</strong> joined today
+                <strong className="text-white">2,847</strong> users earned rewards today
               </span>
             </motion.div>
 
@@ -136,9 +161,9 @@ export default function CTAFinal() {
               viewport={{ once: true }}
               transition={{ delay: 0.3 }}
               onClick={handleConnect}
-              className="bg-yellow-200 text-black px-8 py-4 rounded-xl font-medium hover:bg-yellow-300 transition-colors"
+              className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black px-8 py-4 rounded-xl font-bold hover:shadow-lg hover:shadow-yellow-500/20 transition-all duration-200"
             >
-              {isConnected ? 'Go to Dashboard →' : 'Get Your Card Now →'}
+              {isConnected ? 'Go to Dashboard →' : 'Start Earning Now →'}
             </motion.button>
 
             <motion.p
@@ -148,7 +173,7 @@ export default function CTAFinal() {
               transition={{ delay: 0.4 }}
               className="text-zinc-500 text-sm mt-6"
             >
-              Average processing time: 47 seconds
+              Join in under 30 seconds • No KYC required
             </motion.p>
           </div>
         </div>

@@ -69,6 +69,18 @@ CREATE TABLE IF NOT EXISTS public.stake_logs (
   CONSTRAINT stake_logs_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 
+-- Create claim_history table
+CREATE TABLE IF NOT EXISTS public.claim_history (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  user_id bigint NOT NULL,
+  transaction_hash character varying NOT NULL UNIQUE,
+  amount_claimed character varying NOT NULL,
+  status character varying DEFAULT 'completed' CHECK (status IN ('pending', 'completed', 'failed')),
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT claim_history_pkey PRIMARY KEY (id),
+  CONSTRAINT claim_history_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+
 -- Create referral_codes table
 CREATE TABLE IF NOT EXISTS public.referral_codes (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),

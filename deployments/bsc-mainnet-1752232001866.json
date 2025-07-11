@@ -1,0 +1,13 @@
+{
+  "network": "BSC Mainnet",
+  "chainId": 56,
+  "claimContract": {
+    "address": "0xbfE9400203C02e7b6cD4c38c832EC170308E4fb1",
+    "owner": "0x0F4Dc8B3ad7fb88ab6FB37354dD1462cDf25C08c",
+    "usdtToken": "0x55d398326f99059fF775485246999027B3197955"
+  },
+  "deployer": "0x0F4Dc8B3ad7fb88ab6FB37354dD1462cDf25C08c",
+  "deployedAt": "2025-07-11T11:06:41.739Z",
+  "blockNumber": 53645551,
+  "gasPrice": "0.1 Gwei"
+}

@@ -1,0 +1,20 @@
+{
+  "network": "BSC Testnet",
+  "chainId": 97,
+  "usdtTestToken": {
+    "address": "0x49EdC0FA13e650BC430D8bc23e4aaC6323B4f235",
+    "name": "Tether USD Test",
+    "symbol": "USDTTest",
+    "decimals": 18,
+    "totalSupply": "1000000.0"
+  },
+  "claimContract": {
+    "address": "0xBC4E1c4f44858DFd3AFA82b2Bc5DD986297352E8",
+    "owner": "0x45317795a45496D6F655c950552fD5FB6C2166f1",
+    "usdtToken": "0x49EdC0FA13e650BC430D8bc23e4aaC6323B4f235",
+    "fundedAmount": "50000.0"
+  },
+  "deployer": "0x45317795a45496D6F655c950552fD5FB6C2166f1",
+  "deployedAt": "2025-07-11T09:29:49.090Z",
+  "blockNumber": 57860959
+}
