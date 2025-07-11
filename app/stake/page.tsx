@@ -1031,7 +1031,7 @@ function StakeContent() {
                       </div>
                       <div>
                         <h4 className="text-sm font-semibold text-white mb-1">Staking Period</h4>
-                        <p className="text-xs text-gray-400 leading-relaxed">No lock-up period, unstake anytime</p>
+                        <p className="text-xs text-gray-400 leading-relaxed">Fixed 30 days lockup period</p>
                       </div>
                     </div>
                     
