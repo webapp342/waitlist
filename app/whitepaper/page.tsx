@@ -790,7 +790,7 @@ export default function WhitepaperPage() {
                     <span className="text-2xl font-bold text-yellow-400">3</span>
                   </div>
                   <h4 className="text-lg font-semibold mb-2">Earn Rewards</h4>
-                  <p className="text-zinc-400">Both you and your friend earn rBBLP tokens</p>
+                  <p className="text-zinc-400">Both you and your friend earn USDT instantly</p>
                 </div>
               </div>
             </div>
