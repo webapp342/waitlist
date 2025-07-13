@@ -899,7 +899,7 @@ export default function WhitepaperPage() {
               <div className="bg-zinc-900 rounded-xl p-8 border-l-4 border-yellow-400">
                 <div className="flex items-center mb-4">
                   <Rocket className="w-6 h-6 text-yellow-400 mr-3" />
-                  <h3 className="text-xl font-semibold">Q2 2025 - Presale & Expansion (Current)</h3>
+                  <h3 className="text-xl font-semibold">Q2 2025 - Platform Public Launch  (Completed)</h3>
                 </div>
                 <ul className="space-y-2 text-zinc-300 ml-9">
                   <li>• Swap system implementation</li>
@@ -911,7 +911,7 @@ export default function WhitepaperPage() {
               <div className="bg-zinc-900 rounded-xl p-8 border-l-4 border-zinc-400">
                 <div className="flex items-center mb-4">
                   <ChartBar className="w-6 h-6 text-zinc-400 mr-3" />
-                  <h3 className="text-xl font-semibold">Q3 2025 - Mobile & CEX</h3>
+                  <h3 className="text-xl font-semibold">Q3 2025 - Presale & Expansion (Current)</h3>
                 </div>
                 <ul className="space-y-2 text-zinc-300 ml-9">
                 <li>• Public presale campaign</li>
