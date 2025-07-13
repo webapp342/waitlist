@@ -888,10 +888,11 @@ export default function WhitepaperPage() {
                   <h3 className="text-xl font-semibold">Q1 2025 - Platform Launch (Completed)</h3>
                 </div>
                 <ul className="space-y-2 text-zinc-300 ml-9">
+                <li>• Idea Generation</li>
                   <li>• Web application development</li>
-                  <li>• Swap system implementation</li>
-                  <li>• Staking platform launch</li>
-                  <li>• Crypto card system beta</li>
+                  <li>• Card System Beta launch</li>
+                  <li>• Community Scaling</li>
+                
                 </ul>
               </div>
 
@@ -901,10 +902,9 @@ export default function WhitepaperPage() {
                   <h3 className="text-xl font-semibold">Q2 2025 - Presale & Expansion (Current)</h3>
                 </div>
                 <ul className="space-y-2 text-zinc-300 ml-9">
-                  <li>• Idea Generation</li>
-                  <li>• Web application development</li>
-                  <li>• Card System Beta launch</li>
-                  <li>• Community Scaling</li>
+                  <li>• Swap system implementation</li>
+                  <li>• Staking platform launch</li>
+                  <li>• Crypto card system beta</li>
                 </ul>
               </div>
 
