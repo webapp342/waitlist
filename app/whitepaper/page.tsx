@@ -885,7 +885,7 @@ export default function WhitepaperPage() {
               <div className="bg-zinc-900 rounded-xl p-8 border-l-4 border-green-400">
                 <div className="flex items-center mb-4">
                   <CheckCircle className="w-6 h-6 text-green-400 mr-3" />
-                  <h3 className="text-xl font-semibold">Q1 2025 - Platform Launch (Completed)</h3>
+                  <h3 className="text-xl font-semibold">Q1 2025 - Web dApp development (Completed)</h3>
                 </div>
                 <ul className="space-y-2 text-zinc-300 ml-9">
                 <li>• Idea Generation</li>
