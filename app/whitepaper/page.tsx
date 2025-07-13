@@ -801,15 +801,19 @@ export default function WhitepaperPage() {
                 <ul className="space-y-3">
                   <li className="flex justify-between">
                     <span>Friend stakes 100 BBLP</span>
-                    <span className="text-yellow-400">10 rBBLP</span>
+                    <span className="text-yellow-400">$1 USDT</span>
                   </li>
                   <li className="flex justify-between">
                     <span>Friend stakes 1,000 BBLP</span>
-                    <span className="text-yellow-400">100 rBBLP</span>
+                    <span className="text-yellow-400">$10 USDT</span>  
                   </li>
                   <li className="flex justify-between">
-                    <span>Friend stakes 5,000 BBLP</span>
-                    <span className="text-yellow-400">500 rBBLP</span>
+                    <span>Friend stakes 2,500 BBLP</span>
+                    <span className="text-yellow-400">$25 USDT</span>  
+                  </li>
+                  <li className="flex justify-between">
+                    <span>Friend stakes 3,500 BBLP</span>
+                    <span className="text-yellow-400">$35 USDT</span>   
                   </li>
                 </ul>
               </div>
@@ -831,7 +835,7 @@ export default function WhitepaperPage() {
                   </li>
                   <li className="flex justify-between">
                     <span>4th-5th Place</span>
-                    <span className="text-yellow-400">$125 - $100 USDT</span>
+                    <span className="text-yellow-400">$150 - $100 USDT</span>
                   </li>
                 </ul>
               </div>
