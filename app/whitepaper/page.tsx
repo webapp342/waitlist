@@ -901,10 +901,10 @@ export default function WhitepaperPage() {
                   <h3 className="text-xl font-semibold">Q2 2025 - Presale & Expansion (Current)</h3>
                 </div>
                 <ul className="space-y-2 text-zinc-300 ml-9">
-                  <li>• Public presale campaign</li>
-                  <li>• DEX listings (PancakeSwap, Uniswap)</li>
-                  <li>• Community growth initiatives</li>
-                  <li>• Strategic partnerships</li>
+                  <li>• Idea Generation</li>
+                  <li>• Web application development</li>
+                  <li>• Card System Beta launch</li>
+                  <li>• Community Scaling</li>
                 </ul>
               </div>
 
@@ -914,10 +914,10 @@ export default function WhitepaperPage() {
                   <h3 className="text-xl font-semibold">Q3 2025 - Mobile & CEX</h3>
                 </div>
                 <ul className="space-y-2 text-zinc-300 ml-9">
-                  <li>• iOS & Android app launch</li>
-                  <li>• Tier 2 CEX listings</li>
-                  <li>• Enhanced security features</li>
-                  <li>• Global marketing campaign</li>
+                <li>• Public presale campaign</li>
+                  <li>• DEX listings (PancakeSwap, Uniswap)</li>
+                  <li>• Community growth initiatives</li>
+                  <li>• Strategic partnerships</li>
                 </ul>
               </div>
 
@@ -927,10 +927,10 @@ export default function WhitepaperPage() {
                   <h3 className="text-xl font-semibold">Q4 2025 - Global Expansion</h3>
                 </div>
                 <ul className="space-y-2 text-zinc-300 ml-9">
-                  <li>• Tier 1 CEX listings</li>
-                  <li>• Cross-chain bridge development</li>
-                  <li>• Institutional partnerships</li>
-                  <li>• Advanced DeFi features</li>
+                <li>• iOS & Android app launch</li>
+                  <li>• Tier 2 CEX listings</li>
+                  <li>• Enhanced security features</li>
+                  <li>• Global marketing campaign</li>
                 </ul>
               </div>
             </div>
