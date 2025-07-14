@@ -67,7 +67,7 @@ export default function Footer() {
                       </svg>
                       <span className="text-2xl font-semibold text-white">Stay connected with Bblip</span>
                     </div>
-                    <p className="text-gray-400">Follow @BblipLabs on X for the latest updates</p>
+                    <p className="text-gray-400">Follow @BblipProtocol on X for the latest updates</p>
                   </div>
 
                   <div className="flex items-center gap-2 text-purple-400 group-hover:text-purple-300 transition-colors">
@@ -87,7 +87,7 @@ export default function Footer() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
-            © 2025 Bblip Labs
+            © 2025 Bblip Protocol
           </motion.p>
         </div>
       </Container>

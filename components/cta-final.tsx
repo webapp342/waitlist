@@ -151,7 +151,7 @@ export default function CTAFinal() {
                 </div>
               </div>
               <span className="text-zinc-400">
-                <strong className="text-white">2,847</strong> users earned rewards today
+                <strong className="text-white">8,647</strong> users earned rewards today
               </span>
             </motion.div>
 
