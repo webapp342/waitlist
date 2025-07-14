@@ -29,7 +29,7 @@ interface Milestone {
 
 const roadmapData: Milestone[] = [
   {
-    quarter: 'Q1',
+    quarter: 'Q2',
     year: '2025',
     status: 'completed',
     title: 'Platform Launch',
@@ -44,7 +44,7 @@ const roadmapData: Milestone[] = [
     ]
   },
   {
-    quarter: 'Q2',
+    quarter: 'Q3',
     year: '2025',
     status: 'in-progress',
     title: 'Presale & Expansion',
@@ -58,7 +58,7 @@ const roadmapData: Milestone[] = [
     ]
   },
   {
-    quarter: 'Q3',
+    quarter: 'Q4',
     year: '2025',
     status: 'upcoming',
     title: 'Card System & DEX',
@@ -74,8 +74,8 @@ const roadmapData: Milestone[] = [
     ]
   },
   {
-    quarter: 'Q4',
-    year: '2025',
+    quarter: 'Q1',
+    year: '2026',
     status: 'upcoming',
     title: 'Exchange Listings',
     icon: Globe,
@@ -89,7 +89,7 @@ const roadmapData: Milestone[] = [
     ]
   },
   {
-    quarter: 'Q1',
+    quarter: 'Q2',
     year: '2026',
     status: 'upcoming',
     title: 'Major Exchange Integration',
@@ -102,7 +102,7 @@ const roadmapData: Milestone[] = [
     ]
   },
   {
-    quarter: 'Q2',
+    quarter: 'Q3',
     year: '2026',
     status: 'upcoming',
     title: 'Global Expansion',
