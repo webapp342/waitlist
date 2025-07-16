@@ -888,7 +888,9 @@ function PresalePageInner() {
               BBLP Token Presale
             </h1>
             <p className="text-gray-400 text-sm md:text-base">
-            Purchase at $0.10 per token
+            Purchase BBLP tokens from BSC Mainnet and Ethereum Mainnet
+
+
             </p>
           </div>
 
