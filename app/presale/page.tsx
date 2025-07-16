@@ -13,7 +13,7 @@ declare global {
 }
 
 import React, { useState, useEffect, Suspense, useCallback } from 'react';
-import { useAccount, useSwitchChain, useBalance } from 'wagmi';
+import { useAccount, useSwitchChain, useBalance, useWalletClient } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Particles from "@/components/ui/particles";
@@ -69,6 +69,7 @@ const ETH_PRESALE_ABI = [
 function PresalePageInner() {
   const { isConnected, address, chain } = useAccount();
   const { switchChain } = useSwitchChain();
+  const { data: walletClient } = useWalletClient();
   const chainId = useChainId();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -422,25 +423,22 @@ function PresalePageInner() {
       setIsEthBuying(true);
       setStatusMessage('Initializing ETH purchase...');
       
-      // Check if ethereum provider exists
-      if (!window.ethereum) {
-        setError('Wallet provider not found');
-        setIsEthBuying(false);
-        return;
+      // Use walletClient from wagmi
+      if (!walletClient) {
+        throw new Error('Wallet not connected');
       }
       
-      // Provider'ın hazır olduğundan emin ol
-      await new Promise(resolve => setTimeout(resolve, 500));
+      const ethAmountWei = ethers.parseEther(ethAmount);
       
-      const ethersProvider = new ethers.BrowserProvider(window.ethereum);
-      const signer = await ethersProvider.getSigner();
+      // Get signer from walletClient
+      const provider = new ethers.BrowserProvider(walletClient as any);
+      const signer = await provider.getSigner();
+      
       const presaleContract = new ethers.Contract(
         ETH_PRESALE_CONFIG.PRESALE_CONTRACT,
         ETH_PRESALE_ABI,
         signer
       );
-      
-      const ethAmountWei = ethers.parseEther(ethAmount);
       
       // Calculate expected tokens for display
       const expectedTokens = await presaleContract.calculateTokenAmount(ethAmountWei);
@@ -486,6 +484,8 @@ function PresalePageInner() {
         setError('Transaction was cancelled by user');
       } else if (err.message?.includes('insufficient funds')) {
         setError('Insufficient ETH balance for transaction and gas fees');
+      } else if (err.message?.includes('Wallet not connected')) {
+        setError('Wallet connection lost. Please reconnect your wallet.');
       } else {
         setError(err.message || 'Failed to complete ETH purchase');
       }
@@ -790,16 +790,6 @@ function PresalePageInner() {
     try {
       setIsBuying(true);
       setStatusMessage('Initializing BNB purchase...');
-      
-      // Check if ethereum provider exists
-      if (!window.ethereum) {
-        setError('Wallet provider not found');
-        setIsBuying(false);
-        return;
-      }
-      
-      // Provider'ın hazır olduğundan emin ol
-      await new Promise(resolve => setTimeout(resolve, 500));
       
       // Convert BNB amount to wei format
       const bnbAmountWei = parseEther(bnbAmount);
