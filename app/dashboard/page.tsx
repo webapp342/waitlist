@@ -18,6 +18,7 @@ import { ethers } from 'ethers';
 import { userService } from '@/lib/supabase';
 import AuthGuard from '@/components/AuthGuard';
 import { useChainId } from 'wagmi';
+import { fetchCryptoPrices } from '@/lib/priceService';
 
 // BSC Mainnet Addresses
 const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
@@ -67,6 +68,7 @@ function DashboardContent() {
   
   const [activeTab, setActiveTab] = useState<'portfolio' | 'transactions'>('portfolio');
   const [bnbPrice, setBnbPrice] = useState<number>(0);
+  const [ethPrice, setEthPrice] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [stakeLogs, setStakeLogs] = useState<StakeLog[]>([]);
   const [showAllStakeLogs, setShowAllStakeLogs] = useState(false);
@@ -162,18 +164,14 @@ function DashboardContent() {
     }
   }, [isConnected]);
 
-  // Fetch BNB price from CoinGecko
+  // Fetch BNB and ETH prices from CoinGecko
   useEffect(() => {
-    const fetchBNBPrice = async () => {
-      try {
-        const response = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=binancecoin&vs_currencies=usd');
-        const data = await response.json();
-        setBnbPrice(data.binancecoin.usd);
-      } catch (error) {
-        setBnbPrice(0);
-      }
+    const fetchPrices = async () => {
+      const prices = await fetchCryptoPrices();
+      setBnbPrice(prices.bnb);
+      setEthPrice(prices.eth);
     };
-    fetchBNBPrice();
+    fetchPrices();
   }, []);
 
   // Load stake logs when wallet is connected and on supported network
@@ -238,7 +236,7 @@ function DashboardContent() {
   const busdUsd = busdBalance ? parseFloat(busdBalance.formatted) * 1 : 0;
   const bblpUsd = bblpBalance ? parseFloat(bblpBalance.formatted) * 0.10 : 0;
   const ethBblpUsd = ethBblpBalance ? parseFloat(ethBblpBalance.formatted) * 0.10 : 0;
-  const ethUsd = ethBalance ? parseFloat(ethBalance.formatted) * 3000 : 0; // ETH price ~$3000
+  const ethUsd = ethBalance ? parseFloat(ethBalance.formatted) * ethPrice : 0; // ETH price ~$3000
   const rBblpUsd = referralStats ? parseFloat(referralStats.totalRewards) / 10 : 0; // Divide by 10 for USDT
   const totalUsd = bnbUsd + usdtUsd + busdUsd + bblpUsd + ethBblpUsd + ethUsd + rBblpUsd;
 
@@ -312,7 +310,7 @@ function DashboardContent() {
         return {
           balance: ethBalance ? parseFloat(ethBalance.formatted) : 0,
           usdValue: ethUsd,
-          price: 3000,
+          price: ethPrice,
           change: '+5.23%',
           changeValue: 5.23
         };

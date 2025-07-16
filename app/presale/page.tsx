@@ -32,6 +32,7 @@ import WalletModal from '@/components/WalletModal';
 import { userService, cardService } from '@/lib/supabase';
 import { useChainId } from 'wagmi';
 import { useWallet } from '@/hooks/useWallet';
+import { fetchCryptoPrices, getCachedPrices } from '@/lib/priceService';
 
 const PAYMENT_TOKENS = [
   { id: TOKEN_IDS.eth, name: 'ETH', icon: '/eth.png', color: 'from-blue-600 to-blue-400', chainId: 1 }, // Ethereum Mainnet
@@ -316,30 +317,14 @@ function PresalePageInner() {
       
       if (selectedToken === TOKEN_IDS.eth) {
         try {
-          // For ETH price, we can use a simple fetch or default value
-          // Since contract calls in mobile are problematic
-          setEthPriceUSD(3500); // Default fallback for now
+          // Get cached price immediately for faster display
+          const cachedPrices = getCachedPrices();
+          setEthPriceUSD(cachedPrices.eth);
           
-          // Try to get from contract if possible
-          if (typeof window !== 'undefined' && window.ethereum && (isOnETHMainnet || !isConnected)) {
-            try {
-              const provider = new ethers.BrowserProvider(window.ethereum);
-              const presaleContract = new ethers.Contract(
-                ETH_PRESALE_CONFIG.PRESALE_CONTRACT,
-                ETH_PRESALE_ABI,
-                provider
-              );
-              
-              const ethPriceFromContract = await presaleContract.getLatestETHPrice();
-              const ethPriceFormatted = Number(ethPriceFromContract) / 1e8;
-              console.log('ETH Price from contract:', ethPriceFormatted);
-              if (ethPriceFormatted > 0) {
-                setEthPriceUSD(ethPriceFormatted);
-              }
-            } catch (error) {
-              console.log('Could not get ETH price from contract, using fallback');
-            }
-          }
+          // Then fetch fresh prices
+          const prices = await fetchCryptoPrices();
+          console.log('ETH Price from shared service:', prices.eth);
+          setEthPriceUSD(prices.eth);
         } catch (error) {
           console.error('Error in ETH price fetch:', error);
           setEthPriceUSD(3500);
@@ -348,7 +333,7 @@ function PresalePageInner() {
     };
 
     getETHPriceAndGas();
-  }, [selectedToken, actualChainId, isConnected, isOnETHMainnet]);
+  }, [selectedToken]);
 
   // Save user to database when wallet is connected to correct network
   useEffect(() => {
@@ -909,11 +894,11 @@ function PresalePageInner() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
           
           <div className="text-center mb-6">
-            <h1 className="text-2xl md:text-3xl font-medium text-white mb-1">
+          <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-2">
               BBLP Token Presale
             </h1>
-            <p className="text-gray-500 text-sm">
-              Purchase at $0.10 per token
+            <p className="text-gray-400 text-sm md:text-base">
+            Purchase at $0.10 per token
             </p>
           </div>
 
