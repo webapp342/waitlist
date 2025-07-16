@@ -384,13 +384,16 @@ function PresalePageInner() {
         return '0';
       }
       
+      // ETH fiyatı yüklenene kadar bekle
+      if (ethPriceUSD <= 0) {
+        return '0';
+      }
+      
       // Direct calculation using ETH price
       const ethValue = Number(ethers.formatEther(ethAmountWei));
       if (ethValue <= 0) return '0';
       
-      // ETH price yoksa default kullan
-      const currentEthPrice = ethPriceUSD > 0 ? ethPriceUSD : 3500;
-      const bblpAmount = (ethValue * currentEthPrice) / 0.10;
+      const bblpAmount = (ethValue * ethPriceUSD) / 0.10;
       return bblpAmount.toFixed(18);
     } catch (err) {
       console.error('Error calculating ETH token amount:', err);
@@ -615,17 +618,20 @@ function PresalePageInner() {
   useEffect(() => {
     const updateBBLPtoETHCalculation = async () => {
       if (selectedToken === TOKEN_IDS.eth && bblpAmount && parseFloat(bblpAmount) > 0 && inputMode === 'BBLP') {
+        // ETH fiyatı yüklenene kadar bekle
+        if (ethPriceUSD <= 0) {
+          setEthAmount('');
+          return;
+        }
+        
         try {
           // Direct calculation using ETH price
           const bblpValueUSD = parseFloat(bblpAmount) * 0.10;
-          const ethAmount = bblpValueUSD / (ethPriceUSD > 0 ? ethPriceUSD : 3500);
+          const ethAmount = bblpValueUSD / ethPriceUSD;
           setEthAmount(ethAmount.toFixed(6));
         } catch (error) {
           console.error('Error calculating ETH from BBLP:', error);
-          // Final fallback
-          const bblpValueUSD = parseFloat(bblpAmount) * 0.10;
-          const ethAmount = bblpValueUSD / 3500; 
-          setEthAmount(ethAmount.toFixed(6));
+          setEthAmount('');
         }
       }
     };
@@ -639,17 +645,20 @@ function PresalePageInner() {
   useEffect(() => {
     const updateETHtoBBLPCalculation = async () => {
       if (selectedToken === TOKEN_IDS.eth && ethAmount && parseFloat(ethAmount) > 0 && inputMode === 'ETH') {
+        // ETH fiyatı yüklenene kadar bekle
+        if (ethPriceUSD <= 0) {
+          setBblpAmount('');
+          return;
+        }
+        
         try {
           // Direct calculation using ETH price
-          const bblpValueUSD = parseFloat(ethAmount) * (ethPriceUSD > 0 ? ethPriceUSD : 3500);
+          const bblpValueUSD = parseFloat(ethAmount) * ethPriceUSD;
           const bblpAmount = bblpValueUSD / 0.10; // $0.10 per BBLP
           setBblpAmount(bblpAmount.toFixed(4));
         } catch (error) {
           console.error('Error calculating BBLP from ETH:', error);
-          // Fallback calculation with state ETH price
-          const bblpValueUSD = parseFloat(ethAmount) * 3500;
-          const bblpAmount = bblpValueUSD / 0.10; // $0.10 per BBLP
-          setBblpAmount(bblpAmount.toFixed(4));
+          setBblpAmount('');
         }
       }
     };
@@ -708,13 +717,7 @@ function PresalePageInner() {
           }
         } catch (calcError) {
           console.error('Error calculating BBLP amount:', calcError);
-          // Fallback calculation
-          if (maxEthAmount > 0) {
-            const bblpAmount = (maxEthAmount * ethPriceUSD) / 0.10;
-            setBblpAmount(bblpAmount.toFixed(4));
-          } else {
-            setBblpAmount('0');
-          }
+          setBblpAmount('0');
         }
         
       } else if (selectedTokenDetails.name === 'BNB') {
@@ -1163,7 +1166,11 @@ function PresalePageInner() {
               {selectedTokenDetails && (
                 <div className="mt-2 flex items-center justify-center text-xs text-gray-400">
                   {selectedTokenDetails.name === 'ETH' ? (
-                    <span>1 ETH = ${(ethPriceUSD > 0 ? ethPriceUSD : 3500).toFixed(0)} = {((ethPriceUSD > 0 ? ethPriceUSD : 3500) / 0.10).toFixed(0)} BBLP</span>
+                    ethPriceUSD > 0 ? (
+                      <span>1 ETH = ${ethPriceUSD.toFixed(0)} = {(ethPriceUSD / 0.10).toFixed(0)} BBLP</span>
+                    ) : (
+                      <span>Loading price...</span>
+                    )
                   ) : bnbPriceUSD > 0 ? (
                     <span>1 BNB = ${bnbPriceUSD.toFixed(0)} = {(1 / bblpPriceInBNB).toFixed(0)} BBLP</span>
                   ) : (
@@ -1306,7 +1313,12 @@ function PresalePageInner() {
                   </div>
                 </div>
                 <div className="text-2xl font-bold text-white">{parseFloat(ethAmount || '0').toFixed(6)} ETH</div>
-                <div className="text-sm text-gray-500">${(parseFloat(ethAmount || '0') * (ethPriceUSD > 0 ? ethPriceUSD : 3500)).toFixed(2)} USD</div>
+                <div className="text-sm text-gray-500">
+                  {ethPriceUSD > 0 ? 
+                    `$${(parseFloat(ethAmount || '0') * ethPriceUSD).toFixed(2)} USD` : 
+                    'Calculating...'
+                  }
+                </div>
               </div>
 
               <div className="flex items-center justify-center">

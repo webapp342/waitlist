@@ -20,8 +20,8 @@ export const fetchCryptoPrices = async (): Promise<CryptoPrices> => {
     const data = await response.json();
     
     const prices: CryptoPrices = {
-      bnb: data.binancecoin?.usd || 700,  // Fallback to reasonable defaults
-      eth: data.ethereum?.usd || 3500
+      bnb: data.binancecoin?.usd || 0,  // No fallback - let UI handle loading state
+      eth: data.ethereum?.usd || 0
     };
     
     // Update cache
@@ -32,15 +32,15 @@ export const fetchCryptoPrices = async (): Promise<CryptoPrices> => {
   } catch (error) {
     console.error('Error fetching crypto prices from CoinGecko:', error);
     
-    // Return fallback prices if API fails
+    // Return zero prices if API fails - let UI handle loading state
     return {
-      bnb: 700,
-      eth: 3500
+      bnb: 0,
+      eth: 0
     };
   }
 };
 
 // Get cached prices without fetching (useful for immediate display)
 export const getCachedPrices = (): CryptoPrices => {
-  return cachedPrices || { bnb: 700, eth: 3500 };
+  return cachedPrices || { bnb: 0, eth: 0 };
 }; 
