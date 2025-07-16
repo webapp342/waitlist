@@ -242,7 +242,7 @@ function BridgeContent() {
               <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-3 md:p-6 rounded-xl md:rounded-2xl border border-zinc-800 shadow-xl">
                 <div className="flex items-center gap-2 mb-2">
                   <Image src="/eth.png" alt="Ethereum" width={18} height={18} className="rounded-full" />
-                  <p className="text-xs text-gray-500">Ethereum Mainnet</p>
+                  <p className="text-xs text-gray-500">ETH Mainnet</p>
                 </div>
                 {balanceLoading ? (
                   <div className="flex items-center gap-2 mb-1">
