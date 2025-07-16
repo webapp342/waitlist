@@ -610,14 +610,14 @@ function PresalePageInner() {
         
         console.log('Calculated BBLP Amount:', tokenAmountFormatted);
         
-      } else if (selectedTokenDetails.name === 'BNB' && userData?.bnbBalance && window.ethereum && isOnBSCMainnet) {
+      } else if (selectedTokenDetails.name === 'BNB' && window.ethereum && isOnBSCMainnet && address) {
         // Get BNB balance for BSC Mainnet
         const provider = new ethers.BrowserProvider(window.ethereum);
         const signer = await provider.getSigner();
         const address = await signer.getAddress();
         const balance = await provider.getBalance(address);
         const bnbBalance = parseFloat(ethers.formatEther(balance));
-
+        setBnbWalletBalance(bnbBalance); // update state as well
         // 0.001 BNB'yi gas için ayır, kalanını inputa yaz
         const gasReserve = 0.001;
         const maxBnbAmount = Math.max(0, bnbBalance - gasReserve);
@@ -705,8 +705,8 @@ function PresalePageInner() {
 
   // Helper: get current wallet balance for selected token
   const getCurrentTokenBalance = () => {
-    if (selectedToken === TOKEN_IDS.bnb && userData?.bnbBalance) {
-      return parseFloat(userData.bnbBalance);
+    if (selectedToken === TOKEN_IDS.bnb) {
+      return bnbWalletBalance;
     }
     if (selectedToken === TOKEN_IDS.eth && typeof window !== 'undefined' && window.ethereum && isOnETHMainnet) {
       // ETH balance is not in userData, so we need to get it from provider
@@ -728,6 +728,19 @@ function PresalePageInner() {
     };
     fetchEthBalance();
   }, [selectedToken, isOnETHMainnet, address]);
+
+  // Track BNB wallet balance for BNB mode
+  const [bnbWalletBalance, setBnbWalletBalance] = useState(0);
+  useEffect(() => {
+    const fetchBnbBalance = async () => {
+      if (selectedToken === TOKEN_IDS.bnb && window.ethereum && isOnBSCMainnet && address) {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const bal = await provider.getBalance(address);
+        setBnbWalletBalance(parseFloat(ethers.formatEther(bal)));
+      }
+    };
+    fetchBnbBalance();
+  }, [selectedToken, isOnBSCMainnet, address]);
 
   // Check insufficient balance
   const isInsufficientBalance = () => {
