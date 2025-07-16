@@ -393,11 +393,11 @@ function DashboardContent() {
                 </p>
               </div>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button
                 onClick={() => switchChain({ chainId: BSC_MAINNET_CHAIN_ID })}
                 disabled={isSwitchingChain}
-                className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-semibold shadow-lg h-10"
+                className="w-full sm:w-auto flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-semibold shadow-lg h-10"
               >
                 {isSwitchingChain ? (
                   <div className="flex items-center gap-2">
@@ -411,10 +411,10 @@ function DashboardContent() {
                   </div>
                 )}
               </Button>
-                              <Button
+              <Button
                 onClick={() => switchChain({ chainId: 1 })}
                 disabled={isSwitchingChain}
-                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold shadow-lg h-10"
+                className="w-full sm:w-auto flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold shadow-lg h-10"
               >
                 {isSwitchingChain ? (
                   <div className="flex items-center gap-2">
@@ -470,33 +470,8 @@ function DashboardContent() {
             
             {/* Action Buttons - Enhanced with Psychological Triggers */}
             <div className="flex items-center gap-3 mt-4 -mb-5 lg:mt-0 animate-slide-in">
-
-           
-
-
-        
-
-
-              {!isOnSupportedNetwork ? (
-                <Button
-                  onClick={handleSwitchChain}
-                  disabled={isSwitchingChain}
-                  size="sm"
-                  className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg transition-all duration-200"
-                >
-                  {isSwitchingChain ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Switching...
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <Network className="w-4 h-4" />
-                      Switch Network
-                    </div>
-                  )}
-                </Button>
-              ) : (
+              {/* Remove Switch Network button, only show other action buttons */}
+              {isOnSupportedNetwork && (
                 <>
                   <Link href="/swap">
                     <Button
@@ -533,11 +508,6 @@ function DashboardContent() {
                     </Link>
                 </>
               )}
-
-                
-            
-
-             
             </div>
           </div>
 
