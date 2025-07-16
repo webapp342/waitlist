@@ -13,7 +13,7 @@ declare global {
 }
 
 import React, { useState, useEffect, Suspense, useCallback } from 'react';
-import { useAccount, useSwitchChain } from 'wagmi';
+import { useAccount, useSwitchChain, useBalance } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Particles from "@/components/ui/particles";
@@ -300,40 +300,15 @@ function PresalePageInner() {
   const isOnBSCMainnet = actualChainId === BSC_MAINNET_CHAIN_ID;
   const isOnETHMainnet = actualChainId === ETH_MAINNET_CHAIN_ID;
 
-  // Helper function to get wallet provider
-  const getWalletProvider = () => {
-    if (typeof window === 'undefined') return null;
-    
-    // Try different provider methods
-    if (window.ethereum) return window.ethereum;
-    if (window.web3?.currentProvider) return window.web3.currentProvider;
-    if (window.trustwallet) return window.trustwallet;
-    if ((window as any).coinbaseWalletExtension) return (window as any).coinbaseWalletExtension;
-    
-    // Check for injected providers
-    if (window.providers?.length) {
-      return window.providers[0];
-    }
-    
-    return null;
-  };
-
-  // Helper function to wait for provider
-  const waitForProvider = async (maxAttempts = 10) => {
-    for (let i = 0; i < maxAttempts; i++) {
-      const provider = getWalletProvider();
-      if (provider) return provider;
-      await new Promise(resolve => setTimeout(resolve, 500));
-    }
-    return null;
-  };
+  // Use wagmi hooks for balances - like dashboard
+  const { data: ethBalance } = useBalance(address ? { address, chainId: 1 } : { address: undefined });
+  const { data: bnbBalance } = useBalance(address ? { address, chainId: 56 } : { address: undefined });
 
   // Get ETH price and estimate gas when ETH is selected
   useEffect(() => {
     const getETHPriceAndGas = async () => {
       console.log('ETH Price Fetch - Starting', {
         selectedToken,
-        hasProvider: !!getWalletProvider(),
         isOnETHMainnet,
         chainId: chain?.id,
         actualChainId
@@ -341,55 +316,39 @@ function PresalePageInner() {
       
       if (selectedToken === TOKEN_IDS.eth) {
         try {
-          // Wait for provider to be available
-          const provider = await waitForProvider();
+          // For ETH price, we can use a simple fetch or default value
+          // Since contract calls in mobile are problematic
+          setEthPriceUSD(3500); // Default fallback for now
           
-          if (!provider) {
-            console.error('No wallet provider found after waiting');
-            setEthPriceUSD(3500); // Fallback
-            return;
-          }
-          
-          // Network kontrolünü daha esnek yap
-          const isEthNetwork = actualChainId === ETH_MAINNET_CHAIN_ID || !actualChainId;
-          
-          if (!isEthNetwork && isConnected) {
-            console.log('Not on ETH network, using fallback price');
-            setEthPriceUSD(3500);
-            return;
-          }
-          
-          // Provider'ın hazır olduğundan emin ol
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          const ethersProvider = new ethers.BrowserProvider(provider);
-          
-          try {
-            const presaleContract = new ethers.Contract(
-              ETH_PRESALE_CONFIG.PRESALE_CONTRACT,
-              ETH_PRESALE_ABI,
-              ethersProvider
-            );
-            
-            // Get ETH price
-            const ethPriceFromContract = await presaleContract.getLatestETHPrice(); // 8 decimals
-            const ethPriceFormatted = Number(ethPriceFromContract) / 1e8; // Convert to USD
-            console.log('ETH Price from contract:', ethPriceFormatted);
-            setEthPriceUSD(ethPriceFormatted);
-          } catch (priceError) {
-            console.error('Error getting ETH price from contract:', priceError);
-            // Fallback ETH price
-            setEthPriceUSD(3500);
+          // Try to get from contract if possible
+          if (typeof window !== 'undefined' && window.ethereum && (isOnETHMainnet || !isConnected)) {
+            try {
+              const provider = new ethers.BrowserProvider(window.ethereum);
+              const presaleContract = new ethers.Contract(
+                ETH_PRESALE_CONFIG.PRESALE_CONTRACT,
+                ETH_PRESALE_ABI,
+                provider
+              );
+              
+              const ethPriceFromContract = await presaleContract.getLatestETHPrice();
+              const ethPriceFormatted = Number(ethPriceFromContract) / 1e8;
+              console.log('ETH Price from contract:', ethPriceFormatted);
+              if (ethPriceFormatted > 0) {
+                setEthPriceUSD(ethPriceFormatted);
+              }
+            } catch (error) {
+              console.log('Could not get ETH price from contract, using fallback');
+            }
           }
         } catch (error) {
-          console.error('Provider error in ETH price/gas fetch:', error);
-          setEthPriceUSD(3500); // Fallback
+          console.error('Error in ETH price fetch:', error);
+          setEthPriceUSD(3500);
         }
       }
     };
 
     getETHPriceAndGas();
-  }, [selectedToken, actualChainId, isConnected, chain?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [selectedToken, actualChainId, isConnected, isOnETHMainnet]);
 
   // Save user to database when wallet is connected to correct network
   useEffect(() => {
@@ -439,59 +398,19 @@ function PresalePageInner() {
         return '0';
       }
       
-      // Wait for provider to be available
-      const provider = await waitForProvider();
+      // Direct calculation using ETH price
+      const ethValue = Number(ethers.formatEther(ethAmountWei));
+      if (ethValue <= 0) return '0';
       
-      if (!provider) {
-        console.error('No provider for ETH calculation, using fallback');
-        // Fallback hesaplama
-        const ethValue = Number(ethers.formatEther(ethAmountWei));
-        if (ethValue <= 0) return '0';
-        const bblpAmount = (ethValue * ethPriceUSD) / 0.10;
-        return bblpAmount.toFixed(18);
-      }
-      
-      // Network kontrolünü daha esnek yap
-      const isEthNetwork = actualChainId === ETH_MAINNET_CHAIN_ID || !actualChainId;
-      
-      if (!isEthNetwork && isConnected) {
-        console.log('Not on ETH network, using fallback calculation');
-        // Fallback hesaplama
-        const ethValue = Number(ethers.formatEther(ethAmountWei));
-        if (ethValue <= 0) return '0';
-        const bblpAmount = (ethValue * ethPriceUSD) / 0.10;
-        return bblpAmount.toFixed(18);
-      }
-      
-      // Provider'ın hazır olduğundan emin ol
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      const ethersProvider = new ethers.BrowserProvider(provider);
-      const presaleContract = new ethers.Contract(
-        ETH_PRESALE_CONFIG.PRESALE_CONTRACT,
-        ETH_PRESALE_ABI,
-        ethersProvider
-      );
-      
-      console.log('Calling calculateTokenAmount with:', ethAmountWei);
-      const tokenAmount = await presaleContract.calculateTokenAmount(ethAmountWei);
-      const formatted = ethers.formatEther(tokenAmount);
-      console.log('Token amount result:', formatted);
-      return formatted;
+      // ETH price yoksa default kullan
+      const currentEthPrice = ethPriceUSD > 0 ? ethPriceUSD : 3500;
+      const bblpAmount = (ethValue * currentEthPrice) / 0.10;
+      return bblpAmount.toFixed(18);
     } catch (err) {
       console.error('Error calculating ETH token amount:', err);
-      // Fallback hesaplama: ETH * ETH_price_USD / 0.10
-      try {
-        const ethValue = Number(ethers.formatEther(ethAmountWei));
-        if (ethValue <= 0) return '0';
-        const bblpAmount = (ethValue * ethPriceUSD) / 0.10;
-        return bblpAmount.toFixed(18);
-      } catch (fallbackErr) {
-        console.error('Fallback calculation also failed:', fallbackErr);
-        return '0';
-      }
+      return '0';
     }
-  }, [actualChainId, isConnected, ethPriceUSD, waitForProvider]);
+  }, [ethPriceUSD]);
 
   const buyTokensWithETH = async () => {
     if (!ethAmount || parseFloat(ethAmount) <= 0) {
@@ -518,10 +437,8 @@ function PresalePageInner() {
       setIsEthBuying(true);
       setStatusMessage('Initializing ETH purchase...');
       
-      // Wait for provider to be available
-      const provider = await waitForProvider();
-      
-      if (!provider) {
+      // Check if ethereum provider exists
+      if (!window.ethereum) {
         setError('Wallet provider not found');
         setIsEthBuying(false);
         return;
@@ -530,7 +447,7 @@ function PresalePageInner() {
       // Provider'ın hazır olduğundan emin ol
       await new Promise(resolve => setTimeout(resolve, 500));
       
-      const ethersProvider = new ethers.BrowserProvider(provider);
+      const ethersProvider = new ethers.BrowserProvider(window.ethereum);
       const signer = await ethersProvider.getSigner();
       const presaleContract = new ethers.Contract(
         ETH_PRESALE_CONFIG.PRESALE_CONTRACT,
@@ -714,47 +631,15 @@ function PresalePageInner() {
     const updateBBLPtoETHCalculation = async () => {
       if (selectedToken === TOKEN_IDS.eth && bblpAmount && parseFloat(bblpAmount) > 0 && inputMode === 'BBLP') {
         try {
-          // Wait for provider to be available
-          const provider = await waitForProvider();
-          const isEthNetwork = actualChainId === ETH_MAINNET_CHAIN_ID || !actualChainId;
-          
-          if (provider && (isEthNetwork || !isConnected)) {
-            // Provider'ın hazır olduğundan emin ol
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            const ethersProvider = new ethers.BrowserProvider(provider);
-            
-            try {
-              const presaleContract = new ethers.Contract(
-                ETH_PRESALE_CONFIG.PRESALE_CONTRACT,
-                ETH_PRESALE_ABI,
-                ethersProvider
-              );
-              
-              // Use contract's calculateETHAmount function for accurate calculation
-              const tokenAmountWei = ethers.parseEther(bblpAmount);
-              const ethAmountWei = await presaleContract.calculateETHAmount(tokenAmountWei);
-              const ethAmount = ethers.formatEther(ethAmountWei);
-              
-              setEthAmount(ethAmount);
-            } catch (contractError) {
-              console.error('Contract calculation failed:', contractError);
-              // Fallback calculation
-              const bblpValueUSD = parseFloat(bblpAmount) * 0.10;
-              const ethAmount = bblpValueUSD / ethPriceUSD;
-              setEthAmount(ethAmount.toFixed(6));
-            }
-          } else {
-            // Fallback calculation when not on ETH mainnet
-            const bblpValueUSD = parseFloat(bblpAmount) * 0.10;
-            const ethAmount = bblpValueUSD / ethPriceUSD;
-            setEthAmount(ethAmount.toFixed(6));
-          }
+          // Direct calculation using ETH price
+          const bblpValueUSD = parseFloat(bblpAmount) * 0.10;
+          const ethAmount = bblpValueUSD / (ethPriceUSD > 0 ? ethPriceUSD : 3500);
+          setEthAmount(ethAmount.toFixed(6));
         } catch (error) {
           console.error('Error calculating ETH from BBLP:', error);
           // Final fallback
           const bblpValueUSD = parseFloat(bblpAmount) * 0.10;
-          const ethAmount = bblpValueUSD / ethPriceUSD; 
+          const ethAmount = bblpValueUSD / 3500; 
           setEthAmount(ethAmount.toFixed(6));
         }
       }
@@ -763,53 +648,21 @@ function PresalePageInner() {
     if (selectedToken === TOKEN_IDS.eth) {
       updateBBLPtoETHCalculation();
     }
-  }, [bblpAmount, selectedToken, actualChainId, isConnected, inputMode, ethPriceUSD, waitForProvider]);
+  }, [bblpAmount, selectedToken, inputMode, ethPriceUSD]);
 
   // ETH: Update BBLP when ETH changes
   useEffect(() => {
     const updateETHtoBBLPCalculation = async () => {
       if (selectedToken === TOKEN_IDS.eth && ethAmount && parseFloat(ethAmount) > 0 && inputMode === 'ETH') {
         try {
-          // Wait for provider to be available
-          const provider = await waitForProvider();
-          const isEthNetwork = actualChainId === ETH_MAINNET_CHAIN_ID || !actualChainId;
-          
-          if (provider && (isEthNetwork || !isConnected)) {
-            // Provider'ın hazır olduğundan emin ol
-            await new Promise(resolve => setTimeout(resolve, 100));
-            
-            const ethersProvider = new ethers.BrowserProvider(provider);
-            
-            try {
-              const presaleContract = new ethers.Contract(
-                ETH_PRESALE_CONFIG.PRESALE_CONTRACT,
-                ETH_PRESALE_ABI,
-                ethersProvider
-              );
-              
-              // Use contract's calculateTokenAmount function
-              const ethAmountWei = ethers.parseEther(ethAmount);
-              const tokenAmount = await presaleContract.calculateTokenAmount(ethAmountWei);
-              const tokenAmountFormatted = ethers.formatEther(tokenAmount);
-              
-              setBblpAmount(tokenAmountFormatted);
-            } catch (contractError) {
-              console.error('Contract calculation failed:', contractError);
-              // Fallback calculation with state ETH price
-              const bblpValueUSD = parseFloat(ethAmount) * ethPriceUSD;
-              const bblpAmount = bblpValueUSD / 0.10; // $0.10 per BBLP
-              setBblpAmount(bblpAmount.toFixed(4));
-            }
-          } else {
-            // Fallback calculation when not on ETH mainnet
-            const bblpValueUSD = parseFloat(ethAmount) * ethPriceUSD;
-            const bblpAmount = bblpValueUSD / 0.10; // $0.10 per BBLP
-            setBblpAmount(bblpAmount.toFixed(4));
-          }
+          // Direct calculation using ETH price
+          const bblpValueUSD = parseFloat(ethAmount) * (ethPriceUSD > 0 ? ethPriceUSD : 3500);
+          const bblpAmount = bblpValueUSD / 0.10; // $0.10 per BBLP
+          setBblpAmount(bblpAmount.toFixed(4));
         } catch (error) {
           console.error('Error calculating BBLP from ETH:', error);
           // Fallback calculation with state ETH price
-          const bblpValueUSD = parseFloat(ethAmount) * ethPriceUSD;
+          const bblpValueUSD = parseFloat(ethAmount) * 3500;
           const bblpAmount = bblpValueUSD / 0.10; // $0.10 per BBLP
           setBblpAmount(bblpAmount.toFixed(4));
         }
@@ -819,7 +672,7 @@ function PresalePageInner() {
     if (selectedToken === TOKEN_IDS.eth) {
       updateETHtoBBLPCalculation();
     }
-  }, [ethAmount, selectedToken, actualChainId, isConnected, inputMode, ethPriceUSD, waitForProvider]);
+  }, [ethAmount, selectedToken, inputMode, ethPriceUSD]);
 
 
 
@@ -836,36 +689,14 @@ function PresalePageInner() {
           return;
         }
         
-        // Wait for provider to be available
-        const provider = await waitForProvider();
+        // Use balance from useBalance hook
+        const ethBalanceValue = ethBalance ? parseFloat(ethBalance.formatted) : 0;
         
-        if (!provider) {
-          console.error('No wallet provider found');
-          setError('Wallet provider not found');
-          return;
-        }
-        
-        // Network kontrolünü daha esnek yap
-        const isEthNetwork = actualChainId === ETH_MAINNET_CHAIN_ID || !actualChainId;
-        
-        if (!isEthNetwork && isConnected) {
-          setError('Please switch to Ethereum Mainnet');
-          return;
-        }
-        
-        // Provider'ın hazır olduğundan emin ol
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Get ETH balance for Ethereum Mainnet
-        const ethersProvider = new ethers.BrowserProvider(provider);
-        const balance = await ethersProvider.getBalance(address);
-        const ethBalance = ethers.formatEther(balance);
-        
-        console.log('Current ETH Balance:', ethBalance);
+        console.log('Current ETH Balance:', ethBalanceValue);
         console.log('Current ETH Price USD:', ethPriceUSD);
         
         // Balance kontrolü
-        if (parseFloat(ethBalance) <= 0) {
+        if (ethBalanceValue <= 0) {
           setError('No ETH balance found in wallet');
           setEthAmount('0');
           setBblpAmount('0');
@@ -873,7 +704,7 @@ function PresalePageInner() {
         }
         
         // Kullanıcının tüm bakiyesini kullan (gas rezerv yok)
-        const maxEthAmount = parseFloat(ethBalance);
+        const maxEthAmount = ethBalanceValue;
         
         console.log('Max ETH Amount:', maxEthAmount, 'ETH');
         
@@ -902,34 +733,11 @@ function PresalePageInner() {
         }
         
       } else if (selectedTokenDetails.name === 'BNB') {
-        // Wait for provider to be available
-        const provider = await waitForProvider();
-        
-        if (!provider) {
-          console.error('No wallet provider found');
-          setError('Wallet provider not found');
-          return;
-        }
-        
-        // Network kontrolünü daha esnek yap
-        const isBscNetwork = actualChainId === BSC_MAINNET_CHAIN_ID || !actualChainId;
-        
-        if (!isBscNetwork && isConnected) {
-          setError('Please switch to BSC Mainnet');
-          return;
-        }
-        
-        // Provider'ın hazır olduğundan emin ol
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Get BNB balance for BSC Mainnet
-        const ethersProvider = new ethers.BrowserProvider(provider);
-        const balance = await ethersProvider.getBalance(address);
-        const bnbBalance = parseFloat(ethers.formatEther(balance));
-        setBnbWalletBalance(bnbBalance);
+        // Use balance from useBalance hook
+        const bnbBalanceValue = bnbBalance ? parseFloat(bnbBalance.formatted) : 0;
         
         // Kullanıcının tüm bakiyesini kullan (gas rezerv yok)
-        const maxBnbAmount = bnbBalance;
+        const maxBnbAmount = bnbBalanceValue;
         setInputMode('BNB');
         setBnbAmount(maxBnbAmount.toFixed(6));
       }
@@ -998,10 +806,8 @@ function PresalePageInner() {
       setIsBuying(true);
       setStatusMessage('Initializing BNB purchase...');
       
-      // Wait for provider to be available
-      const provider = await waitForProvider();
-      
-      if (!provider) {
+      // Check if ethereum provider exists
+      if (!window.ethereum) {
         setError('Wallet provider not found');
         setIsBuying(false);
         return;
@@ -1020,12 +826,7 @@ function PresalePageInner() {
       setBnbAmount('');
       setBblpAmount('');
       
-      // Bakiyeleri güncelle
-      if (provider && address) {
-        const ethersProvider = new ethers.BrowserProvider(provider);
-        const balance = await ethersProvider.getBalance(address);
-        setBnbWalletBalance(parseFloat(ethers.formatEther(balance)));
-      }
+      // Balance will be automatically refreshed by useBalance hook
     } catch (err: any) {
       console.error('Purchase failed:', err);
       if (err.message?.includes('User rejected') || err.code === 4001) {
@@ -1053,115 +854,13 @@ function PresalePageInner() {
   // Helper: get current wallet balance for selected token
   const getCurrentTokenBalance = () => {
     if (selectedToken === TOKEN_IDS.bnb) {
-      return bnbWalletBalance;
+      return bnbBalance ? parseFloat(bnbBalance.formatted) : 0;
     }
-    if (selectedToken === TOKEN_IDS.eth && typeof window !== 'undefined' && window.ethereum && isOnETHMainnet) {
-      // ETH balance is not in userData, so we need to get it from provider
-      // But for button logic, we can use ethAmount and a state variable
-      return ethWalletBalance;
+    if (selectedToken === TOKEN_IDS.eth) {
+      return ethBalance ? parseFloat(ethBalance.formatted) : 0;
     }
     return 0;
   };
-
-  // Track ETH wallet balance for ETH mode
-  const [ethWalletBalance, setEthWalletBalance] = useState(0);
-  useEffect(() => {
-    const fetchEthBalance = async () => {
-      console.log('ETH Balance Fetch - Starting', {
-        selectedToken,
-        hasProvider: !!getWalletProvider(),
-        isOnETHMainnet,
-        address,
-        chainId: chain?.id,
-        actualChainId
-      });
-      
-      if (selectedToken === TOKEN_IDS.eth && address) {
-        try {
-          // Wait for provider to be available
-          const provider = await waitForProvider();
-          
-          if (!provider) {
-            console.error('No wallet provider found for ETH balance');
-            setEthWalletBalance(0);
-            return;
-          }
-          
-          // Network kontrolünü daha esnek yap
-          const isEthNetwork = actualChainId === ETH_MAINNET_CHAIN_ID || !actualChainId;
-          
-          if (!isEthNetwork && isConnected) {
-            console.log('Not on ETH network for balance');
-            setEthWalletBalance(0);
-            return;
-          }
-          
-          // Provider'ın hazır olduğundan emin ol
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          const ethersProvider = new ethers.BrowserProvider(provider);
-          console.log('Fetching ETH balance for address:', address);
-          const bal = await ethersProvider.getBalance(address);
-          const formattedBalance = parseFloat(ethers.formatEther(bal));
-          console.log('ETH Balance (wei):', bal.toString());
-          console.log('ETH Balance (formatted):', formattedBalance);
-          setEthWalletBalance(formattedBalance);
-        } catch (error) {
-          console.error('Error fetching ETH balance:', error);
-          setEthWalletBalance(0);
-        }
-      }
-    };
-    fetchEthBalance();
-  }, [selectedToken, actualChainId, address, isConnected, getWalletProvider, waitForProvider]);
-
-  // Track BNB wallet balance for BNB mode
-  const [bnbWalletBalance, setBnbWalletBalance] = useState(0);
-  useEffect(() => {
-    const fetchBnbBalance = async () => {
-      console.log('BNB Balance Fetch - Starting', {
-        selectedToken,
-        hasProvider: !!getWalletProvider(),
-        isOnBSCMainnet,
-        address,
-        chainId: chain?.id,
-        actualChainId
-      });
-      
-      if (selectedToken === TOKEN_IDS.bnb && address) {
-        try {
-          // Wait for provider to be available
-          const provider = await waitForProvider();
-          
-          if (!provider) {
-            console.error('No wallet provider found for BNB balance');
-            setBnbWalletBalance(0);
-            return;
-          }
-          
-          // Network kontrolünü daha esnek yap
-          const isBscNetwork = actualChainId === BSC_MAINNET_CHAIN_ID || !actualChainId;
-          
-          if (!isBscNetwork && isConnected) {
-            console.log('Not on BSC network for balance');
-            setBnbWalletBalance(0);
-            return;
-          }
-          
-          // Provider'ın hazır olduğundan emin ol
-          await new Promise(resolve => setTimeout(resolve, 500));
-          
-          const ethersProvider = new ethers.BrowserProvider(provider);
-          const bal = await ethersProvider.getBalance(address);
-          setBnbWalletBalance(parseFloat(ethers.formatEther(bal)));
-        } catch (error) {
-          console.error('Error fetching BNB balance:', error);
-          setBnbWalletBalance(0);
-        }
-      }
-    };
-    fetchBnbBalance();
-  }, [selectedToken, actualChainId, address, isConnected, getWalletProvider, waitForProvider]);
 
   // Check insufficient balance
   const isInsufficientBalance = () => {
@@ -1348,8 +1047,8 @@ function PresalePageInner() {
                   {isConnected && (
                     <span className="text-gray-500">
                       {selectedToken === TOKEN_IDS.eth 
-                        ? `${ethWalletBalance.toFixed(4)} ETH` 
-                        : `${bnbWalletBalance.toFixed(4)} BNB`}
+                        ? `${ethBalance ? parseFloat(ethBalance.formatted).toFixed(4) : '0.0000'} ETH` 
+                        : `${bnbBalance ? parseFloat(bnbBalance.formatted).toFixed(4) : '0.0000'} BNB`}
                     </span>
                   )}
                   <button
