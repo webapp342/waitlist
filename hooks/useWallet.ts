@@ -22,7 +22,7 @@ declare global {
   }
 }
 
-export const useWallet = () => {
+export const useWallet = (chainId?: number) => {
   const { address, isConnected } = useAccount();
   const { data: walletClient } = useWalletClient();
   
@@ -145,23 +145,55 @@ export const useWallet = () => {
       const formattedBNBBalance = ethers.formatEther(bnbBalance);
       console.log('💰 BNB balance:', formattedBNBBalance);
 
-      // Get BNB fee information
-      console.log('💰 Getting BNB fee info...');
-      const feeInfo = await stakingContract.getBNBFeeInfo();
-      const bnbFeeInfo: BNBFeeInfo = {
-        stakingFeeBNB: feeInfo[0].toString(),
-        unstakingFeeBNB: feeInfo[1].toString(),
-        feeRecipient: feeInfo[2],
-        totalBNBFeesCollected: feeInfo[3].toString(),
-        maxFeeBNB: feeInfo[4].toString()
-      };
-      console.log('💰 BNB fee info:', bnbFeeInfo);
+      // Get fee information - BNB for BSC, ETH for Ethereum
+      let bnbFeeInfo: BNBFeeInfo | undefined;
+      if (chainId === 56) { // BSC Mainnet - BNB fees
+        try {
+          console.log('💰 Getting BNB fee info...');
+          const feeInfo = await stakingContract.getBNBFeeInfo();
+          bnbFeeInfo = {
+            stakingFeeBNB: feeInfo[0].toString(),
+            unstakingFeeBNB: feeInfo[1].toString(),
+            feeRecipient: feeInfo[2],
+            totalBNBFeesCollected: feeInfo[3].toString(),
+            maxFeeBNB: feeInfo[4].toString()
+          };
+          console.log('💰 BNB fee info:', bnbFeeInfo);
+        } catch (error) {
+          console.log('⚠️ BNB fee info not available on this network');
+          bnbFeeInfo = undefined;
+        }
+      } else if (chainId === 1) { // Ethereum Mainnet - ETH fees
+        try {
+          console.log('💰 Getting ETH fee info...');
+          const feeInfo = await stakingContract.getETHFeeInfo();
+          bnbFeeInfo = {
+            stakingFeeBNB: feeInfo[0].toString(), // Actually ETH fee
+            unstakingFeeBNB: feeInfo[1].toString(), // Actually ETH fee
+            feeRecipient: feeInfo[2],
+            totalBNBFeesCollected: feeInfo[3].toString(), // Actually ETH fees
+            maxFeeBNB: feeInfo[4].toString() // Actually ETH fee
+          };
+          console.log('💰 ETH fee info:', bnbFeeInfo);
+        } catch (error) {
+          console.log('⚠️ ETH fee info not available on this network');
+          bnbFeeInfo = undefined;
+        }
+      } else {
+        console.log('💰 Skipping fee info for unknown network');
+      }
 
-      // Get minimum staking period
-      console.log('⏰ Getting minimum staking period...');
-      const minPeriod = await stakingContract.minimumStakingPeriod();
-      const minimumStakingPeriod = minPeriod.toString();
-      console.log('⏰ Minimum staking period:', minimumStakingPeriod, 'seconds');
+      // Get minimum staking period - Handle different contract versions
+      let minimumStakingPeriod = '0';
+      try {
+        console.log('⏰ Getting minimum staking period...');
+        const minPeriod = await stakingContract.minimumStakingPeriod();
+        minimumStakingPeriod = minPeriod.toString();
+        console.log('⏰ Minimum staking period:', minimumStakingPeriod, 'seconds');
+      } catch (error) {
+        console.log('⚠️ Minimum staking period not available, using default: 0');
+        minimumStakingPeriod = '0';
+      }
 
       // Get token balance
       console.log('💰 Getting token balance...');
@@ -173,24 +205,47 @@ export const useWallet = () => {
 
       // Get staking history with REAL contract structure
       console.log('📊 Getting staking history...');
-      const stakingHistory = await stakingContract.getUserStakingHistory(userAddress);
-      console.log('📊 Raw staking history - checking types...');
+      let userTotalStaked = '0';
+      let totalRewardsClaimed = '0';
+      let currentRewards = '0';
+      let totalActiveStakes = '0';
+      let activeStakes: any[] = [];
 
-      // Real contract returns: [userTotalStaked, totalRewardsClaimed, currentRewards, totalActiveStakes, activeStakes]
-      const userTotalStaked = stakingHistory[0];
-      const totalRewardsClaimed = stakingHistory[1]; 
-      const currentRewards = stakingHistory[2];
-      const totalActiveStakes = stakingHistory[3];
-      const rawActiveStakes = stakingHistory[4];
+      try {
+        const stakingHistory = await stakingContract.getUserStakingHistory(userAddress);
+        console.log('📊 Raw staking history - checking types...');
 
-      // Convert BigInt values to strings for JSON serialization
-      const activeStakes = rawActiveStakes.map((stake: any) => ({
-        amount: stake.amount.toString(),
-        timestamp: stake.timestamp.toString(),
-        rewardDebt: stake.rewardDebt.toString(),
-        isActive: stake.isActive,
-        stakeId: stake.stakeId.toString()
-      }));
+        // Real contract returns: [userTotalStaked, totalRewardsClaimed, currentRewards, totalActiveStakes, activeStakes]
+        userTotalStaked = stakingHistory[0];
+        totalRewardsClaimed = stakingHistory[1]; 
+        currentRewards = stakingHistory[2];
+        totalActiveStakes = stakingHistory[3];
+        const rawActiveStakes = stakingHistory[4];
+
+        // Convert BigInt values to strings for JSON serialization
+        activeStakes = rawActiveStakes.map((stake: any) => ({
+          amount: stake.amount.toString(),
+          timestamp: stake.timestamp.toString(),
+          rewardDebt: stake.rewardDebt.toString(),
+          isActive: stake.isActive,
+          stakeId: stake.stakeId.toString()
+        }));
+      } catch (error) {
+        console.log('⚠️ getUserStakingHistory failed, trying alternative methods...');
+        
+        // Try alternative methods for different contract versions
+        try {
+          // Try getting individual values
+          userTotalStaked = await stakingContract.getUserTotalStaked(userAddress);
+          currentRewards = await stakingContract.getPendingRewards(userAddress);
+          console.log('✅ Got data using alternative methods');
+        } catch (altError) {
+          console.log('❌ Alternative methods also failed:', altError);
+          // Use default values
+          userTotalStaked = '0';
+          currentRewards = '0';
+        }
+      }
 
       const stakedAmount = ethers.formatEther(userTotalStaked);
       const pendingRewards = ethers.formatEther(currentRewards);
@@ -202,6 +257,8 @@ export const useWallet = () => {
         totalActiveStakes: totalActiveStakes.toString(),
         activeStakesCount: activeStakes.length
       });
+      
+      console.log('🔍 Active stakes details:', activeStakes);
 
       // Log each active stake with correct structure (now serializable)
       console.log('🎯 Active Stakes Details:');
@@ -249,7 +306,7 @@ export const useWallet = () => {
   }, [setError]);
 
   useEffect(() => {
-    if (isConnected && address) {
+    if (isConnected && address && chainId) {
       setWalletState(prev => ({
         ...prev,
         isConnected: true,
@@ -259,21 +316,24 @@ export const useWallet = () => {
       const initializeContracts = async () => {
         try {
           setLoading(true);
-          // Remove automatic network switching
-          // await switchToTargetNetwork();
-
+          
           // Create a signer provider using the connected wallet (for WRITE operations only)
           const signerProvider = new ethers.BrowserProvider(walletClient as any);
           const signer = await signerProvider.getSigner();
 
+          // Use provided chainId or default to BSC Mainnet
+          const targetChainId = chainId || 56;
+          
           // --- READ-ONLY provider (no wallet — prevents unwanted pop-ups) ---
-          const PUBLIC_BSC_MAINNET_RPC = 'https://bsc-dataseed.binance.org/';
-          const readProvider = new ethers.JsonRpcProvider(PUBLIC_BSC_MAINNET_RPC);
+          const RPC_URLS = {
+            56: 'https://bsc-dataseed.binance.org/',
+            1: 'https://ethereum.publicnode.com'
+          };
+          const rpcUrl = RPC_URLS[targetChainId as keyof typeof RPC_URLS] || RPC_URLS[56];
+          
+          const readProvider = new ethers.JsonRpcProvider(rpcUrl);
 
-          // Always use BSC Testnet contract addresses for read/write (adjust if multi-chain later)
-          const networkContracts = getContractsForNetwork(56);
-
-          console.log('🌐 Contracts (BSC Mainnet):', networkContracts);
+          const networkContracts = getContractsForNetwork(targetChainId);
 
           // READ-ONLY contract instances (attached to public RPC)
           const stakingRead = new ethers.Contract(
@@ -321,7 +381,7 @@ export const useWallet = () => {
         loading: false  // Set loading to false when wallet is not connected
       }));
     }
-  }, [isConnected, address, walletClient]);
+  }, [isConnected, address, walletClient, chainId]);
 
 
 
@@ -350,7 +410,7 @@ export const useWallet = () => {
     }
   };
 
-  // Stake işlemi - Now with BNB fee
+  // Stake işlemi - Now with BNB fee (only for BSC Mainnet)
   const stakeTokens = async (amount: string) => {
     if (!contracts.staking || !amount || parseFloat(amount) <= 0) {
       setError('Geçerli bir miktar girin');
@@ -360,13 +420,31 @@ export const useWallet = () => {
     try {
       setLoading(true);
       
-      // Get staking fee from userData
-      const stakingFee = userData.feeInfo?.stakingFeeBNB || '0';
+      // Get current network to determine if BNB fee is needed
+      const currentChainId = await (contracts.staking.runner?.provider as ethers.BrowserProvider)?.send('eth_chainId', []);
+      const chainId = parseInt(currentChainId, 16);
       
-      // Call stake function with BNB fee as value
-      const tx = await contracts.staking.stake(ethers.parseEther(amount), {
-        value: stakingFee
-      });
+      let tx;
+      if (chainId === 56) { // BSC Mainnet - with BNB fee
+        // Get staking fee from userData
+        const stakingFee = userData.feeInfo?.stakingFeeBNB || '0';
+        
+        // Call stake function with BNB fee as value
+        tx = await contracts.staking.stake(ethers.parseEther(amount), {
+          value: stakingFee
+        });
+              } else if (chainId === 1) { // Ethereum Mainnet - with ETH fee
+        // Get staking fee from userData (actually ETH fee)
+        const stakingFee = userData.feeInfo?.stakingFeeBNB || '0';
+        
+        // Call stake function with ETH fee as value
+        tx = await contracts.staking.stake(ethers.parseEther(amount), {
+          value: stakingFee
+        });
+      } else { // Other networks - without fee
+        // Call stake function without fee
+        tx = await contracts.staking.stake(ethers.parseEther(amount));
+      }
       
       console.log('📤 Stake transaction sent:', tx.hash);
       
@@ -436,6 +514,17 @@ export const useWallet = () => {
 
     try {
       setLoading(true);
+      
+      // Debug: Check pending rewards before claiming
+      console.log('🔍 CLAIM DEBUG - Current pending rewards:', userData.pendingRewards);
+      console.log('🔍 CLAIM DEBUG - Pending rewards as number:', Number(userData.pendingRewards));
+      console.log('🔍 CLAIM DEBUG - Has pending rewards:', Number(userData.pendingRewards) > 0);
+      
+      // Check if there are any pending rewards
+      if (Number(userData.pendingRewards) <= 0) {
+        setError('Claim edilecek ödül yok');
+        return false;
+      }
       
       const tx = await contracts.staking.claimRewards();
       console.log('📤 Claim rewards transaction sent:', tx.hash);

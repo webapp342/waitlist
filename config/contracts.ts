@@ -4,6 +4,11 @@ export const CONTRACTS = {
   56: {
     STAKING: '0x87270BC7f552160634FA01d20C5E1580A02f9595',
     TOKEN: '0x49EdC0FA13e650BC430D8bc23e4aaC6323B4f235',
+  },
+  // Ethereum Mainnet (Chain ID: 1)
+  1: {
+    STAKING: '0xf3f0b31849c2d04c7aeBBAa53B6baf0BBB3651aa',
+    TOKEN: '0x49EdC0FA13e650BC430D8bc23e4aaC6323B4f235',
   }
 };
 
@@ -26,6 +31,19 @@ export const BSC_MAINNET_CONFIG = {
   },
   rpcUrls: ['https://bsc-dataseed.binance.org/'],
   blockExplorerUrls: ['https://bscscan.com']
+};
+
+// Ethereum Mainnet Network Configuration
+export const ETH_MAINNET_CONFIG = {
+  chainId: '0x1', // 1 in hex
+  chainName: 'Ethereum Mainnet',
+  nativeCurrency: {
+    name: 'ETH',
+    symbol: 'ETH',
+    decimals: 18
+  },
+  rpcUrls: ['https://ethereum.publicnode.com'],
+  blockExplorerUrls: ['https://etherscan.io']
 };
 
 // Hardhat Network Configuration

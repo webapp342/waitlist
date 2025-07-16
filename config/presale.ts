@@ -6,6 +6,7 @@ export const PRESALE_ADDRESSES = {
 } as const;
 
 export const TOKEN_IDS = {
+  eth: 3,
   bnb: 0,
   usdt: 1,
   busd: 2

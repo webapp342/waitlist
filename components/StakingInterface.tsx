@@ -24,6 +24,10 @@ interface StakingInterfaceProps {
   emergencyWithdraw?: (stakeId: string) => Promise<boolean>;
   getAllowance: () => Promise<string>;
   loading: boolean;
+  networkDetails?: {
+    nativeToken: string;
+    tokenSymbol: string;
+  };
 }
 
 const StakingInterface = ({ 
@@ -34,7 +38,8 @@ const StakingInterface = ({
   unstakeTokens, 
   emergencyWithdraw,
   getAllowance,
-  loading 
+  loading,
+  networkDetails
 }: StakingInterfaceProps) => {
   const [stakeAmount, setStakeAmount] = useState('');
   const [allowance, setAllowance] = useState('0');
@@ -194,13 +199,14 @@ const StakingInterface = ({
   };
 
   const handleWithdraw = async (stakeId: string) => {
-    // Check BNB balance for unstaking fee
+    // Check balance for unstaking fee
     if (userData.feeInfo && userData.bnbBalance) {
       const unstakingFee = parseFloat(ethers.formatEther(userData.feeInfo.unstakingFeeBNB));
-      const bnbBalance = parseFloat(userData.bnbBalance);
+      const balance = parseFloat(userData.bnbBalance);
+      const feeToken = networkDetails?.nativeToken || 'BNB';
       
-      if (bnbBalance < unstakingFee) {
-        showStatus(`Insufficient BNB for unstaking fee. Required: ${unstakingFee.toFixed(6)} BNB`, true);
+      if (balance < unstakingFee) {
+        showStatus(`Insufficient ${feeToken} for unstaking fee. Required: ${unstakingFee.toFixed(6)} ${feeToken}`, true);
         return;
       }
     }
@@ -280,7 +286,7 @@ const StakingInterface = ({
             {/* Fee Info */}
             {userData.feeInfo && (
               <div className="text-sm text-gray-400">
-                Staking Fee: {formatBNB(userData.feeInfo.stakingFeeBNB)} BNB
+                Staking Fee: {formatBNB(userData.feeInfo.stakingFeeBNB)} {networkDetails?.nativeToken || 'BNB'}
               </div>
             )}
 

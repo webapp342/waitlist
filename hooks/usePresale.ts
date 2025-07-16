@@ -27,6 +27,16 @@ export const usePresale = () => {
   const [error, setError] = useState<string | null>(null);
   const [tokenPrices, setTokenPrices] = useState<{ [key: number]: bigint }>({});
 
+  // ETH için dummy değerler
+  const isETH = chainId === 1;
+  const ETH_DUMMY_INFO = {
+    saleTokenAddress: '',
+    tokenPriceUSD: BigInt(0),
+    totalTokensSold: BigInt(0),
+    userTokensPurchased: BigInt(0),
+    isPaused: false
+  };
+
   const loadPresaleInfo = useCallback(async () => {
     if (!walletClient || !isConnected || !address) {
       // Don't set error, just stop loading to allow page access without wallet
@@ -217,18 +227,24 @@ export const usePresale = () => {
   };
 
   useEffect(() => {
+    if (isETH) {
+      setPresaleInfo(ETH_DUMMY_INFO);
+      setTokenPrices({ [TOKEN_IDS.eth]: BigInt(0) });
+      setLoading(false);
+      return;
+    }
     if (isConnected && address && walletClient) {
       loadPresaleInfo();
     } else {
       // Set loading to false if wallet is not connected to allow page access
       setLoading(false);
     }
-  }, [isConnected, address, walletClient, loadPresaleInfo]);
+  }, [isConnected, address, walletClient, loadPresaleInfo, isETH]);
 
   return {
-    presaleInfo,
+    presaleInfo: isETH ? ETH_DUMMY_INFO : presaleInfo,
     paymentTokens,
-    loading,
+    loading: isETH ? false : loading,
     error,
     checkAllowance,
     approveToken,
@@ -236,6 +252,6 @@ export const usePresale = () => {
     calculateTokenAmount,
     calculatePaymentAmount,
     loadPresaleInfo,
-    tokenPrices
+    tokenPrices: isETH ? { [TOKEN_IDS.eth]: BigInt(0) } : tokenPrices
   };
 }; 

@@ -58,6 +58,7 @@ export default function Header() {
     { href: "/presale", label: "Presale" },
     { href: "/tokenomics", label: "Tokenomics" },
     { href: "/swap", label: "Swap" },
+    { href: "/bridge", label: "Bridge" },
     { href: "/stake", label: "Stake" },
     { href: "/referral", label: "Referral" },
     { href: "/whitepaper", label: "Whitepaper" }

@@ -19,18 +19,28 @@ import { userService } from '@/lib/supabase';
 import AuthGuard from '@/components/AuthGuard';
 import { useChainId } from 'wagmi';
 
+// BSC Mainnet Addresses
 const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
 const BUSD_ADDRESS = '0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56';
 const BBLP_ADDRESS = '0x49EdC0FA13e650BC430D8bc23e4aaC6323B4f235';
+
+// Ethereum Mainnet Addresses
+const ETH_BBSC_ADDRESS = '0x49EdC0FA13e650BC430D8bc23e4aaC6323B4f235'; // bBSC token address
+const ETH_USDT_ADDRESS = '0xdAC17F958D2ee523a2206206994597C13D831ec7'; // USDT Ethereum
+const ETH_USDC_ADDRESS = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'; // USDC Ethereum
 
 // BSC Mainnet Chain ID
 const BSC_MAINNET_CHAIN_ID = 56;
 
 const ASSETS = [
-  { symbol: 'BBLP', name: 'BBLP Token', icon: '/logo.svg' },
-  { symbol: 'USDT', name: 'Tether USD', icon: '/usdt.svg' },
-  { symbol: 'BNB', name: 'Binance Coin', icon: '/bnb.svg'  },
-  { symbol: 'BUSD', name: 'Binance USD', icon: '/busd.svg' }
+  { symbol: 'BBLP', name: 'BBLP Token', icon: '/BBLP.svg', network: 'bsc', networkName: 'BNB Smart Chain', isNative: false },
+  { symbol: 'USDT', name: 'Tether USD', icon: '/usdt.svg', network: 'bsc', networkName: 'BNB Smart Chain', isNative: false },
+  { symbol: 'BNB', name: 'Binance Coin', icon: '/bnb.svg', network: 'bsc', networkName: 'BNB Smart Chain', isNative: true },
+  { symbol: 'BUSD', name: 'Binance USD', icon: '/busd.svg', network: 'bsc', networkName: 'BNB Smart Chain', isNative: false },
+  { symbol: 'WBBLP', name: 'WBBLP Token', icon: '/BBLP.svg', network: 'eth', networkName: 'Ethereum', isNative: false },
+  { symbol: 'ETH', name: 'Ethereum', icon: '/eth.png', network: 'eth', networkName: 'Ethereum', isNative: true },
+  { symbol: 'USDT_ETH', name: 'Tether USD', icon: '/usdt.svg', network: 'eth', networkName: 'Ethereum', isNative: false },
+  { symbol: 'USDC_ETH', name: 'USD Coin', icon: '/usdc.svg', network: 'eth', networkName: 'Ethereum', isNative: false },
 ];
 
 function DashboardContent() {
@@ -38,7 +48,23 @@ function DashboardContent() {
   const { switchChain } = useSwitchChain();
   const chainId = useChainId();
   const router = useRouter();
-  const { userData } = useWallet();
+  
+  // Get staking data from both networks
+  const { userData: bscUserData } = useWallet(56); // BSC Mainnet
+  const { userData: ethUserData } = useWallet(1); // Ethereum Mainnet
+  
+  // Combine data from both networks
+  const combinedUserData = {
+    ...bscUserData,
+    stakedAmount: (parseFloat(bscUserData?.stakedAmount || '0') + parseFloat(ethUserData?.stakedAmount || '0')).toString(),
+    pendingRewards: (parseFloat(bscUserData?.pendingRewards || '0') + parseFloat(ethUserData?.pendingRewards || '0')).toString(),
+    stakes: [...(bscUserData?.stakes || []), ...(ethUserData?.stakes || [])]
+  };
+
+  console.log('🎯 Dashboard - bscUserData.stakedAmount:', bscUserData?.stakedAmount);
+  console.log('🎯 Dashboard - ethUserData.stakedAmount:', ethUserData?.stakedAmount);
+  console.log('🎯 Dashboard - combinedUserData.stakedAmount:', combinedUserData.stakedAmount);
+  
   const [activeTab, setActiveTab] = useState<'portfolio' | 'transactions'>('portfolio');
   const [bnbPrice, setBnbPrice] = useState<number>(0);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -59,9 +85,11 @@ function DashboardContent() {
   const [isSwitchingChain, setIsSwitchingChain] = useState(false);
   const [switchChainError, setSwitchChainError] = useState<string | null>(null);
 
-  // Check if user is on the correct network (BSC Mainnet - Chain ID 56)
+  // Check if user is on any supported network (BSC Mainnet or Ethereum)
   const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
   const isOnBSCMainnet = actualChainId === BSC_MAINNET_CHAIN_ID;
+  const isOnEthMainnet = actualChainId === 1;
+  const isOnSupportedNetwork = isOnBSCMainnet || isOnEthMainnet;
 
   // Handle chain switching
   const handleSwitchChain = async () => {
@@ -70,13 +98,20 @@ function DashboardContent() {
     try {
       setIsSwitchingChain(true);
       setSwitchChainError(null);
-      await switchChain({ chainId: BSC_MAINNET_CHAIN_ID });
+      
+      // Try to switch to BSC Mainnet first, if not available, try Ethereum
+      try {
+        await switchChain({ chainId: BSC_MAINNET_CHAIN_ID });
+      } catch (err: any) {
+        // If BSC fails, try Ethereum
+        await switchChain({ chainId: 1 });
+      }
     } catch (err: any) {
       console.error('Failed to switch chain:', err);
       if (err.code === 4001) {
         setSwitchChainError('Chain switch was cancelled by user');
       } else {
-        setSwitchChainError('Failed to switch to BSC Mainnet. Please switch manually in your wallet.');
+        setSwitchChainError('Failed to switch to supported network. Please switch manually in your wallet.');
       }
     } finally {
       setIsSwitchingChain(false);
@@ -91,10 +126,17 @@ function DashboardContent() {
     }
   }, [switchChainError]);
 
-  // Fetch token balances for the connected wallet - only on correct network
-  const { data: usdtBalance, refetch: refetchUSDT } = useBalance(address && isOnBSCMainnet ? { address, token: USDT_ADDRESS } : { address: undefined });
-  const { data: busdBalance, refetch: refetchBUSD } = useBalance(address && isOnBSCMainnet ? { address, token: BUSD_ADDRESS } : { address: undefined });
-  const { data: bblpBalance, refetch: refetchBBLP } = useBalance(address && isOnBSCMainnet ? { address, token: BBLP_ADDRESS } : { address: undefined });
+  // Fetch token balances for the connected wallet - BSC Mainnet (always fetch)
+  const { data: usdtBalance, refetch: refetchUSDT } = useBalance(address ? { address, token: USDT_ADDRESS, chainId: 56 } : { address: undefined });
+  const { data: busdBalance, refetch: refetchBUSD } = useBalance(address ? { address, token: BUSD_ADDRESS, chainId: 56 } : { address: undefined });
+  const { data: bblpBalance, refetch: refetchBBLP } = useBalance(address ? { address, token: BBLP_ADDRESS, chainId: 56 } : { address: undefined });
+  const { data: bnbBalance, refetch: refetchBNB } = useBalance(address ? { address, chainId: 56 } : { address: undefined });
+  
+  // Fetch token balances for the connected wallet - ETH Mainnet (always fetch)
+  const { data: ethBblpBalance, refetch: refetchEthBblp } = useBalance(address ? { address, token: ETH_BBSC_ADDRESS, chainId: 1 } : { address: undefined });
+  const { data: ethBalance, refetch: refetchEth } = useBalance(address ? { address, chainId: 1 } : { address: undefined });
+  const { data: ethUsdtBalance, refetch: refetchEthUsdt } = useBalance(address ? { address, token: ETH_USDT_ADDRESS, chainId: 1 } : { address: undefined });
+  const { data: ethUsdcBalance, refetch: refetchEthUsdc } = useBalance(address ? { address, token: ETH_USDC_ADDRESS, chainId: 1 } : { address: undefined });
 
   // Clear any existing toasts on dashboard load
   useEffect(() => {
@@ -134,10 +176,10 @@ function DashboardContent() {
     fetchBNBPrice();
   }, []);
 
-  // Load stake logs when wallet is connected and on correct network
+  // Load stake logs when wallet is connected and on supported network
   useEffect(() => {
     const loadStakeLogs = async () => {
-      if (isConnected && address && isOnBSCMainnet) {
+      if (isConnected && address && isOnSupportedNetwork) {
         try {
           const logs = await stakeLogsService.getUserStakeLogs(address);
           setStakeLogs(logs);
@@ -149,12 +191,12 @@ function DashboardContent() {
     };
 
     loadStakeLogs();
-  }, [isConnected, address, isOnBSCMainnet]);
+  }, [isConnected, address, isOnSupportedNetwork]);
 
-  // Load referral data when wallet is connected and on correct network
+  // Load referral data when wallet is connected and on supported network
   useEffect(() => {
     const loadReferralData = async () => {
-      if (isConnected && address && isOnBSCMainnet) {
+      if (isConnected && address && isOnSupportedNetwork) {
         try {
           // Get user first
           const user = await userService.getUserByWallet(address);
@@ -188,19 +230,21 @@ function DashboardContent() {
     };
 
     loadReferralData();
-  }, [isConnected, address, isOnBSCMainnet]);
+  }, [isConnected, address, isOnSupportedNetwork]);
 
   // Calculate total USD value for all assets
-  const bnbUsd = userData?.bnbBalance && bnbPrice ? parseFloat(userData.bnbBalance) * bnbPrice : 0;
+  const bnbUsd = bnbBalance ? parseFloat(bnbBalance.formatted) * bnbPrice : 0;
   const usdtUsd = usdtBalance ? parseFloat(usdtBalance.formatted) * 1 : 0;
   const busdUsd = busdBalance ? parseFloat(busdBalance.formatted) * 1 : 0;
-      const bblpUsd = bblpBalance ? parseFloat(bblpBalance.formatted) * 0.10 : 0;
-    const rBblpUsd = referralStats ? parseFloat(referralStats.totalRewards) / 10 : 0; // Divide by 10 for USDT
-    const totalUsd = bnbUsd + usdtUsd + busdUsd + bblpUsd + rBblpUsd;
+  const bblpUsd = bblpBalance ? parseFloat(bblpBalance.formatted) * 0.10 : 0;
+  const ethBblpUsd = ethBblpBalance ? parseFloat(ethBblpBalance.formatted) * 0.10 : 0;
+  const ethUsd = ethBalance ? parseFloat(ethBalance.formatted) * 3000 : 0; // ETH price ~$3000
+  const rBblpUsd = referralStats ? parseFloat(referralStats.totalRewards) / 10 : 0; // Divide by 10 for USDT
+  const totalUsd = bnbUsd + usdtUsd + busdUsd + bblpUsd + ethBblpUsd + ethUsd + rBblpUsd;
 
   const handleRefresh = async () => {
-    if (!isOnBSCMainnet) {
-      toast.error('Please switch to BSC Mainnet to refresh portfolio');
+    if (!isConnected) {
+      toast.error('Please connect your wallet to refresh portfolio');
       return;
     }
     
@@ -209,7 +253,10 @@ function DashboardContent() {
       await Promise.all([
         refetchUSDT(),
         refetchBUSD(),
-        refetchBBLP()
+        refetchBBLP(),
+        refetchBNB(),
+        refetchEthBblp(),
+        refetchEth()
       ]);
       toast.success('Portfolio refreshed successfully!');
     } catch (error) {
@@ -223,7 +270,7 @@ function DashboardContent() {
     switch (symbol) {
       case 'BNB':
         return {
-          balance: userData?.bnbBalance ? parseFloat(userData.bnbBalance) : 0,
+          balance: bnbBalance ? parseFloat(bnbBalance.formatted) : 0,
           usdValue: bnbUsd,
           price: bnbPrice,
           change: '+2.34%',
@@ -253,13 +300,45 @@ function DashboardContent() {
           change: '+15.67%',
           changeValue: 15.67
         };
+      case 'WBBLP':
+        return {
+          balance: ethBblpBalance ? parseFloat(ethBblpBalance.formatted) : 0,
+          usdValue: ethBblpUsd,
+          price: 0.10,
+          change: '+12.45%',
+          changeValue: 12.45
+        };
+      case 'ETH':
+        return {
+          balance: ethBalance ? parseFloat(ethBalance.formatted) : 0,
+          usdValue: ethUsd,
+          price: 3000,
+          change: '+5.23%',
+          changeValue: 5.23
+        };
+      case 'USDT_ETH':
+        return {
+          balance: ethUsdtBalance ? parseFloat(ethUsdtBalance.formatted) : 0,
+          usdValue: ethUsdtBalance ? parseFloat(ethUsdtBalance.formatted) * 1 : 0,
+          price: 1.00,
+          change: '+0.01%',
+          changeValue: 0.01
+        };
+      case 'USDC_ETH':
+        return {
+          balance: ethUsdcBalance ? parseFloat(ethUsdcBalance.formatted) : 0,
+          usdValue: ethUsdcBalance ? parseFloat(ethUsdcBalance.formatted) * 1 : 0,
+          price: 1.00,
+          change: '+0.01%',
+          changeValue: 0.01
+        };
       default:
         return { balance: 0, usdValue: 0, price: 0, change: '0.00%', changeValue: 0 };
     }
   };
 
   // Check if user needs to stake for card activation
-  const totalStaked = userData?.stakedAmount ? parseFloat(userData.stakedAmount) : 0;
+  const totalStaked = combinedUserData?.stakedAmount ? parseFloat(combinedUserData.stakedAmount) : 0;
   const needsStaking = totalStaked < 1000;
 
   if (!isConnected) {
@@ -300,37 +379,56 @@ function DashboardContent() {
       <section className="flex flex-col items-center mt-10 px-4 sm:px-6 lg:px-8 w-full max-w-7xl mx-auto">
         <Header />
 
-        {/* Network Warning - Show when connected but not on BSC Mainnet */}
-        {isConnected && !isOnBSCMainnet && (
+        {/* Network Warning - Show when connected but not on supported network */}
+        {isConnected && !isOnSupportedNetwork && (
           <div className="w-full max-w-5xl mt-20 mb-10 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 rounded-lg bg-orange-500/20 border border-orange-500/30">
                 <Network className="w-5 h-5 text-orange-400" />
               </div>
               <div>
-                <h3 className="text-sm font-semibold text-orange-200">Wrong Network</h3>
+                <h3 className="text-sm font-semibold text-orange-200">Unsupported Network</h3>
                 <p className="text-xs text-orange-300/80">
-                  You&apos;re connected to {chain?.name || "Unknown Network"}. Please switch to BSC Mainnet to access all features.
+                  You&apos;re connected to {chain?.name || "Unknown Network"}. Please switch to BSC Mainnet or ETH Mainnet to access all features.
                 </p>
               </div>
             </div>
-            <Button
-              onClick={handleSwitchChain}
-              disabled={isSwitchingChain}
-              className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-semibold shadow-lg h-10"
-            >
-              {isSwitchingChain ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  Switching Network...
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Network className="w-4 h-4" />
-                  Switch to BSC Mainnet
-                </div>
-              )}
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => switchChain({ chainId: BSC_MAINNET_CHAIN_ID })}
+                disabled={isSwitchingChain}
+                className="flex-1 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-semibold shadow-lg h-10"
+              >
+                {isSwitchingChain ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                    Switching...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Image src="/bnb.svg" alt="BSC" width={16} height={16} />
+                    Switch to BSC Mainnet
+                  </div>
+                )}
+              </Button>
+                              <Button
+                onClick={() => switchChain({ chainId: 1 })}
+                disabled={isSwitchingChain}
+                className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold shadow-lg h-10"
+              >
+                {isSwitchingChain ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                    Switching...
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Image src="/eth.png" alt="ETH" width={16} height={16} className="rounded-full" />
+                    Switch to ETH Mainnet
+                  </div>
+                )}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -344,12 +442,12 @@ function DashboardContent() {
           </div>
         )}
 
-        <DashboardCTA userData={userData} totalUsd={totalUsd} />
+        <DashboardCTA userData={combinedUserData} totalUsd={totalUsd} />
 
         {/* Main Dashboard Content */}
         <div className={cn(
           "w-full max-w-5xl mt-8 space-y-4 transition-all duration-300",
-          !isOnBSCMainnet && isConnected && "opacity-50 pointer-events-none"
+          !isOnSupportedNetwork && isConnected && "opacity-50 pointer-events-none"
         )}>
           {/* Dashboard Header - Simplified */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
@@ -360,9 +458,9 @@ function DashboardContent() {
                 onClick={handleRefresh}
                 className={cn(
                   "text-zinc-400 hover:text-yellow-400 transition-colors",
-                  (!isOnBSCMainnet || isRefreshing) && "opacity-50 cursor-not-allowed"
+                  (!isConnected || isRefreshing) && "opacity-50 cursor-not-allowed"
                 )}
-                disabled={isRefreshing || !isOnBSCMainnet}
+                disabled={isRefreshing || !isConnected}
               >
                 <RefreshCw className={cn("w-5 h-5", isRefreshing && "animate-spin")} />
               </button>
@@ -379,7 +477,7 @@ function DashboardContent() {
         
 
 
-              {!isOnBSCMainnet ? (
+              {!isOnSupportedNetwork ? (
                 <Button
                   onClick={handleSwitchChain}
                   disabled={isSwitchingChain}
@@ -449,7 +547,7 @@ function DashboardContent() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs lg:text-sm  mb-1">Total Staked</p>
-                  <p className="text-lg lg:text-xl font-bold text-zinc-200">{userData?.stakedAmount || '0'} BBLP</p>
+                  <p className="text-lg lg:text-xl font-bold text-zinc-200">{combinedUserData?.stakedAmount || '0'} BBLP</p>
                 </div>
                 <Coins className="w-5 h-5 lg:w-6 lg:h-6 text-zinc-200 group-hover:rotate-12 transition-transform" />
               </div>
@@ -473,6 +571,11 @@ function DashboardContent() {
               {ASSETS.map((asset, index) => {
                 const data = getAssetData(asset.symbol);
                 const isPositive = data.changeValue > 0;
+                return { asset, data, index };
+              })
+              .sort((a, b) => b.data.usdValue - a.data.usdValue)
+              .map(({ asset, data, index }) => {
+                const isPositive = data.changeValue > 0;
                 
                 return (
                   <div
@@ -483,18 +586,46 @@ function DashboardContent() {
                     <div className="flex items-center justify-between">
                       {/* Asset Info */}
                       <div className="flex items-center gap-2">
-                        <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-lg  flex items-center justify-center   shadow-lg">
-                          <Image 
-                            src={asset.icon} 
-                            alt={asset.symbol} 
-                            width={28} 
-                            height={28} 
-                            className="group-hover:rotate-12 transition-transform lg:w-8 lg:h-8" 
-                          />
+                        <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-lg flex items-center justify-center shadow-lg relative">
+                          <div className={cn(
+                            "w-7 h-7 lg:w-8 lg:h-8 rounded-full flex items-center justify-center",
+                            (asset.symbol === 'ETH') && "bg-white",
+                            (asset.symbol === 'BNB') && "bg-black",
+                            (asset.symbol === 'BUSD') && "bg-[#f0b90b]",
+                            (asset.symbol === 'USDT' || asset.symbol === 'USDT_ETH') && "bg-[#50af95]"
+                          )}>
+                            <Image 
+                              src={asset.icon} 
+                              alt={asset.symbol} 
+                              width={(asset.symbol === 'BNB' || asset.symbol === 'USDC' || asset.symbol === 'USDC_ETH') ? 32 : 24} 
+                              height={(asset.symbol === 'BNB' || asset.symbol === 'USDC' || asset.symbol === 'USDC_ETH') ? 32 : 24} 
+                              className={cn("group-hover:rotate-12 transition-transform", (asset.symbol === 'BNB' || asset.symbol === 'USDC' || asset.symbol === 'USDC_ETH') ? 'lg:w-8 lg:h-8' : 'lg:w-6 lg:h-6')} 
+                            />
+                          </div>
+                          {/* Network Badge - Only show for non-native tokens */}
+                          {!asset.isNative && (
+                            <div className={cn(
+                              "absolute bottom-0 right-1 flex items-center justify-center p-0",
+                              asset.network === 'bsc' ? 'w-6 h-6 rounded-full bg-black/80 shadow-sm' : 'w-5 h-5 rounded-full bg-white shadow-sm'
+                            )}>
+                              <Image 
+                                src={asset.network === 'bsc' ? '/bnb.svg' : '/eth.png'} 
+                                alt={asset.network} 
+                                width={asset.network === 'bsc' ? 18 : 12} 
+                                height={asset.network === 'bsc' ? 18 : 12} 
+                                className={asset.network === 'bsc' ? 'lg:w-5 lg:h-5' : 'lg:w-4 lg:h-4'} 
+                              />
+                            </div>
+                          )}
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-white group-hover:text-yellow-400 transition-colors text-base lg:text-lg">{asset.symbol}</h3>
-                          <p className="text-sm text-gray-500">{data.balance.toFixed(4)} {asset.symbol}</p>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-white group-hover:text-yellow-400 transition-colors text-base lg:text-lg">{asset.symbol.replace('_ETH', '')}</h3>
+                            <div className="px-1.5 py-0.5 bg-zinc-800/50 rounded-xl">
+                              <p className="text-xs text-gray-400">{asset.networkName}</p>
+                            </div>
+                          </div>
+                          <p className="text-sm text-gray-500">{data.balance.toFixed(4)} {asset.symbol.replace('_ETH', '')}</p>
                         </div>
                       </div>
 

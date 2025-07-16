@@ -7,11 +7,11 @@ export interface Stake {
 }
 
 export interface BNBFeeInfo {
-  stakingFeeBNB: string;
-  unstakingFeeBNB: string;
+  stakingFeeBNB: string; // Actually BNB or ETH depending on network
+  unstakingFeeBNB: string; // Actually BNB or ETH depending on network
   feeRecipient: string;
-  totalBNBFeesCollected: string;
-  maxFeeBNB: string;
+  totalBNBFeesCollected: string; // Actually BNB or ETH depending on network
+  maxFeeBNB: string; // Actually BNB or ETH depending on network
 }
 
 export interface UserData {

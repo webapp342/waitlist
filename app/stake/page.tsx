@@ -27,8 +27,31 @@ const CARD_REQUIREMENTS = {
   BLACK: 3500
 };
 
-// BSC Mainnet Chain ID
+// Chain IDs
 const BSC_MAINNET_CHAIN_ID = 56;
+const ETH_MAINNET_CHAIN_ID = 1;
+
+// Staking Networks Configuration
+const STAKING_NETWORKS = [
+  { 
+    id: 'bsc', 
+    name: 'BSC Mainnet', 
+    icon: '/bnb.svg', 
+    color: 'from-black to-black', 
+    chainId: BSC_MAINNET_CHAIN_ID,
+    tokenSymbol: 'BBLP',
+    nativeToken: 'BNB'
+  },
+  { 
+    id: 'eth', 
+    name: 'ETH Mainnet', 
+    icon: '/eth.png', 
+    color: 'from-white to-white', 
+    chainId: ETH_MAINNET_CHAIN_ID,
+    tokenSymbol: 'WBBLP',
+    nativeToken: 'ETH'
+  }
+];
 
 // Enhanced styles
 const glowStyles = `
@@ -120,6 +143,7 @@ function StakeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [stakeAmount, setStakeAmount] = useState('');
+  const [selectedNetwork, setSelectedNetwork] = useState<string>('eth'); // Default to Ethereum
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [showWalletModal, setShowWalletModal] = useState(false);
@@ -139,6 +163,14 @@ function StakeContent() {
   const [switchChainError, setSwitchChainError] = useState<string | null>(null);
   const [countdowns, setCountdowns] = useState<{ [key: string]: { days: number; hours: number; minutes: number; seconds: number } }>({});
   
+  // Get selected network details
+  const selectedNetworkDetails = STAKING_NETWORKS.find(network => network.id === selectedNetwork);
+  const requiredChainId = selectedNetworkDetails?.chainId || BSC_MAINNET_CHAIN_ID;
+  
+
+  
+
+  
   const { 
     walletState, 
     userData, 
@@ -148,7 +180,9 @@ function StakeContent() {
     unstakeTokens,
     emergencyWithdraw,
     getAllowance
-  } = useWallet();
+  } = useWallet(requiredChainId);
+
+
 
   // Countdown timer for unstake lock period (30 days)
   useEffect(() => {
@@ -196,9 +230,16 @@ function StakeContent() {
     }
   }, [searchParams]);
 
-  // Check if user is on the correct network (BSC Mainnet - Chain ID 56)
+  // Reset stake amount when network changes
+  useEffect(() => {
+    setStakeAmount('');
+  }, [selectedNetwork, requiredChainId]);
+
+  // Check if user is on the correct network
   const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
+  const isOnCorrectNetwork = actualChainId === requiredChainId;
   const isOnBSCMainnet = actualChainId === BSC_MAINNET_CHAIN_ID;
+  const isOnEthMainnet = actualChainId === ETH_MAINNET_CHAIN_ID;
 
   // Handle chain switching
   const handleSwitchChain = async () => {
@@ -207,13 +248,15 @@ function StakeContent() {
     try {
       setIsSwitchingChain(true);
       setSwitchChainError(null);
-      await switchChain({ chainId: BSC_MAINNET_CHAIN_ID });
+      const targetNetworkName = selectedNetworkDetails?.name || 'BSC Mainnet';
+      await switchChain({ chainId: requiredChainId as any });
     } catch (err: any) {
       console.error('Failed to switch chain:', err);
       if (err.code === 4001) {
         setSwitchChainError('Chain switch was cancelled by user');
       } else {
-        setSwitchChainError('Failed to switch to BSC Mainnet. Please switch manually in your wallet.');
+        const targetNetworkName = selectedNetworkDetails?.name || 'BSC Mainnet';
+        setSwitchChainError(`Failed to switch to ${targetNetworkName}. Please switch manually in your wallet.`);
       }
     } finally {
       setIsSwitchingChain(false);
@@ -239,7 +282,7 @@ function StakeContent() {
   // Save user to database when wallet is connected to correct network
   useEffect(() => {
     const saveUserToDatabase = async () => {
-      if (isConnected && address && isOnBSCMainnet) {
+      if (isConnected && address && isOnCorrectNetwork) {
         try {
           await userService.addUser(address);
           console.log('User saved successfully from stake page');
@@ -250,53 +293,92 @@ function StakeContent() {
     };
 
     saveUserToDatabase();
-  }, [isConnected, address, isOnBSCMainnet]);
+  }, [isConnected, address, isOnCorrectNetwork]);
 
   // Load stake logs when wallet is connected
   useEffect(() => {
     const loadStakeLogs = async () => {
-      if (isConnected && address && isOnBSCMainnet) {
+      if (isConnected && address && isOnCorrectNetwork) {
         try {
           const logs = await stakeLogsService.getUserStakeLogs(address);
           setStakeLogs(logs);
-          console.log('Stake logs loaded:', logs);
+          console.log('\ud83d\udcca Database stake logs loaded:', logs);
+          console.log('\ud83d\udcca Database logs count:', logs.length);
+          console.log('\ud83d\udcca Current userData.stakedAmount:', userData.stakedAmount);
+          console.log('\ud83d\udcca Current userData.stakes count:', userData.stakes.length);
+          // Check transaction status for each log
+          logs.forEach((log, index) => {
+            console.log(`\ud83d\udcca Log ${index + 1}:`, {
+              transaction_hash: log.transaction_hash,
+              amount: log.amount,
+              action_type: log.action_type,
+              status: log.status,
+              block_number: log.block_number
+            });
+          });
         } catch (error) {
           console.error('Error loading stake logs:', error);
         }
       }
     };
-
     loadStakeLogs();
-  }, [isConnected, address, userData.stakes, isOnBSCMainnet]); // Reload when stakes change
+  }, [isConnected, address, userData.stakes, isOnCorrectNetwork]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Format token amounts from wei to ether
+  // Format token amounts from wei to ether without rounding
   const formatTokenAmount = useCallback((amount: string, decimals: number = 8) => {
     try {
-      if (!amount || amount === '0') return '0.00000000';
+      if (!amount || amount === '0') return '0.00';
       if (amount.includes('.')) {
         const num = parseFloat(amount);
-        return isNaN(num) ? '0.00000000' : num.toFixed(decimals);
+        if (isNaN(num)) return '0.00';
+        
+        // Convert to string and limit decimal places without rounding
+        const numStr = num.toString();
+        if (numStr.includes('.')) {
+          const parts = numStr.split('.');
+          const integerPart = parts[0];
+          const decimalPart = parts[1].substring(0, decimals);
+          return `${integerPart}.${decimalPart.padEnd(decimals, '0')}`;
+        } else {
+          return `${numStr}.${'0'.repeat(decimals)}`;
+        }
       }
       const formatted = ethers.formatEther(amount);
       const num = parseFloat(formatted);
-      return isNaN(num) ? '0.00000000' : num.toFixed(decimals);
+      if (isNaN(num)) return '0.00';
+      
+      // Convert to string and limit decimal places without rounding
+      const numStr = num.toString();
+      if (numStr.includes('.')) {
+        const parts = numStr.split('.');
+        const integerPart = parts[0];
+        const decimalPart = parts[1].substring(0, decimals);
+        return `${integerPart}.${decimalPart.padEnd(decimals, '0')}`;
+      } else {
+        return `${numStr}.${'0'.repeat(decimals)}`;
+      }
     } catch (error) {
       console.error('Error formatting amount:', error);
-      return '0.00000000';
+      return '0.00';
     }
   }, []);
 
-  // Format BNB fee amounts
-  const formatBNBAmount = (amount: string) => {
+  // Format fee amounts (BNB or ETH)
+  const formatFeeAmount = (amount: string) => {
     try {
       if (!amount || amount === '0') return '0.00';
       const formatted = ethers.formatEther(amount);
       const num = parseFloat(formatted);
       return isNaN(num) ? '0.00' : num.toFixed(6);
     } catch (error) {
-      console.error('Error formatting BNB amount:', error);
+      console.error('Error formatting fee amount:', error);
       return '0.00';
     }
+  };
+
+  // Get fee token symbol based on network
+  const getFeeTokenSymbol = () => {
+    return selectedNetworkDetails?.nativeToken || 'BNB';
   };
 
   // Check if user has enough balance for staking
@@ -305,7 +387,7 @@ function StakeContent() {
     const amount = parseFloat(stakeAmount);
     const balance = parseFloat(formatTokenAmount(userData.tokenBalance));
     return !isNaN(amount) && !isNaN(balance) && balance >= amount;
-  }, [stakeAmount, userData.tokenBalance, formatTokenAmount]);
+  }, [stakeAmount, userData.tokenBalance, formatTokenAmount, selectedNetworkDetails?.nativeToken]);
 
   // Helper function to format error messages
   const formatErrorMessage = useCallback((error: any) => {
@@ -319,9 +401,10 @@ function StakeContent() {
 
     // Check for insufficient balance
     if (!hasEnoughBalance() && stakeAmount) {
+      const tokenSymbol = selectedNetworkDetails?.tokenSymbol || 'BBLP';
       return {
-              title: 'Insufficient BBLP Balance',
-      message: `You need ${parseFloat(stakeAmount).toFixed(2)} BBLP for staking.\nYour current balance: ${formatTokenAmount(userData.tokenBalance)} BBLP`,
+        title: `Insufficient ${tokenSymbol} Balance`,
+        message: `You need ${parseFloat(stakeAmount).toFixed(2)} ${tokenSymbol} for staking.\nYour current balance: ${formatTokenAmount(userData.tokenBalance)} ${tokenSymbol}`,
         showPurchaseButton: true,
         purchaseAmount: parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))
       };
@@ -348,9 +431,10 @@ function StakeContent() {
 
     // Check for specific error messages
     if (error.message?.includes('insufficient funds')) {
+      const nativeToken = selectedNetworkDetails?.nativeToken || 'BNB';
       return {
-        title: 'Insufficient BNB Balance',
-        message: 'You do not have enough BNB to cover the transaction fees. Please add more BNB to your wallet and try again.'
+        title: `Insufficient ${nativeToken} Balance`,
+        message: `You do not have enough ${nativeToken} to cover the transaction fees. Please add more ${nativeToken} to your wallet and try again.`
       };
     }
 
@@ -362,11 +446,12 @@ function StakeContent() {
     }
 
     // Default error message
+    const nativeToken = selectedNetworkDetails?.nativeToken || 'BNB';
     return {
-      title: 'Insufficient BNB Balance',
-      message:  'You do not have enough BNB to cover the transaction fees. Please add more BNB to your wallet and try again.'
+      title: `Insufficient ${nativeToken} Balance`,
+      message: `You do not have enough ${nativeToken} to cover the transaction fees. Please add more ${nativeToken} to your wallet and try again.`
     };
-  }, [hasEnoughBalance, stakeAmount, userData.tokenBalance, formatTokenAmount]);
+  }, [hasEnoughBalance, stakeAmount, userData.tokenBalance, formatTokenAmount, selectedNetworkDetails?.tokenSymbol]);
 
   // Add function to handle transaction modal close
   const handleTransactionModalClose = () => {
@@ -709,15 +794,15 @@ function StakeContent() {
           
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-2">
-              Stake BBLP
+              Stake {selectedNetworkDetails?.tokenSymbol || 'BBLP'}
             </h1>
             <p className="text-gray-400 text-sm md:text-base">
-              Earn <span className="text-yellow-200 font-semibold">32% APR</span> by staking your tokens
+              Earn <span className="text-yellow-200 font-semibold">32% APR</span> by staking your tokens on {selectedNetworkDetails?.name || 'BSC Mainnet'}
             </p>
           </div>
 
-          {/* Network Warning - Show when connected but not on BSC Mainnet */}
-          {isConnected && !isOnBSCMainnet && (
+          {/* Network Warning - Show when connected but not on correct network */}
+          {isConnected && !isOnCorrectNetwork && (
             <div className="w-full max-w-5xl mt-1 mb-10 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 rounded-lg bg-orange-500/20">
@@ -726,7 +811,7 @@ function StakeContent() {
                 <div>
                   <h3 className="text-sm font-semibold text-orange-200">Wrong Network</h3>
                   <p className="text-xs text-orange-300/80">
-                    You&apos;re connected to {chain?.name || 'Unknown Network'}. Please switch to BSC Mainnet to stake your tokens.
+                    You&apos;re connected to {chain?.name || 'Unknown Network'}. Please switch to {selectedNetworkDetails?.name || 'BSC Mainnet'} to stake your tokens.
                   </p>
                 </div>
               </div>
@@ -743,7 +828,7 @@ function StakeContent() {
                 ) : (
                   <div className="flex items-center gap-2">
                     <Network className="w-4 h-4" />
-                    Switch to BSC Mainnet
+                    Switch to {selectedNetworkDetails?.name || 'BSC Mainnet'}
                   </div>
                 )}
               </Button>
@@ -760,10 +845,66 @@ function StakeContent() {
             </div>
           )}
 
+          {/* Network Selection - Always Active */}
+          <div className="mb-6">
+            
+            <div className="grid grid-cols-2 gap-3">
+              {STAKING_NETWORKS.map((network) => (
+                <button
+                  key={network.id}
+                  onClick={() => setSelectedNetwork(network.id)}
+                  className={cn(
+                    "p-4 rounded-xl border transition-all duration-300 text-left relative overflow-hidden group",
+                    selectedNetwork === network.id
+                      ? "bg-gradient-to-br from-zinc-800 to-zinc-900 border-yellow-400/50 shadow-lg shadow-yellow-400/20 scale-[1.02]"
+                      : "bg-zinc-800/30 border-zinc-700 hover:bg-zinc-800/50 hover:border-zinc-600 hover:scale-[1.01]"
+                  )}
+                >
+                  {/* Selection indicator overlay */}
+                  {selectedNetwork === network.id && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-400/5 to-yellow-400/10 rounded-xl"></div>
+                  )}
+                  
+                  <div className="flex items-center gap-3 relative z-10">
+                    <div className={cn(
+                      "w-10 h-10 rounded-full bg-gradient-to-br flex items-center justify-center transition-all duration-300",
+                      network.color,
+                      selectedNetwork === network.id && "scale-110 shadow-lg shadow-yellow-400/20"
+                    )}>
+                      <Image 
+                        src={network.icon} 
+                        alt={network.name} 
+                        width={network.id === 'bsc' ? 32 : 24} 
+                        height={network.id === 'bsc' ? 32 : 24}
+                        className={cn(
+                          network.id === 'eth' ? "rounded-full" : ""
+                        )}
+                      />
+                    </div>
+                    <div>
+                      <p className={cn(
+                        "text-sm font-semibold transition-colors duration-300",
+                        selectedNetwork === network.id ? "text-yellow-200" : "text-white"
+                      )}>
+                        {network.name}
+                      </p>
+                      <p className="text-xs text-gray-400">{network.tokenSymbol} Staking</p>
+                    </div>
+                  </div>
+                  
+
+                  
+                  {/* Hover effect */}
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl"></div>
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Main Staking Card */}
           <div className={cn(
             "bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-3xl border border-zinc-800 px-4 py-6 md:p-8 mb-6 shadow-xl transition-all duration-300",
-            !isOnBSCMainnet && isConnected && "opacity-50 pointer-events-none"
+            !isOnCorrectNetwork && isConnected && "opacity-50 pointer-events-none"
           )}>
             
             {/* Portfolio Overview Header */}
@@ -785,7 +926,7 @@ function StakeContent() {
                   <p className="text-xs text-gray-500">Available</p>
                 </div>
                 <p className="text-lg md:text-2xl font-bold text-white mb-1">{formatTokenAmount(userData.tokenBalance, 2)}</p>
-                <p className="text-xs md:text-sm text-gray-400">BBLP </p>
+                <p className="text-xs md:text-sm text-gray-400">{selectedNetworkDetails?.tokenSymbol || 'BBLP'}</p>
               </div>
 
               <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-3 md:p-6 rounded-xl md:rounded-2xl border border-yellow-500/30 shadow-xl shadow-yellow-500/5">
@@ -794,7 +935,7 @@ function StakeContent() {
                   <p className="text-xs text-gray-500">Staked</p>
                 </div>
                 <p className="text-lg md:text-2xl font-bold text-yellow-400 mb-1">{formatTokenAmount(userData.stakedAmount, 2)}</p>
-                <p className="text-xs md:text-sm text-gray-400">BBLP</p>
+                <p className="text-xs md:text-sm text-gray-400">{selectedNetworkDetails?.tokenSymbol || 'BBLP'}</p>
               </div>
 
               <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 p-3 md:p-6 rounded-xl md:rounded-2xl border border-green-500/30 shadow-xl shadow-green-500/5">
@@ -803,11 +944,11 @@ function StakeContent() {
                   <p className="text-xs text-gray-500">Pending</p>
                 </div>
                 <p className="text-lg md:text-2xl font-bold text-green-400 mb-1">{
-                  Number(formatTokenAmount(userData.pendingRewards, 8)) >= 0.01
-                    ? formatTokenAmount(userData.pendingRewards, 2)
-                    : '0.00'
+                  Number(formatTokenAmount(userData.pendingRewards, 8)) >= 0.000001
+                    ? formatTokenAmount(userData.pendingRewards, 8)
+                    : '0'
                 }</p>
-                <p className="text-xs md:text-sm text-gray-400">Rewards</p>
+                <p className="text-xs md:text-sm text-gray-400">{selectedNetworkDetails?.tokenSymbol || 'BBLP'} Rewards</p>
               </div>
             </div>
 
@@ -833,10 +974,10 @@ function StakeContent() {
                   value={stakeAmount}
                   onChange={(e) => setStakeAmount(e.target.value)}
                   className="h-12 md:h-14 text-lg font-semibold bg-black/60 border-yellow-400/10 text-white placeholder:text-gray-500 pr-16 rounded-xl"
-                  disabled={walletState.loading || !isOnBSCMainnet}
+                  disabled={walletState.loading || !isOnCorrectNetwork}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-sm text-gray-400">
-                  BBLP
+                  {selectedNetworkDetails?.tokenSymbol || 'BBLP'}
                 </div>
               </div>
 
@@ -861,7 +1002,7 @@ function StakeContent() {
                   <span className="text-sm md:text-base">Connect Wallet</span>
                 </div>
               </Button>
-            ) : !isOnBSCMainnet ? (
+            ) : !isOnCorrectNetwork ? (
               <Button
                 onClick={handleSwitchChain}
                 disabled={isSwitchingChain}
@@ -882,7 +1023,7 @@ function StakeContent() {
                 ) : (
                   <div className="flex items-center justify-center w-full gap-2">
                     <Network className="w-4 h-4" />
-                    <span className="text-sm md:text-base">Switch to BSC Mainnet</span>
+                    <span className="text-sm md:text-base">Switch to {selectedNetworkDetails?.name || 'BSC Mainnet'}</span>
                   </div>
                 )}
               </Button>
@@ -917,7 +1058,7 @@ function StakeContent() {
                     className="w-full mt-3 bg-transparent border border-red-500/30 text-red-400 hover:bg-red-500/10 transition-all duration-200"
                   >
                     <Link href={`/presale?amount=${parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))}`}>
-                      Purchase {(parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))).toFixed(2)} BBLP
+                      Purchase {(parseFloat(stakeAmount) - parseFloat(formatTokenAmount(userData.tokenBalance))).toFixed(2)} {selectedNetworkDetails?.tokenSymbol || 'BBLP'}
                     </Link>
                   </Button>
                 )}
@@ -942,14 +1083,14 @@ function StakeContent() {
                       <div className="w-1.5 h-1.5 rounded-full bg-blue-400"></div>
                       <p className="text-xs text-gray-400 font-medium">Daily</p>
                     </div>
-                    <p className="text-lg md:text-xl font-bold text-blue-400 mb-1">{estimatedRewards.daily.toFixed(4)} BBLP</p>
+                    <p className="text-lg md:text-xl font-bold text-blue-400 mb-1">{estimatedRewards.daily.toFixed(4)} {selectedNetworkDetails?.tokenSymbol || 'BBLP'}</p>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-green-400"></div>
                       <p className="text-xs text-gray-400 font-medium">Yearly</p>
                     </div>
-                    <p className="text-lg md:text-xl font-bold text-green-400 mb-1">{estimatedRewards.yearly.toFixed(2)} BBLP</p>
+                    <p className="text-lg md:text-xl font-bold text-green-400 mb-1">{estimatedRewards.yearly.toFixed(2)} {selectedNetworkDetails?.tokenSymbol || 'BBLP'}</p>
                   </div>
                 </div>
               </div>
@@ -967,7 +1108,7 @@ function StakeContent() {
           {isConnected && userData.pendingRewards && Number(userData.pendingRewards) > 0 && (
             <div className={cn(
               "bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-green-500/30 p-4 md:p-6 mb-6 shadow-xl shadow-green-500/10 transition-all duration-300",
-              !isOnBSCMainnet && "opacity-50 pointer-events-none"
+              !isOnCorrectNetwork && "opacity-50 pointer-events-none"
             )}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-4">
@@ -980,22 +1121,23 @@ function StakeContent() {
                       <h4 className="text-sm font-semibold text-white">Rewards Available</h4>
                     </div>
                     <div className="flex items-baseline gap-2">
-                      <p className="text-lg font-bold text-green-400">{formatTokenAmount(userData.pendingRewards, 8)}</p>
-                      <p className="text-xs text-gray-500">BBLP</p>
+                      <p className="text-lg font-bold text-green-400">{parseFloat(formatTokenAmount(userData.pendingRewards, 8)) % 1 === 0 ? parseFloat(formatTokenAmount(userData.pendingRewards, 8)).toFixed(0) : formatTokenAmount(userData.pendingRewards, 8)}</p>
+                      <p className="text-xs text-gray-500">{selectedNetworkDetails?.tokenSymbol || 'BBLP'}</p>
                     </div>
                   </div>
                 </div>
                 
                 <Button
                   onClick={handleClaimRewards}
-                  disabled={walletState.loading || !isOnBSCMainnet}
+                  disabled={walletState.loading || !isOnCorrectNetwork || Number(userData.pendingRewards) <= 0}
+                  title={`Debug: loading=${walletState.loading}, correctNetwork=${isOnCorrectNetwork}, pendingRewards=${userData.pendingRewards}`}
                   className={cn(
                     "font-semibold text-black px-4 md:px-6",
                     "bg-gradient-to-r from-green-400 via-green-300 to-green-400",
                     "hover:from-green-300 hover:via-green-200 hover:to-green-300",
                     "shadow-lg shadow-green-400/25 hover:shadow-green-400/40",
                     "transition-all duration-300 transform hover:scale-105",
-                    !isOnBSCMainnet && "opacity-50 cursor-not-allowed"
+                    (walletState.loading || !isOnCorrectNetwork || Number(userData.pendingRewards) <= 0) && "opacity-50 cursor-not-allowed"
                   )}
                   size="sm"
                 >
@@ -1003,6 +1145,10 @@ function StakeContent() {
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
                       <span className="text-sm">Processing...</span>
+                    </div>
+                  ) : Number(userData.pendingRewards) <= 0 ? (
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm">No Rewards</span>
                     </div>
                   ) : (
                     <div className="flex items-center gap-2">
@@ -1104,7 +1250,7 @@ function StakeContent() {
           {isConnected && userData.stakes && userData.stakes.length > 0 && (
             <div className={cn(
               "py-5 rounded-3xl p-0 shadow-xl transition-all duration-300",
-              !isOnBSCMainnet && "opacity-50 pointer-events-none"
+              !isOnCorrectNetwork && "opacity-50 pointer-events-none"
             )}>
               {/* Active Stakes Header */}
               <div className="flex items-center gap-3 mb-6">
@@ -1136,7 +1282,7 @@ function StakeContent() {
                             <span className="text-white font-bold text-xs md:text-sm">#{stake.stakeId}</span>
                           </div>
                           <div>
-                            <p className="text-lg md:text-xl font-bold text-white">{formatTokenAmount(stake.amount, 2)} BBLP</p>
+                            <p className="text-lg md:text-xl font-bold text-white">{parseFloat(formatTokenAmount(stake.amount, 2)) % 1 === 0 ? parseFloat(formatTokenAmount(stake.amount, 2)).toFixed(0) : formatTokenAmount(stake.amount, 2)} {selectedNetworkDetails?.tokenSymbol || 'BBLP'}</p>
                             <p className="text-xs md:text-sm text-gray-400">
                               Staked on {stakeDate.toLocaleDateString('en-US', { 
                                 year: 'numeric', 
@@ -1180,7 +1326,7 @@ function StakeContent() {
                         
                         <Button
                           onClick={() => handleUnstake(stake.stakeId)}
-                          disabled={walletState.loading || !canUnstakeNow || !isOnBSCMainnet}
+                          disabled={walletState.loading || !canUnstakeNow || !isOnCorrectNetwork}
                           className={cn(
                             "font-semibold text-black px-4 md:px-6",
                             "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400",

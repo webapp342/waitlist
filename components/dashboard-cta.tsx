@@ -56,14 +56,16 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
     });
   }, [chainId, chain, isConnected, chains]);
 
-  // Check if user is on the correct network (BSC Mainnet - Chain ID 56)
+  // Check if user is on any supported network (BSC Mainnet or Ethereum)
   const actualChainId = chain?.id ? Number(chain.id) : (chainId ? Number(chainId) : undefined);
   const isOnBSCMainnet = actualChainId === 56; // BSC Mainnet Chain ID
+  const isOnEthMainnet = actualChainId === 1; // Ethereum Mainnet Chain ID
+  const isOnSupportedNetwork = isOnBSCMainnet || isOnEthMainnet;
         
-  // Save user to database when wallet is connected to correct network
+  // Save user to database when wallet is connected to supported network
   useEffect(() => {
     const saveUserToDatabase = async () => {
-      if (isConnected && address && isOnBSCMainnet) {
+      if (isConnected && address && isOnSupportedNetwork) {
         try {
           await userService.addUser(address);
           console.log('User saved successfully');
@@ -77,7 +79,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
     };
 
     saveUserToDatabase();
-  }, [isConnected, address, isOnBSCMainnet]);
+  }, [isConnected, address, isOnSupportedNetwork]);
 
   // Load user cards
   const loadUserCards = async (walletAddress: string) => {
@@ -96,13 +98,30 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
   // Calculate staked amount and determine card reservation status
   const getStakedAmount = () => {
     try {
+      console.log('🎯 DashboardCTA - userData.stakedAmount:', userData.stakedAmount);
       if (!userData.stakedAmount) return 0;
-      // Convert from wei if needed, or parse directly if already formatted
+      
+      // Check if the value is already formatted (contains decimal point)
       if (userData.stakedAmount.includes('.')) {
-        return parseFloat(userData.stakedAmount);
+        const result = parseFloat(userData.stakedAmount);
+        console.log('🎯 DashboardCTA - Parsed stakedAmount (already formatted):', result);
+        return result;
       }
-      return parseFloat(ethers.formatEther(userData.stakedAmount));
-    } catch {
+      
+      // Check if the value is a large number (wei format) or small number (already in BBLP)
+      const numericValue = parseFloat(userData.stakedAmount);
+      if (numericValue > 1000000) {
+        // Large number, likely in wei format
+        const result = parseFloat(ethers.formatEther(userData.stakedAmount));
+        console.log('🎯 DashboardCTA - Formatted stakedAmount (from wei):', result);
+        return result;
+      } else {
+        // Small number, already in BBLP format
+        console.log('🎯 DashboardCTA - Parsed stakedAmount (already in BBLP):', numericValue);
+        return numericValue;
+      }
+    } catch (error) {
+      console.error('🎯 DashboardCTA - Error parsing stakedAmount:', error);
       return 0;
     }
   };
@@ -228,6 +247,9 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
     const currentStaked = stakedAmount;
     let requiredAmount = 0;
 
+    console.log('🎯 getRequiredStakeAmount - currentCard.card_type:', currentCard.card_type);
+    console.log('🎯 getRequiredStakeAmount - currentStaked:', currentStaked);
+
     switch (currentCard.card_type) {
       case 'bronze':
         requiredAmount = Math.max(0, 1000 - currentStaked);
@@ -242,6 +264,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
         requiredAmount = 0;
     }
 
+    console.log('🎯 getRequiredStakeAmount - requiredAmount:', requiredAmount);
     return requiredAmount;
   };
 
@@ -489,8 +512,8 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
 
   
 
-      {/* User Cards Display - Only show when on correct network */}
-      {isOnBSCMainnet && (
+      {/* User Cards Display - Show when on supported network */}
+      {isOnSupportedNetwork && (
         <motion.div variants={itemVariants} className="mt-8 w-full">
           {isLoadingCards ? (
             <div className="flex justify-center">
@@ -509,7 +532,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
    
 
       {/* Staking CTA for current active card */}
-      {isOnBSCMainnet && userCards.length > 0 && (
+      {isOnSupportedNetwork && userCards.length > 0 && (
         <motion.div variants={itemVariants} >
           {!isCardReserved(userCards[currentCardIndex]?.card_type) ? (
             // Card Not Activated - Yellow Theme

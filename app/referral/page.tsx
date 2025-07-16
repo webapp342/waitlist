@@ -174,7 +174,7 @@ export default function ReferralPage() {
     }
 
     if (!isOnBSCMainnet) {
-      toast.error('Please switch to BSC Mainnet to claim USDT');
+      toast.error('Please switch to BSC Mainnet to claim rewards');
       return;
     }
 
@@ -378,7 +378,7 @@ export default function ReferralPage() {
                   className="w-full bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold text-xs md:text-sm py-2 px-3 rounded-lg shadow-lg hover:shadow-orange-500/20 transition-all duration-200"
                 >
                   <AlertTriangle className="w-3 h-3 md:w-4 md:h-4 mr-1 md:mr-2" />
-                  Switch to BSC Testnet
+                  Switch to BSC Mainnet 
                 </Button>
               ) : parseFloat(referralStats.totalRewards) > 0 ? (
                 <Button
