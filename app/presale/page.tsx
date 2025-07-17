@@ -1275,7 +1275,7 @@ function PresalePageInner() {
                     </div>
                     <div>
                       <h4 className="text-sm font-semibold text-white mb-1">Network Requirement</h4>
-                      <p className="text-xs text-gray-400">Presale is available on BSC Mainnet only</p>
+                      <p className="text-xs text-gray-400">Presale is available on BNB Smart Chain & Ethereum</p>
                     </div>
                   </div>
                 </div>
