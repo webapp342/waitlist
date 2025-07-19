@@ -99,7 +99,7 @@ export default function TelegramPage() {
           const widgetDiv = document.createElement('div');
           widgetDiv.setAttribute('data-telegram-login', 'denemebot45bot');
           widgetDiv.setAttribute('data-size', 'large');
-          widgetDiv.setAttribute('data-auth-url', window.location.origin + '/telegram');
+          widgetDiv.setAttribute('data-auth-url', 'https://bblip.io/telegram');
           widgetDiv.setAttribute('data-request-access', 'write');
           widgetDiv.setAttribute('data-radius', '8');
           widgetDiv.setAttribute('data-lang', 'en');
@@ -578,7 +578,7 @@ export default function TelegramPage() {
                     const widgetDiv = document.createElement('div');
                     widgetDiv.setAttribute('data-telegram-login', 'denemebot45bot');
                     widgetDiv.setAttribute('data-size', 'large');
-                    widgetDiv.setAttribute('data-auth-url', window.location.origin + '/telegram');
+                    widgetDiv.setAttribute('data-auth-url', 'https://bblip.io/telegram');
                     widgetDiv.setAttribute('data-request-access', 'write');
                     widgetDiv.setAttribute('data-radius', '8');
                     widgetDiv.setAttribute('data-lang', 'en');
