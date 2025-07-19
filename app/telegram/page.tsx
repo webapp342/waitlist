@@ -173,43 +173,66 @@ export default function TelegramPage() {
   };
 
   const handleTelegramLogin = async (user: TelegramUser) => {
+    console.log('🔐 handleTelegramLogin called with user:', user);
+    console.log('💰 Current wallet address:', address);
+    
     if (!address) {
+      console.log('❌ No wallet address found');
       toast.error('Please connect your wallet first');
       return;
     }
 
+    console.log('⏳ Starting Telegram connection process...');
     setIsLoading(true);
+    
     try {
+      const requestBody = {
+        telegramUser: user,
+        walletAddress: address
+      };
+      
+      console.log('📤 Sending request to /api/telegram/connect');
+      console.log('📦 Request body:', JSON.stringify(requestBody, null, 2));
+      
       const response = await fetch('/api/telegram/connect', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          telegramUser: user,
-          walletAddress: address
-        }),
+        body: JSON.stringify(requestBody),
       });
 
+      console.log('📥 Response received:');
+      console.log('  - Status:', response.status);
+      console.log('  - OK:', response.ok);
+      console.log('  - Headers:', Object.fromEntries(response.headers.entries()));
+
       const data = await response.json();
+      console.log('📄 Response data:', JSON.stringify(data, null, 2));
       
       if (response.ok) {
         if (data.isAlreadyConnected) {
+          console.log('✅ User already connected');
           toast.success('Telegram already connected! 🎉');
         } else {
+          console.log('✅ User connected successfully');
           toast.success('Telegram connected successfully! 🎉');
         }
         
-        // Stats'ı yenile
+        console.log('🔄 Refreshing Telegram status...');
         await checkTelegramStatus();
         setShowTelegramWidget(false);
+        console.log('✅ Telegram connection process completed');
       } else {
+        console.log('❌ API error:', data.error);
         toast.error(data.error || 'Failed to connect Telegram');
       }
     } catch (error) {
-      console.error('Error connecting Telegram:', error);
+      console.error('❌ Error connecting Telegram:', error);
+      console.error('Error details:', JSON.stringify(error, null, 2));
       toast.error('Failed to connect Telegram');
     } finally {
+      console.log('🏁 Setting loading to false');
       setIsLoading(false);
     }
   };

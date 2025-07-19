@@ -2,25 +2,45 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
+  console.log('🔗 POST /api/telegram/connect called');
+  
   try {
-    const { telegramUser, walletAddress } = await request.json();
+    const body = await request.json();
+    console.log('📦 Request body:', JSON.stringify(body, null, 2));
+    
+    const { telegramUser, walletAddress } = body;
+
+    console.log('🔍 Validating request data...');
+    console.log('  - telegramUser:', telegramUser ? 'Present' : 'Missing');
+    console.log('  - walletAddress:', walletAddress ? 'Present' : 'Missing');
 
     if (!telegramUser || !walletAddress) {
+      console.log('❌ Missing required data');
       return NextResponse.json(
         { error: 'Telegram user data and wallet address are required' },
         { status: 400 }
       );
     }
 
+    console.log('✅ Request validation passed');
+
     // 1. Önce kullanıcının wallet adresini kontrol et
+    console.log('🔍 Step 1: Checking if wallet user exists...');
+    console.log('  - Wallet address:', walletAddress);
+    
     const { data: existingUser, error: userError } = await supabase
       .from('users')
       .select('id')
       .eq('wallet_address', walletAddress)
       .single();
 
+    console.log('📊 Wallet user check result:');
+    console.log('  - User found:', !!existingUser);
+    console.log('  - User ID:', existingUser?.id);
+    console.log('  - Error:', userError ? JSON.stringify(userError) : 'None');
+
     if (userError && userError.code !== 'PGRST116') {
-      console.error('Error checking user:', userError);
+      console.error('❌ Error checking user:', userError);
       return NextResponse.json(
         { error: 'Failed to check user' },
         { status: 500 }
@@ -28,11 +48,14 @@ export async function POST(request: NextRequest) {
     }
 
     if (!existingUser) {
+      console.log('❌ User not found in database');
       return NextResponse.json(
         { error: 'User not found. Please connect wallet first' },
         { status: 404 }
       );
     }
+
+    console.log('✅ Wallet user found:', existingUser.id);
 
     // 2. Telegram ID'nin başka bir kullanıcı ile bağlı olup olmadığını kontrol et
     const { data: existingTelegramUser, error: telegramCheckError } = await supabase

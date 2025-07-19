@@ -42,7 +42,15 @@ bot.onText(/\/start/, async (msg) => {
   const username = msg.from.username || msg.from.first_name;
   const args = msg.text.split(' ');
   
+  console.log(`🚀 /start command received:`);
+  console.log(`  - Chat ID: ${chatId}`);
+  console.log(`  - User ID: ${userId}`);
+  console.log(`  - Username: @${username}`);
+  console.log(`  - Args: ${JSON.stringify(args)}`);
+  
   try {
+    console.log(`🔍 Checking if user ${userId} exists in database...`);
+    
     // Check if user is in our database
     const { data: telegramUser, error } = await supabase
       .from('telegram_users')
@@ -50,42 +58,58 @@ bot.onText(/\/start/, async (msg) => {
       .eq('telegram_id', userId)
       .single();
     
+    console.log(`📊 Database query result:`);
+    console.log(`  - User found: ${!!telegramUser}`);
+    console.log(`  - Error: ${error ? JSON.stringify(error) : 'None'}`);
+    console.log(`  - User data: ${telegramUser ? JSON.stringify(telegramUser) : 'Not found'}`);
+    
     if (error || !telegramUser) {
-              if (args[1] === 'connect') {
-          await bot.sendMessage(chatId, 
-            `🔗 Manual Connection Mode\n\n` +
-            `To connect your Telegram account:\n\n` +
-            `1. Visit our web app: ${WEB_APP_URL}/telegram\n` +
-            `2. Connect your wallet\n` +
-            `3. Click "Connect Telegram" button\n` +
-            `4. Use the Telegram Login Widget\n\n` +
-            `Your Telegram ID: ${userId}\n` +
-            `Your Username: @${username}\n\n` +
-            `Once connected, you can use:\n` +
-            `/my_xp - View your XP and level\n` +
-            `/leaderboard - View top users\n` +
-            `/help - Show all commands`
-          );
-        } else {
-          await bot.sendMessage(chatId, 
-            `Welcome to BBLIP Telegram Bot! 🤖\n\n` +
-            `To start earning XP, connect your Telegram account:\n\n` +
-            `1. Visit: ${WEB_APP_URL}/telegram\n` +
-            `2. Connect your wallet\n` +
-            `3. Click "Connect Telegram" button\n` +
-            `4. Use the Telegram Login Widget\n\n` +
-            `Your messages and reactions in our group will earn you XP automatically!`
-          );
-        }
+      console.log(`❌ User not connected, sending connection instructions...`);
+      
+      if (args[1] === 'connect') {
+        const message = `🔗 Manual Connection Mode\n\n` +
+          `To connect your Telegram account:\n\n` +
+          `1. Visit our web app: ${WEB_APP_URL}/telegram\n` +
+          `2. Connect your wallet\n` +
+          `3. Click "Connect Telegram" button\n` +
+          `4. Use the Telegram Login Widget\n\n` +
+          `Your Telegram ID: ${userId}\n` +
+          `Your Username: @${username}\n\n` +
+          `Once connected, you can use:\n` +
+          `/my_xp - View your XP and level\n` +
+          `/leaderboard - View top users\n` +
+          `/help - Show all commands`;
+        
+        console.log(`📤 Sending manual connection message...`);
+        await bot.sendMessage(chatId, message);
+        console.log(`✅ Manual connection message sent`);
+      } else {
+        const message = `Welcome to BBLIP Telegram Bot! 🤖\n\n` +
+          `To start earning XP, connect your Telegram account:\n\n` +
+          `1. Visit: ${WEB_APP_URL}/telegram\n` +
+          `2. Connect your wallet\n` +
+          `3. Click "Connect Telegram" button\n` +
+          `4. Use the Telegram Login Widget\n\n` +
+          `Your messages and reactions in our group will earn you XP automatically!`;
+        
+        console.log(`📤 Sending welcome message...`);
+        await bot.sendMessage(chatId, message);
+        console.log(`✅ Welcome message sent`);
+      }
       return;
     }
     
-    await bot.sendMessage(chatId, 
-      `Welcome back! You are connected to wallet: ${telegramUser.user_id}\n\n` +
-      'Your messages and reactions in the group will earn you XP automatically!'
-    );
+    console.log(`✅ User already connected to wallet: ${telegramUser.user_id}`);
+    const message = `Welcome back! You are connected to wallet: ${telegramUser.user_id}\n\n` +
+      'Your messages and reactions in the group will earn you XP automatically!';
+    
+    console.log(`📤 Sending welcome back message...`);
+    await bot.sendMessage(chatId, message);
+    console.log(`✅ Welcome back message sent`);
+    
   } catch (error) {
-    console.error('Error in /start command:', error);
+    console.error('❌ Error in /start command:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
     await bot.sendMessage(chatId, 'Sorry, something went wrong. Please try again.');
   }
 });
@@ -405,6 +429,12 @@ bot.on('polling_error', (error) => {
   console.error('Polling error:', error);
 });
 
-console.log('Telegram bot started...');
+console.log('🤖 Telegram bot started...');
+console.log('📊 Bot Info:');
+console.log('  - Bot Token:', BOT_TOKEN ? '✅ Set' : '❌ Missing');
+console.log('  - Group ID:', GROUP_ID);
+console.log('  - Supabase URL:', SUPABASE_URL ? '✅ Set' : '❌ Missing');
+console.log('  - Web App URL:', WEB_APP_URL);
+console.log('🔍 Waiting for messages...');
 
 module.exports = bot; 
