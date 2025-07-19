@@ -79,8 +79,18 @@ export default function TelegramPage() {
 
   // Telegram callback fonksiyonu - global olarak tanımla
   useEffect(() => {
+    // Global callback fonksiyonu (Telegram dokümantasyonuna göre)
     window.TelegramLoginWidget = {
       dataOnauth: (user: TelegramUser) => {
+        console.log('✅ Telegram auth callback received:', user);
+        handleTelegramLogin(user);
+      }
+    };
+
+    // Alternatif callback yöntemi
+    window.TelegramLoginWidget = {
+      dataOnauth: function(user) {
+        console.log('✅ Telegram auth callback received:', user);
         handleTelegramLogin(user);
       }
     };
@@ -95,26 +105,23 @@ export default function TelegramPage() {
           // Mevcut widget'ı temizle
           widgetContainer.innerHTML = '';
           
-          // Widget div'ini oluştur
-          const widgetDiv = document.createElement('div');
-          widgetDiv.setAttribute('data-telegram-login', 'denemebot45bot');
-          widgetDiv.setAttribute('data-size', 'large');
-          widgetDiv.setAttribute('data-auth-url', 'https://bblip.io/telegram');
-          widgetDiv.setAttribute('data-request-access', 'write');
-          widgetDiv.setAttribute('data-radius', '8');
-          widgetDiv.setAttribute('data-lang', 'en');
+          // Widget script'ini oluştur (Telegram dokümantasyonuna göre)
+          const widgetScript = document.createElement('script');
+          widgetScript.setAttribute('data-telegram-login', 'denemebot45bot');
+          widgetScript.setAttribute('data-size', 'large');
+          widgetScript.setAttribute('data-auth-url', 'https://bblip.io/telegram?auth=1');
+          widgetScript.setAttribute('data-request-access', 'write');
+          widgetScript.setAttribute('data-radius', '8');
+          widgetScript.setAttribute('data-lang', 'en');
+          widgetScript.src = 'https://telegram.org/js/telegram-widget.js?22';
+          widgetScript.async = true;
           
-          widgetContainer.appendChild(widgetDiv);
-          
-          // Script'i yükle
-          const script = document.createElement('script');
-          script.src = 'https://telegram.org/js/telegram-widget.js?22';
-          script.async = true;
-          script.onload = () => {
-            console.log('Telegram widget script loaded');
+          widgetScript.onload = () => {
+            console.log('✅ Telegram widget script loaded successfully');
           };
-          script.onerror = () => {
-            console.error('Failed to load Telegram widget script');
+          
+          widgetScript.onerror = () => {
+            console.error('❌ Failed to load Telegram widget script');
             // Fallback: Manuel buton oluştur
             widgetContainer.innerHTML = `
               <div class="flex flex-col items-center gap-4">
@@ -130,7 +137,7 @@ export default function TelegramPage() {
             `;
           };
           
-          document.head.appendChild(script);
+          widgetContainer.appendChild(widgetScript);
         }
       };
 
@@ -575,20 +582,17 @@ export default function TelegramPage() {
                   const widgetContainer = document.getElementById('telegram-login-widget');
                   if (widgetContainer) {
                     widgetContainer.innerHTML = '';
-                    const widgetDiv = document.createElement('div');
-                    widgetDiv.setAttribute('data-telegram-login', 'denemebot45bot');
-                    widgetDiv.setAttribute('data-size', 'large');
-                    widgetDiv.setAttribute('data-auth-url', 'https://bblip.io/telegram');
-                    widgetDiv.setAttribute('data-request-access', 'write');
-                    widgetDiv.setAttribute('data-radius', '8');
-                    widgetDiv.setAttribute('data-lang', 'en');
+                    const widgetScript = document.createElement('script');
+                    widgetScript.setAttribute('data-telegram-login', 'denemebot45bot');
+                    widgetScript.setAttribute('data-size', 'large');
+                    widgetScript.setAttribute('data-auth-url', 'https://bblip.io/telegram?auth=1');
+                    widgetScript.setAttribute('data-request-access', 'write');
+                    widgetScript.setAttribute('data-radius', '8');
+                    widgetScript.setAttribute('data-lang', 'en');
+                    widgetScript.src = 'https://telegram.org/js/telegram-widget.js?22';
+                    widgetScript.async = true;
                     
-                    widgetContainer.appendChild(widgetDiv);
-                    
-                    const script = document.createElement('script');
-                    script.src = 'https://telegram.org/js/telegram-widget.js?22';
-                    script.async = true;
-                    document.head.appendChild(script);
+                    widgetContainer.appendChild(widgetScript);
                   }
                 }}
                 className="flex-1 bg-blue-600 hover:bg-blue-700"
