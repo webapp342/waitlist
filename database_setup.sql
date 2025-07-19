@@ -161,6 +161,26 @@ CREATE INDEX IF NOT EXISTS idx_referrals_referred_id ON public.referrals(referre
 CREATE INDEX IF NOT EXISTS idx_referral_rewards_referrer_id ON public.referral_rewards(referrer_id);
 CREATE INDEX IF NOT EXISTS idx_referral_rewards_referred_id ON public.referral_rewards(referred_id);
 
+-- Performance optimization for admin dashboard
+CREATE INDEX IF NOT EXISTS idx_users_created_at ON public.users(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_referrals_referrer_id_count ON public.referrals(referrer_id) INCLUDE (id);
+CREATE INDEX IF NOT EXISTS idx_users_wallet_referrals ON public.users(wallet_address) INCLUDE (id, created_at);
+
+-- Create airdrop table
+CREATE TABLE IF NOT EXISTS public.airdrop (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  ethereum_address character varying NOT NULL,
+  xp_amount numeric(20,2) NOT NULL DEFAULT 0,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT airdrop_pkey PRIMARY KEY (id),
+  CONSTRAINT airdrop_ethereum_address_unique UNIQUE (ethereum_address)
+);
+
+-- Create indexes for airdrop table
+CREATE INDEX IF NOT EXISTS idx_airdrop_ethereum_address ON public.airdrop(ethereum_address);
+CREATE INDEX IF NOT EXISTS idx_airdrop_xp_amount ON public.airdrop(xp_amount DESC);
+
 -- Enable Row Level Security (RLS)
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.cards ENABLE ROW LEVEL SECURITY;
@@ -193,6 +213,14 @@ CREATE POLICY "Referrals can be updated by authenticated users" ON public.referr
 CREATE POLICY "Referral rewards are viewable by everyone" ON public.referral_rewards FOR SELECT USING (true);
 CREATE POLICY "Referral rewards can be inserted by authenticated users" ON public.referral_rewards FOR INSERT WITH CHECK (true);
 CREATE POLICY "Referral rewards can be updated by authenticated users" ON public.referral_rewards FOR UPDATE USING (true);
+
+-- Enable RLS for airdrop table
+ALTER TABLE public.airdrop ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policies for airdrop table
+CREATE POLICY "Airdrop is viewable by everyone" ON public.airdrop FOR SELECT USING (true);
+CREATE POLICY "Airdrop can be inserted by authenticated users" ON public.airdrop FOR INSERT WITH CHECK (true);
+CREATE POLICY "Airdrop can be updated by authenticated users" ON public.airdrop FOR UPDATE USING (true);
 
 -- Grant necessary permissions
 GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated;

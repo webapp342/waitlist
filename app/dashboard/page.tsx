@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { useWallet } from '@/hooks/useWallet';
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Wallet, RefreshCw, Plus, Send, Info, ArrowUpRight, ArrowDownLeft, Coins, History, ExternalLink, ChevronDown, ChevronUp, Copy, Share2, Users, Gift, Sparkles, Trophy, Crown, ArrowRight, Activity, Repeat, Network, AlertCircle } from 'lucide-react';
+import { TrendingUp, Wallet, RefreshCw, Plus, Send, Info, ArrowUpRight, ArrowDownLeft, Coins, History, ExternalLink, ChevronDown, ChevronUp, Copy, Share2, Users, Gift, Sparkles, Trophy, Crown, ArrowRight, Activity, Repeat, Network, AlertCircle, MessageSquare } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { cn } from "@/lib/utils";
@@ -820,6 +820,8 @@ function DashboardContent() {
               </div>
             </div>
           )}
+
+
         </div>
       </section>
 

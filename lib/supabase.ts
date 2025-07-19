@@ -93,6 +93,15 @@ export interface Referral {
   updated_at?: string
 }
 
+// Airdrop interface
+export interface Airdrop {
+  id?: string
+  ethereum_address: string
+  xp_amount: number
+  created_at?: string
+  updated_at?: string
+}
+
 // User service functions
 export const userService = {
   // Add user wallet to database (simplified)
@@ -1117,6 +1126,276 @@ export const referralService = {
     } catch (error) {
       console.error('Error in getLeaderboard:', error)
       return { topUsers: [], currentUserRank: null }
+    }
+  }
+}
+
+// Airdrop service functions
+export const airdropService = {
+  // Add or update airdrop entry (single record)
+  async addOrUpdateAirdrop(ethereumAddress: string, xpAmount: number): Promise<Airdrop | null> {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, skipping airdrop save')
+      return null
+    }
+
+    try {
+      // Check if airdrop entry already exists
+      const { data: existing, error: checkError } = await supabase
+        .from('airdrop')
+        .select('*')
+        .eq('ethereum_address', ethereumAddress.toLowerCase())
+        .single()
+
+      if (checkError && checkError.code !== 'PGRST116') {
+        console.error('Error checking existing airdrop:', checkError)
+        throw checkError
+      }
+
+      if (existing) {
+        // Update existing entry - add to current XP
+        const newXpAmount = existing.xp_amount + xpAmount
+        const { data: updated, error: updateError } = await supabase
+          .from('airdrop')
+          .update({ 
+            xp_amount: newXpAmount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('ethereum_address', ethereumAddress.toLowerCase())
+          .select()
+          .single()
+
+        if (updateError) {
+          console.error('Error updating airdrop:', updateError)
+          throw updateError
+        }
+
+        console.log('Airdrop updated successfully:', updated)
+        return updated
+      } else {
+        // Create new entry
+        const { data: created, error: createError } = await supabase
+          .from('airdrop')
+          .insert([{ 
+            ethereum_address: ethereumAddress.toLowerCase(),
+            xp_amount: xpAmount
+          }])
+          .select()
+          .single()
+
+        if (createError) {
+          console.error('Error creating airdrop:', createError)
+          throw createError
+        }
+
+        console.log('Airdrop created successfully:', created)
+        return created
+      }
+    } catch (error) {
+      console.error('Error in addOrUpdateAirdrop:', error)
+      throw error
+    }
+  },
+
+  // Get all existing airdrop data for comparison
+  async getAllExistingAirdrops(): Promise<Map<string, number>> {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, returning empty map')
+      return new Map()
+    }
+
+    try {
+      console.log('Fetching all existing airdrop data...')
+      const { data: existingRecords, error: fetchError } = await supabase
+        .from('airdrop')
+        .select('ethereum_address, xp_amount')
+
+      if (fetchError) {
+        console.error('Error fetching all airdrops:', {
+          error: fetchError,
+          message: fetchError.message,
+          details: fetchError.details,
+          hint: fetchError.hint,
+          code: fetchError.code
+        })
+        throw fetchError
+      }
+
+      // Create map for quick lookup
+      const existingMap = new Map<string, number>()
+      existingRecords?.forEach(record => {
+        existingMap.set(record.ethereum_address.toLowerCase(), record.xp_amount)
+      })
+
+      console.log(`Found ${existingMap.size} existing airdrop records`)
+      return existingMap
+    } catch (error: any) {
+      console.error('Error in getAllExistingAirdrops:', {
+        error: error,
+        message: error?.message || 'Unknown error',
+        stack: error?.stack || 'No stack trace'
+      })
+      return new Map()
+    }
+  },
+
+  // Batch add new airdrops and update existing ones (PERFORMANCE OPTIMIZED)
+  async batchAddOrUpdateAirdrops(airdropData: Array<{ethereumAddress: string, xpAmount: number}>): Promise<{successCount: number, errorCount: number, updatedCount: number, newCount: number}> {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, skipping batch airdrop save')
+      return { successCount: 0, errorCount: airdropData.length, updatedCount: 0, newCount: 0 }
+    }
+
+    if (airdropData.length === 0) {
+      return { successCount: 0, errorCount: 0, updatedCount: 0, newCount: 0 }
+    }
+
+    try {
+      // Get all existing data first
+      const existingMap = await this.getAllExistingAirdrops()
+      
+      // Separate new and existing records
+      const newRecords: Array<{ethereum_address: string, xp_amount: number}> = []
+      const updateRecords: Array<{ethereum_address: string, xp_amount: number}> = []
+
+      airdropData.forEach(item => {
+        const address = item.ethereumAddress.toLowerCase()
+        const existingXp = existingMap.get(address)
+        
+        if (existingXp !== undefined) {
+          // Update existing record - add to current XP
+          updateRecords.push({
+            ethereum_address: address,
+            xp_amount: existingXp + item.xpAmount
+          })
+        } else {
+          // Add new record
+          newRecords.push({
+            ethereum_address: address,
+            xp_amount: item.xpAmount
+          })
+        }
+      })
+
+      console.log(`Processing: ${newRecords.length} new records, ${updateRecords.length} updates`)
+
+      let successCount = 0
+      let errorCount = 0
+
+      // Batch insert new records
+      if (newRecords.length > 0) {
+        const { error: insertError } = await supabase
+          .from('airdrop')
+          .insert(newRecords)
+
+        if (insertError) {
+          console.error('Error batch inserting new airdrops:', insertError)
+          errorCount += newRecords.length
+        } else {
+          successCount += newRecords.length
+          console.log(`Successfully inserted ${newRecords.length} new airdrop records`)
+        }
+      }
+
+      // Batch update existing records using upsert
+      if (updateRecords.length > 0) {
+        const { error: updateError } = await supabase
+          .from('airdrop')
+          .upsert(updateRecords, { onConflict: 'ethereum_address' })
+
+        if (updateError) {
+          console.error('Error batch updating airdrops:', updateError)
+          errorCount += updateRecords.length
+        } else {
+          successCount += updateRecords.length
+          console.log(`Successfully updated ${updateRecords.length} existing airdrop records`)
+        }
+      }
+
+      return { 
+        successCount, 
+        errorCount, 
+        updatedCount: updateRecords.length, 
+        newCount: newRecords.length 
+      }
+
+    } catch (error: any) {
+      console.error('Error in batchAddOrUpdateAirdrops:', {
+        error: error,
+        message: error?.message || 'Unknown error',
+        stack: error?.stack || 'No stack trace',
+        dataLength: airdropData.length
+      })
+      return { successCount: 0, errorCount: airdropData.length, updatedCount: 0, newCount: 0 }
+    }
+  },
+
+  // Get airdrop entry by ethereum address
+  async getAirdropByAddress(ethereumAddress: string): Promise<Airdrop | null> {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, skipping airdrop fetch')
+      return null
+    }
+
+    const { data, error } = await supabase
+      .from('airdrop')
+      .select('*')
+      .eq('ethereum_address', ethereumAddress.toLowerCase())
+      .single()
+
+    if (error && error.code !== 'PGRST116') {
+      console.error('Error fetching airdrop:', error)
+      throw error
+    }
+
+    return data || null
+  },
+
+  // Get all airdrop entries (for admin dashboard)
+  async getAllAirdrops(): Promise<Airdrop[]> {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, returning empty airdrops')
+      return []
+    }
+
+    const { data, error } = await supabase
+      .from('airdrop')
+      .select('*')
+      .order('xp_amount', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching all airdrops:', error)
+      throw error
+    }
+
+    return data || []
+  },
+
+  // Get airdrop statistics
+  async getAirdropStats() {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return { totalParticipants: 0, totalXp: 0, averageXp: 0 }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('airdrop')
+        .select('xp_amount')
+
+      if (error) throw error
+
+      const totalParticipants = data?.length || 0
+      const totalXp = data?.reduce((sum, item) => sum + (item.xp_amount || 0), 0) || 0
+      const averageXp = totalParticipants > 0 ? totalXp / totalParticipants : 0
+
+      return {
+        totalParticipants,
+        totalXp,
+        averageXp
+      }
+    } catch (error) {
+      console.error('Error in getAirdropStats:', error)
+      return { totalParticipants: 0, totalXp: 0, averageXp: 0 }
     }
   }
 } 
