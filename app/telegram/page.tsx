@@ -95,6 +95,34 @@ export default function TelegramPage() {
       handleTelegramLogin(user);
     };
 
+    // URL parametrelerini kontrol et (callback için)
+    const urlParams = new URLSearchParams(window.location.search);
+    const authId = urlParams.get('id');
+    const authFirstName = urlParams.get('first_name');
+    const authUsername = urlParams.get('username');
+    const authPhotoUrl = urlParams.get('photo_url');
+    const authDate = urlParams.get('auth_date');
+    const authHash = urlParams.get('hash');
+
+    if (authId && authFirstName) {
+      console.log('🔗 URL callback detected!');
+      console.log('  - ID:', authId);
+      console.log('  - First Name:', authFirstName);
+      console.log('  - Username:', authUsername);
+      
+      const user = {
+        id: parseInt(authId),
+        first_name: authFirstName,
+        username: authUsername || undefined,
+        photo_url: authPhotoUrl || undefined,
+        auth_date: parseInt(authDate || '0'),
+        hash: authHash || ''
+      };
+      
+      console.log('📦 Constructed user object:', user);
+      handleTelegramLogin(user);
+    }
+
     console.log('🔧 Telegram callback functions initialized');
   }, []);
 

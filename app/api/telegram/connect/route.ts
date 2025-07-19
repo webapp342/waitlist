@@ -58,14 +58,22 @@ export async function POST(request: NextRequest) {
     console.log('✅ Wallet user found:', existingUser.id);
 
     // 2. Telegram ID'nin başka bir kullanıcı ile bağlı olup olmadığını kontrol et
+    console.log('🔍 Step 2: Checking if Telegram ID is already connected...');
+    console.log('  - Telegram ID:', telegramUser.id);
+    
     const { data: existingTelegramUser, error: telegramCheckError } = await supabase
       .from('telegram_users')
       .select('user_id, telegram_id')
       .eq('telegram_id', telegramUser.id)
       .single();
 
+    console.log('📊 Telegram user check result:');
+    console.log('  - Existing user found:', !!existingTelegramUser);
+    console.log('  - Existing user data:', existingTelegramUser ? JSON.stringify(existingTelegramUser) : 'None');
+    console.log('  - Error:', telegramCheckError ? JSON.stringify(telegramCheckError) : 'None');
+
     if (telegramCheckError && telegramCheckError.code !== 'PGRST116') {
-      console.error('Error checking telegram user:', telegramCheckError);
+      console.error('❌ Error checking telegram user:', telegramCheckError);
       return NextResponse.json(
         { error: 'Failed to check telegram user' },
         { status: 500 }
@@ -73,8 +81,10 @@ export async function POST(request: NextRequest) {
     }
 
     if (existingTelegramUser) {
+      console.log('⚠️ Telegram ID already connected to another user');
       if (existingTelegramUser.user_id === existingUser.id) {
         // Zaten bağlı
+        console.log('✅ User already connected to this Telegram account');
         return NextResponse.json({
           success: true,
           message: 'Telegram already connected',
@@ -82,12 +92,15 @@ export async function POST(request: NextRequest) {
         });
       } else {
         // Başka bir kullanıcı ile bağlı
+        console.log('❌ Telegram account connected to different wallet');
         return NextResponse.json(
           { error: 'This Telegram account is already connected to another wallet' },
           { status: 409 }
         );
       }
     }
+
+    console.log('✅ Telegram ID not connected to any user');
 
     // 3. Kullanıcının zaten başka bir Telegram hesabı ile bağlı olup olmadığını kontrol et
     const { data: existingUserTelegram, error: userTelegramError } = await supabase
