@@ -29,6 +29,7 @@ declare global {
     TelegramLoginWidget?: {
       dataOnauth: (user: any) => void;
     };
+    debugTelegramAuth?: (user: any) => void;
   }
 }
 
@@ -81,19 +82,20 @@ export default function TelegramPage() {
   useEffect(() => {
     // Global callback fonksiyonu (Telegram dokümantasyonuna göre)
     window.TelegramLoginWidget = {
-      dataOnauth: (user: TelegramUser) => {
+      dataOnauth: function(user) {
         console.log('✅ Telegram auth callback received:', user);
+        console.log('User data:', JSON.stringify(user, null, 2));
         handleTelegramLogin(user);
       }
     };
 
-    // Alternatif callback yöntemi
-    window.TelegramLoginWidget = {
-      dataOnauth: function(user) {
-        console.log('✅ Telegram auth callback received:', user);
-        handleTelegramLogin(user);
-      }
+    // Debug için global fonksiyon
+    window.debugTelegramAuth = function(user) {
+      console.log('🔍 Debug: Telegram auth received:', user);
+      handleTelegramLogin(user);
     };
+
+    console.log('🔧 Telegram callback functions initialized');
   }, []);
 
   // Modal açıldığında widget'ı yükle
