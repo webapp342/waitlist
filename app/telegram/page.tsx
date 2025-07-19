@@ -568,7 +568,7 @@ export default function TelegramPage() {
             <p className="text-gray-400 mb-4">
               Click the button below to connect your Telegram account and start earning XP!
             </p>
-            <div id="telegram-login-widget" className="flex justify-center mb-4 min-h-[80px]"></div>
+            <div id="telegram-login-widget" className="flex justify-center mb-4 min-h-[80px] items-center"></div>
             <div className="flex gap-2">
               <Button 
                 variant="outline" 
