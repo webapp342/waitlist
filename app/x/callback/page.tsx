@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAccount } from 'wagmi';
 import { toast } from 'sonner';
 import { CheckCircle, XCircle, Loader2 } from 'lucide-react';
 
-export default function XCallbackPage() {
+function XCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { address, isConnected } = useAccount();
@@ -144,5 +144,27 @@ export default function XCallbackPage() {
         )}
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="text-center max-w-md mx-auto p-8">
+        <div className="mb-8">
+          <Loader2 className="w-16 h-16 mx-auto text-blue-400 animate-spin" />
+        </div>
+        <h1 className="text-2xl font-bold mb-4">Loading...</h1>
+        <p className="text-gray-400">Preparing authentication...</p>
+      </div>
+    </div>
+  );
+}
+
+export default function XCallbackPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <XCallbackContent />
+    </Suspense>
   );
 } 
