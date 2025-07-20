@@ -71,9 +71,19 @@ export async function GET(request: NextRequest) {
 
     // Get user's Discord guilds (servers) - optional
     let userGuilds = [];
+    let isInBBLIPGuild = false;
     try {
       userGuilds = await getDiscordUserGuilds(tokenData.access_token);
       console.log('Discord guilds retrieved:', userGuilds.length);
+      
+      // Check if user is in BBLIP guild
+      const guildId = process.env.DISCORD_GUILD_ID || '1396412220480426114';
+      isInBBLIPGuild = userGuilds.some((guild: any) => guild.id === guildId);
+      console.log('Guild membership check during connection:', {
+        guildId,
+        userGuilds: userGuilds.map((g: any) => ({ id: g.id, name: g.name })),
+        isInBBLIPGuild
+      });
     } catch (guildError) {
       console.log('Could not retrieve Discord guilds (this is normal if guilds.join scope is not available):', guildError);
       // Continue without guild information
@@ -166,7 +176,8 @@ export async function GET(request: NextRequest) {
         access_token: tokenData.access_token,
         refresh_token: tokenData.refresh_token,
         token_expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
-        is_active: true
+        is_active: true,
+        is_in_guild: isInBBLIPGuild
       })
       .select()
       .single();

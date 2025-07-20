@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     // Get Discord user data
     const { data: discordUser, error: userError } = await supabaseAdmin
       .from('discord_users')
-      .select('*')
+      .select('*, is_in_guild')
       .eq('user_id', walletAddress)
       .eq('is_active', true)
       .single();
@@ -54,9 +54,11 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if user is in BBLIP guild
-    let isInBBLIPGuild = false;
-    try {
-      if (discordUser.access_token) {
+    let isInBBLIPGuild = discordUser.is_in_guild || false;
+    
+    // Only check guild membership if not already confirmed in database
+    if (!isInBBLIPGuild && discordUser.access_token) {
+      try {
         const guildId = process.env.DISCORD_GUILD_ID || '1396412220480426114';
         
         // Check if token is expired
@@ -93,10 +95,18 @@ export async function GET(request: NextRequest) {
           guildId: guildId,
           isInGuild: isInBBLIPGuild
         });
+        
+        // Update guild membership status in database
+        await supabaseAdmin
+          .from('discord_users')
+          .update({ is_in_guild: isInBBLIPGuild })
+          .eq('discord_id', discordUser.discord_id);
+      } catch (guildError) {
+        console.error('Error checking guild membership:', guildError);
+        // Continue without guild information
       }
-    } catch (guildError) {
-      console.error('Error checking guild membership:', guildError);
-      // Continue without guild information
+    } else {
+      console.log('Using cached guild membership status:', isInBBLIPGuild);
     }
 
     // Get Discord activity data
