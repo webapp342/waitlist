@@ -111,7 +111,7 @@ export default function XPage() {
 
       if (response.ok) {
         // Store session ID for callback
-        localStorage.setItem('x_session_id', data.sessionId);
+        localStorage.setItem('x_oauth_session_id', data.sessionId);
         
         // Redirect to X OAuth
         window.location.href = data.authUrl;
