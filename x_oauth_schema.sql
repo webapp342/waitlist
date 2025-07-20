@@ -26,9 +26,9 @@ CREATE TABLE IF NOT EXISTS x_users (
     x_followers_count INTEGER DEFAULT 0,
     x_following_count INTEGER DEFAULT 0,
     x_tweet_count INTEGER DEFAULT 0,
-    access_token TEXT NOT NULL,
-    refresh_token TEXT,
-    token_expires_at TIMESTAMP WITH TIME ZONE,
+    access_token TEXT NULL, -- Allow NULL for Bearer Token connections
+    refresh_token TEXT NULL, -- Allow NULL for Bearer Token connections
+    token_expires_at TIMESTAMP WITH TIME ZONE NULL, -- Allow NULL for Bearer Token connections
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -46,25 +46,13 @@ CREATE INDEX IF NOT EXISTS idx_x_oauth_sessions_expires_at ON x_oauth_sessions(e
 ALTER TABLE x_oauth_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE x_users ENABLE ROW LEVEL SECURITY;
 
--- X OAuth Sessions policies
-CREATE POLICY "Users can view their own oauth sessions" ON x_oauth_sessions
-    FOR SELECT USING (wallet_address = current_setting('request.jwt.claims', true)::json->>'wallet_address');
+-- X OAuth Sessions policies - Allow all operations for now (can be restricted later)
+CREATE POLICY "Allow all operations on x_oauth_sessions" ON x_oauth_sessions
+    FOR ALL USING (true) WITH CHECK (true);
 
-CREATE POLICY "Users can insert their own oauth sessions" ON x_oauth_sessions
-    FOR INSERT WITH CHECK (wallet_address = current_setting('request.jwt.claims', true)::json->>'wallet_address');
-
-CREATE POLICY "Users can update their own oauth sessions" ON x_oauth_sessions
-    FOR UPDATE USING (wallet_address = current_setting('request.jwt.claims', true)::json->>'wallet_address');
-
--- X Users policies
-CREATE POLICY "Users can view their own x connections" ON x_users
-    FOR SELECT USING (wallet_address = current_setting('request.jwt.claims', true)::json->>'wallet_address');
-
-CREATE POLICY "Users can insert their own x connections" ON x_users
-    FOR INSERT WITH CHECK (wallet_address = current_setting('request.jwt.claims', true)::json->>'wallet_address');
-
-CREATE POLICY "Users can update their own x connections" ON x_users
-    FOR UPDATE USING (wallet_address = current_setting('request.jwt.claims', true)::json->>'wallet_address');
+-- X Users policies - Allow all operations for now (can be restricted later)
+CREATE POLICY "Allow all operations on x_users" ON x_users
+    FOR ALL USING (true) WITH CHECK (true);
 
 -- Clean up expired sessions function
 CREATE OR REPLACE FUNCTION cleanup_expired_x_sessions()
