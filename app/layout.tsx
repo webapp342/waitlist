@@ -85,7 +85,53 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // Suppress SES deprecation warnings
+              const originalConsoleWarn = console.warn;
+              console.warn = function(...args) {
+                const message = args.join(' ');
+                if (message.includes('dateTaming') || message.includes('mathTaming') || message.includes('SES')) {
+                  return; // Suppress SES warnings
+                }
+                originalConsoleWarn.apply(console, args);
+              };
 
+              // Suppress CSP violations for known safe scripts
+              const originalConsoleError = console.error;
+              console.error = function(...args) {
+                const message = args.join(' ');
+                if (message.includes('Content-Security-Policy') && message.includes('unsafe-inline')) {
+                  return; // Suppress CSP warnings for inline scripts
+                }
+                originalConsoleError.apply(console, args);
+              };
+
+              // Global error handler for wallet-related errors
+              window.addEventListener('error', function(event) {
+                if (event.filename && (
+                  event.filename.includes('lockdown-install.js') ||
+                  event.filename.includes('inpage.js') ||
+                  event.filename.includes('wallet')
+                )) {
+                  event.preventDefault();
+                  return false;
+                }
+              });
+
+              // Clear any existing toasts on page load
+              if (typeof window !== 'undefined') {
+                setTimeout(() => {
+                  const toasts = document.querySelectorAll('[data-sonner-toast]');
+                  toasts.forEach(toast => toast.remove());
+                }, 100);
+              }
+            `,
+          }}
+        />
+      </head>
       <body className={FigtreeFont.className}>
         <Providers>
           {children}
@@ -98,19 +144,6 @@ export default function RootLayout({
           />
           <Analytics />
         </Providers>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              // Clear any existing toasts on page load
-              if (typeof window !== 'undefined') {
-                setTimeout(() => {
-                  const toasts = document.querySelectorAll('[data-sonner-toast]');
-                  toasts.forEach(toast => toast.remove());
-                }, 100);
-              }
-            `,
-          }}
-        />
       </body>
     </html>
   );

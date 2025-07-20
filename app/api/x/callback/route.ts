@@ -5,6 +5,7 @@ import {
   getXUserInfo, 
   validateState 
 } from '@/lib/xOAuth';
+import { decodeTwitterError } from '@/lib/twitterDebug';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,6 +18,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Processing OAuth callback:', {
+      sessionId,
+      state: state.substring(0, 8) + '...',
+      code: code.substring(0, 8) + '...'
+    });
+
     // Retrieve OAuth session from database
     const { data: session, error: sessionError } = await supabase
       .from('x_oauth_sessions')
@@ -26,6 +33,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (sessionError || !session) {
+      console.error('Session retrieval failed:', sessionError);
       return NextResponse.json(
         { error: 'Invalid or expired OAuth session' },
         { status: 400 }
@@ -34,6 +42,7 @@ export async function POST(request: NextRequest) {
 
     // Validate state parameter
     if (!validateState(state, session.state)) {
+      console.error('State validation failed:', { received: state, expected: session.state });
       return NextResponse.json(
         { error: 'Invalid state parameter' },
         { status: 400 }
@@ -42,6 +51,7 @@ export async function POST(request: NextRequest) {
 
     // Check if session is expired
     if (new Date() > new Date(session.expires_at)) {
+      console.error('Session expired:', { expiresAt: session.expires_at, now: new Date().toISOString() });
       return NextResponse.json(
         { error: 'OAuth session expired' },
         { status: 400 }
@@ -56,6 +66,7 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (userError || !existingUser) {
+      console.error('User lookup failed:', userError);
       return NextResponse.json(
         { error: 'User not found' },
         { status: 404 }
@@ -68,22 +79,45 @@ export async function POST(request: NextRequest) {
     const redirectUri = 'https://www.bblip.io/x/callback';
 
     if (!clientId || !clientSecret) {
+      console.error('Missing OAuth credentials');
       return NextResponse.json(
         { error: 'X OAuth not configured' },
         { status: 500 }
       );
     }
 
-    const tokenResponse = await exchangeCodeForToken({
-      clientId,
-      clientSecret,
-      code,
-      redirectUri,
-      codeVerifier: session.code_verifier
-    });
+    let tokenResponse;
+    try {
+      tokenResponse = await exchangeCodeForToken({
+        clientId,
+        clientSecret,
+        code,
+        redirectUri,
+        codeVerifier: session.code_verifier
+      });
+    } catch (error) {
+      console.error('Token exchange failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const decodedError = decodeTwitterError(400, errorMessage);
+      return NextResponse.json(
+        { error: 'Token exchange failed', details: decodedError },
+        { status: 400 }
+      );
+    }
 
     // Get X user information
-    const xUser = await getXUserInfo(tokenResponse.access_token);
+    let xUser;
+    try {
+      xUser = await getXUserInfo(tokenResponse.access_token);
+    } catch (error) {
+      console.error('User info fetch failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      const decodedError = decodeTwitterError(400, errorMessage);
+      return NextResponse.json(
+        { error: 'Failed to fetch user info', details: decodedError },
+        { status: 400 }
+      );
+    }
 
     // Check if X account is already connected to another wallet
     const { data: existingXConnection, error: xCheckError } = await supabase
@@ -94,6 +128,11 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existingXConnection && existingXConnection.wallet_address !== session.wallet_address) {
+      console.warn('X account already connected to different wallet:', {
+        xUserId: xUser.id,
+        existingWallet: existingXConnection.wallet_address,
+        newWallet: session.wallet_address
+      });
       return NextResponse.json(
         { error: 'This X account is already connected to another wallet' },
         { status: 409 }
@@ -150,7 +189,7 @@ export async function POST(request: NextRequest) {
       if (updateError) {
         console.error('Error updating X user:', updateError);
         return NextResponse.json(
-          { error: 'Failed to update X user connection' },
+          { error: 'Failed to update X user connection', details: updateError.message },
           { status: 500 }
         );
       }
@@ -164,7 +203,7 @@ export async function POST(request: NextRequest) {
       if (insertError) {
         console.error('Error inserting X user:', insertError);
         return NextResponse.json(
-          { error: 'Failed to create X user connection' },
+          { error: 'Failed to create X user connection', details: insertError.message },
           { status: 500 }
         );
       }
@@ -179,7 +218,7 @@ export async function POST(request: NextRequest) {
     console.log('X OAuth completed successfully:', {
       xUserId: xUser.id,
       xUsername: xUser.username,
-      walletAddress: session.wallet_address,
+      walletAddress: session.wallet_address.substring(0, 8) + '...',
       isAlreadyConnected
     });
 
@@ -201,7 +240,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error in X OAuth callback:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }

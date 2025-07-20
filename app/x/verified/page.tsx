@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'sonner';
 import { Twitter, CheckCircle, XCircle, Activity, Shield } from 'lucide-react';
@@ -14,7 +14,7 @@ export default function VerifiedXPage() {
   const [xUser, setXUser] = useState<any>(null);
 
   // Check existing X connection
-  const checkXStatus = async () => {
+  const checkXStatus = useCallback(async () => {
     if (!isConnected || !address) return;
 
     try {
@@ -38,11 +38,11 @@ export default function VerifiedXPage() {
       console.error('Error checking X status:', error);
       setConnectionStatus('disconnected');
     }
-  };
+  }, [isConnected, address]);
 
   useEffect(() => {
     checkXStatus();
-  }, [isConnected, address]);
+  }, [checkXStatus]);
 
   const connectX = async () => {
     if (!isConnected || !address) {
@@ -190,7 +190,7 @@ export default function VerifiedXPage() {
                           🔒 Secure OAuth verification required
                         </p>
                         <p className="text-gray-400 text-xs mt-1">
-                          You'll be redirected to X to verify your account
+                          You&apos;ll be redirected to X to verify your account
                         </p>
                       </div>
                       <Button 

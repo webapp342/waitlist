@@ -83,6 +83,7 @@ export function buildAuthUrl(params: {
     scope = 'tweet.read users.read offline.access'
   } = params;
 
+  // Use the correct OAuth endpoint
   const url = new URL('https://twitter.com/i/oauth2/authorize');
   url.searchParams.set('response_type', 'code');
   url.searchParams.set('client_id', clientId);
@@ -105,6 +106,7 @@ export async function exchangeCodeForToken(params: {
 }): Promise<XTokenResponse> {
   const { clientId, clientSecret, code, redirectUri, codeVerifier } = params;
 
+  // Use the correct token endpoint
   const response = await fetch('https://api.twitter.com/2/oauth2/token', {
     method: 'POST',
     headers: {
@@ -121,6 +123,11 @@ export async function exchangeCodeForToken(params: {
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error('Token exchange error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText
+    });
     throw new Error(`Token exchange failed: ${response.status} ${errorText}`);
   }
 
@@ -140,6 +147,11 @@ export async function getXUserInfo(accessToken: string): Promise<XUser> {
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error('User info error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText
+    });
     throw new Error(`Failed to fetch user info: ${response.status} ${errorText}`);
   }
 
@@ -180,6 +192,11 @@ export async function refreshAccessToken(params: {
 
   if (!response.ok) {
     const errorText = await response.text();
+    console.error('Token refresh error:', {
+      status: response.status,
+      statusText: response.statusText,
+      error: errorText
+    });
     throw new Error(`Token refresh failed: ${response.status} ${errorText}`);
   }
 

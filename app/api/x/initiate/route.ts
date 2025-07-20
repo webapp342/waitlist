@@ -7,9 +7,21 @@ import {
   generateSessionId,
   buildAuthUrl 
 } from '@/lib/xOAuth';
+import { logTwitterDebugInfo, validateTwitterConfig, validateOAuthParams } from '@/lib/twitterDebug';
 
 export async function POST(request: NextRequest) {
   try {
+    // Log debug info for troubleshooting
+    logTwitterDebugInfo();
+    
+    // Validate Twitter configuration
+    if (!validateTwitterConfig()) {
+      return NextResponse.json(
+        { error: 'Twitter OAuth not properly configured. Check your environment variables.' },
+        { status: 500 }
+      );
+    }
+
     const { walletAddress } = await request.json();
 
     if (!walletAddress) {
@@ -39,6 +51,25 @@ export async function POST(request: NextRequest) {
     const codeChallenge = generateCodeChallenge(codeVerifier);
     const state = generateState();
 
+    // Validate OAuth parameters
+    const clientId = process.env.NEXT_PUBLIC_X_CLIENT_ID;
+    const redirectUri = 'https://www.bblip.io/x/callback';
+    
+    const validationIssues = validateOAuthParams({
+      clientId: clientId || '',
+      redirectUri,
+      state,
+      codeChallenge
+    });
+
+    if (validationIssues.length > 0) {
+      console.error('OAuth parameter validation failed:', validationIssues);
+      return NextResponse.json(
+        { error: 'Invalid OAuth parameters', details: validationIssues },
+        { status: 400 }
+      );
+    }
+
     // Store OAuth session in database
     const { error: sessionError } = await supabase
       .from('x_oauth_sessions')
@@ -46,21 +77,20 @@ export async function POST(request: NextRequest) {
         session_id: sessionId,
         code_verifier: codeVerifier,
         state: state,
-        wallet_address: walletAddress
+        wallet_address: walletAddress,
+        expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
+        used: false
       });
 
     if (sessionError) {
       console.error('Error storing OAuth session:', sessionError);
       return NextResponse.json(
-        { error: 'Failed to create OAuth session' },
+        { error: 'Failed to create OAuth session', details: sessionError.message },
         { status: 500 }
       );
     }
 
     // Build authorization URL
-    const clientId = process.env.NEXT_PUBLIC_X_CLIENT_ID;
-    const redirectUri = 'https://www.bblip.io/x/callback';
-
     if (!clientId) {
       return NextResponse.json(
         { error: 'X OAuth not configured' },
@@ -75,10 +105,11 @@ export async function POST(request: NextRequest) {
       codeChallenge
     });
 
-    console.log('OAuth session created:', {
+    console.log('OAuth session created successfully:', {
       sessionId,
-      walletAddress,
-      state: state.substring(0, 8) + '...'
+      walletAddress: walletAddress.substring(0, 8) + '...',
+      state: state.substring(0, 8) + '...',
+      authUrl: authUrl.substring(0, 100) + '...'
     });
 
     return NextResponse.json({
@@ -90,7 +121,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Error initiating X OAuth:', error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     );
   }
