@@ -1,6 +1,6 @@
 # Twitter OAuth Setup Guide
 
-This guide will help you configure Twitter OAuth to fix the 400 errors you're experiencing.
+This guide will help you configure Twitter OAuth for your BBLIP application.
 
 ## Prerequisites
 
@@ -29,10 +29,12 @@ Create a `.env.local` file in your project root with the following variables:
 NEXT_PUBLIC_X_CLIENT_ID=your_twitter_client_id_here
 X_CLIENT_SECRET=your_twitter_client_secret_here
 
-# Other required variables
+# Database Configuration
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key_here
+
+# WalletConnect Configuration
 NEXT_PUBLIC_WC_PROJECT_ID=your_walletconnect_project_id_here
 ```
 
@@ -40,10 +42,9 @@ NEXT_PUBLIC_WC_PROJECT_ID=your_walletconnect_project_id_here
 
 Make sure you have the required database tables. Run the following SQL files in order:
 
-1. `schema.sql` - Main database schema
-2. `x_oauth_schema.sql` - Twitter OAuth tables
-3. `x_oauth_fix_columns.sql` - Fix any column issues
-4. `x_oauth_fix_rls.sql` - Configure Row Level Security
+1. `x_oauth_schema.sql` - Twitter OAuth tables
+2. `x_oauth_fix_columns.sql` - Fix any column issues
+3. `x_oauth_fix_rls.sql` - Configure Row Level Security
 
 ## Step 4: Verify Configuration
 
