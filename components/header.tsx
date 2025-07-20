@@ -61,6 +61,7 @@ export default function Header() {
     { href: "/bridge", label: "Bridge" },
     { href: "/stake", label: "Stake" },
     { href: "/referral", label: "Referral" },
+    { href: "/x", label: "X Connect" },
     { href: "/whitepaper", label: "Whitepaper" }
   ];
 

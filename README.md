@@ -70,6 +70,29 @@ bun install
 
 **Important**: Make sure to run the `database_setup.sql` file in Supabase SQL Editor, not the `schema.sql` file.
 
+### 3.1 X (Twitter) OAuth Setup
+
+To enable X account integration:
+
+1. **Create X Developer Account**:
+   - Go to [developer.twitter.com](https://developer.twitter.com)
+   - Sign up for a free developer account
+   - Create a new app with OAuth 2.0 enabled
+
+2. **Configure OAuth Settings**:
+   - Set Callback URL: `https://yourdomain.com/x/callback`
+   - Enable OAuth 2.0 with PKCE
+   - Add scopes: `tweet.read`, `users.read`, `offline.access`
+
+3. **Get API Credentials**:
+   - Copy your Client ID and Client Secret
+   - Add them to your environment variables
+
+4. **Run X Schema**:
+   - In Supabase SQL Editor, run the `x_schema.sql` file
+   - This creates the `x_users` table and security policies
+   - Optionally run `test_x_schema.sql` to verify the setup
+
 ### 3. Environment Variables
 
 Create a `.env.local` file in the root directory:
@@ -81,6 +104,19 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 # WalletConnect Project ID (optional - has default)
 NEXT_PUBLIC_WC_PROJECT_ID=your_walletconnect_project_id
+
+# App URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# X (Twitter) OAuth Configuration
+NEXT_PUBLIC_X_CLIENT_ID=your_x_client_id
+X_CLIENT_SECRET=your_x_client_secret
+
+# JWT Secret (for authentication)
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+
+# Crypto Secret (for data encryption)
+CRYPTO_SECRET=your-crypto-secret-key-change-this-in-production
 ```
 
 ### 4. Start Development Server
@@ -151,6 +187,27 @@ Visit `http://localhost:3000` and connect your wallet with BSC Testnet!
 - created_at, updated_at (TIMESTAMP)
 ```
 
+### X Users Table
+```sql
+- id (BIGSERIAL PRIMARY KEY)
+- user_id (BIGINT, Foreign Key to users.id)
+- wallet_address (VARCHAR(42))
+- x_user_id (VARCHAR(50) UNIQUE)
+- x_username (VARCHAR(50))
+- x_name (VARCHAR(255))
+- x_profile_image_url (TEXT)
+- x_verified (BOOLEAN)
+- x_followers_count (INTEGER)
+- x_following_count (INTEGER)
+- x_tweet_count (INTEGER)
+- access_token (TEXT)
+- refresh_token (TEXT)
+- token_expires_at (TIMESTAMP)
+- is_active (BOOLEAN)
+- connected_at, disconnected_at (TIMESTAMP)
+- created_at, updated_at (TIMESTAMP)
+```
+
 ## 🎮 **How It Works**
 
 ### User Registration
@@ -177,6 +234,14 @@ Visit `http://localhost:3000` and connect your wallet with BSC Testnet!
 3. **Automatic Tracking**: When new users sign up via referral link, it's automatically tracked
 4. **Reward System**: Both referrer and referred user earn rewards
 5. **Analytics**: Dashboard shows referral statistics and history
+
+### X (Twitter) Integration
+1. **OAuth 2.0 Authentication**: Secure X account connection using OAuth 2.0 with PKCE
+2. **Wallet Linking**: X accounts are linked to specific wallet addresses
+3. **Duplicate Prevention**: One X account can only be connected to one wallet
+4. **User Data Sync**: Fetches profile info, follower count, and verification status
+5. **Token Management**: Handles access token refresh and expiration
+6. **Social Rewards**: Foundation for future social activity-based rewards
 
 ## 🔧 **Customization**
 

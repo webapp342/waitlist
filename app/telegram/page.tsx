@@ -252,13 +252,27 @@ export default function TelegramPage() {
         setShowTelegramWidget(false);
         console.log('✅ Telegram connection process completed');
       } else {
-        console.log('❌ API error:', data.error);
+        console.log('❌ API error response:');
+        console.log('  - Status:', response.status);
+        console.log('  - Status Text:', response.statusText);
+        console.log('  - Error:', data.error);
+        console.log('  - Full response:', JSON.stringify(data, null, 2));
         toast.error(data.error || 'Failed to connect Telegram');
       }
     } catch (error) {
-      console.error('❌ Error connecting Telegram:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
-      toast.error('Failed to connect Telegram');
+      console.error('💥 CRITICAL ERROR connecting Telegram:');
+      console.error('  - Error type:', typeof error);
+      console.error('  - Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('  - Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+      console.error('  - Full error object:', JSON.stringify(error, null, 2));
+      
+      // Network error kontrolü
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        console.error('🌐 Network error detected - possible CORS or connection issue');
+        toast.error('Network error - please check your connection');
+      } else {
+        toast.error('Failed to connect Telegram - please try again');
+      }
     } finally {
       console.log('🏁 Setting loading to false');
       setIsLoading(false);
