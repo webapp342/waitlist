@@ -4,7 +4,8 @@ import crypto from 'crypto';
 export async function GET(request: NextRequest) {
   try {
     const clientId = process.env.NEXT_PUBLIC_X_CLIENT_ID;
-    const redirectUri = `${process.env.NEXT_PUBLIC_APP_URL}/x/callback`;
+    // Use exact redirect URI that matches X Developer settings
+    const redirectUri = 'https://www.bblip.io/x/callback';
     
     if (!clientId) {
       return NextResponse.json({ error: 'X OAuth not configured' }, { status: 500 });
@@ -29,6 +30,9 @@ export async function GET(request: NextRequest) {
       `state=${state}&` +
       `code_challenge_method=S256&` +
       `code_challenge=${codeChallenge}`;
+
+    console.log('Server Auth URL:', authUrl);
+    console.log('Server Redirect URI:', redirectUri);
 
     return NextResponse.json({ 
       authUrl,

@@ -170,7 +170,8 @@ export default function XPage() {
       return;
     }
     
-    const redirectUri = `${window.location.origin}/x/callback`;
+    // Use exact redirect URI that matches X Developer settings
+    const redirectUri = 'https://www.bblip.io/x/callback';
     const scope = 'tweet.read users.read offline.access';
     
     // Generate personalization_id (required by X API)
@@ -188,6 +189,7 @@ export default function XPage() {
       `personalization_id=${encodeURIComponent(personalizationId)}`;
 
     console.log('Auth URL:', authUrl);
+    console.log('Redirect URI:', redirectUri);
     
     // Try opening in new window first, fallback to redirect
     try {
@@ -218,7 +220,8 @@ export default function XPage() {
     const state = Math.random().toString(36).substring(2, 15);
     localStorage.setItem('x_auth_state', state);
     
-    const redirectUri = `${window.location.origin}/x/callback`;
+    // Use exact redirect URI that matches X Developer settings
+    const redirectUri = 'https://www.bblip.io/x/callback';
     
     // Use web-based OAuth flow
     const authUrl = `https://twitter.com/i/oauth2/authorize?` +
@@ -229,7 +232,35 @@ export default function XPage() {
       `state=${state}`;
 
     console.log('Alternative Auth URL:', authUrl);
+    console.log('Alternative Redirect URI:', redirectUri);
     window.location.href = authUrl;
+  };
+
+  // Server-side OAuth method
+  const initiateServerSideAuth = async () => {
+    if (!isConnected || !address) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      setIsConnecting(true);
+      
+      const response = await fetch('/api/x/auth');
+      const data = await response.json();
+      
+      if (response.ok) {
+        console.log('Server Auth URL:', data.authUrl);
+        window.location.href = data.authUrl;
+      } else {
+        toast.error(data.error || 'Failed to generate OAuth URL');
+      }
+    } catch (error) {
+      console.error('Error initiating server-side auth:', error);
+      toast.error('Failed to start authentication');
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const generateCodeChallenge = () => {
@@ -321,6 +352,16 @@ export default function XPage() {
                     >
                       <Twitter className="w-4 h-4 mr-2" />
                       Alternative Connect Method
+                    </Button>
+                    
+                    <Button 
+                      onClick={initiateServerSideAuth}
+                      disabled={!isConnected || isConnecting}
+                      variant="outline"
+                      className="border-green-600 text-green-300 hover:bg-green-800"
+                    >
+                      <Twitter className="w-4 h-4 mr-2" />
+                      Server-Side OAuth
                     </Button>
                   </div>
                 )}
