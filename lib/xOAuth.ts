@@ -18,22 +18,67 @@ export function redirectToXApp(authUrl: string, isMobile: boolean): void {
   if (typeof window === 'undefined') return;
 
   if (isMobile) {
-    // Mobil cihazlarda deep link ile X uygulamasını aç
-    const deepLinkUrl = authUrl;
+    // Mobil cihazlarda X uygulamasına yönlendirme stratejileri
     
-    // Fallback URL (X uygulaması yüklü değilse)
-    const fallbackUrl = 'https://twitter.com/i/oauth2/authorize?' + new URL(authUrl).searchParams.toString();
+    // Platform tespiti
+    const isAndroid = /Android/i.test(navigator.userAgent);
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    
+    console.log('🔍 Mobil cihaz tespit edildi:', { isAndroid, isIOS, userAgent: navigator.userAgent });
+    
+    // OAuth parametrelerini al
+    const urlParams = new URL(authUrl).searchParams;
+    const clientId = urlParams.get('client_id');
+    const redirectUri = urlParams.get('redirect_uri');
+    const state = urlParams.get('state');
+    const codeChallenge = urlParams.get('code_challenge');
+    const scope = urlParams.get('scope');
+    
+    let targetUrl = authUrl; // Varsayılan olarak web URL'i kullan
+    
+    if (isAndroid) {
+      // Android için farklı deep link formatları dene
+      
+      // 1. Intent URL formatı
+      const intentUrl = `intent://twitter.com/i/oauth2/authorize?${urlParams.toString()}#Intent;scheme=https;package=com.twitter.android;S.browser_fallback_url=${encodeURIComponent(authUrl)};end`;
+      
+      // 2. X uygulaması için özel deep link (alternatif)
+      const xDeepLink = `twitter://oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri || '')}&state=${state}&code_challenge=${codeChallenge}&scope=${encodeURIComponent(scope || '')}`;
+      
+      // 3. X uygulaması için başka bir format
+      const xAppLink = `twitter://authorize?${urlParams.toString()}`;
+      
+      targetUrl = intentUrl;
+      console.log('📱 Android Intent URL:', targetUrl);
+      console.log('📱 X Deep Link (alternatif 1):', xDeepLink);
+      console.log('📱 X App Link (alternatif 2):', xAppLink);
+      
+      // Alternatif deep link'leri de dene
+      setTimeout(() => {
+        console.log('🔄 Alternatif deep link deneniyor:', xDeepLink);
+        window.location.href = xDeepLink;
+      }, 1000);
+      
+    } else if (isIOS) {
+      // iOS için Universal Link kullan (X uygulaması otomatik açılacak)
+      targetUrl = authUrl;
+      console.log('🍎 iOS Universal Link:', targetUrl);
+    }
     
     // X uygulamasını açmaya çalış
-    window.location.href = deepLinkUrl;
+    console.log('🚀 X uygulamasına yönlendiriliyor:', targetUrl);
     
-    // 2 saniye sonra fallback URL'e yönlendir (uygulama açılmadıysa)
+    // Önce deep link'i dene
+    window.location.href = targetUrl;
+    
+    // 3 saniye sonra fallback URL'e yönlendir (uygulama açılmadıysa)
     setTimeout(() => {
-      // Sayfa hala aktifse, fallback URL'e yönlendir
-      window.location.href = fallbackUrl;
-    }, 2000);
+      console.log('⏰ Fallback URL\'e yönlendiriliyor:', authUrl);
+      window.location.href = authUrl;
+    }, 3000);
   } else {
     // Desktop'ta normal yönlendirme
+    console.log('💻 Desktop yönlendirmesi:', authUrl);
     window.location.href = authUrl;
   }
 }
@@ -125,17 +170,18 @@ export function buildAuthUrl(params: {
 
   // Mobil cihazlarda X uygulamasına deep link ile yönlendir
   if (isMobile) {
-    // X uygulaması deep link formatı
-    const deepLinkUrl = new URL('twitter://authorize');
-    deepLinkUrl.searchParams.set('response_type', 'code');
-    deepLinkUrl.searchParams.set('client_id', clientId);
-    deepLinkUrl.searchParams.set('redirect_uri', redirectUri);
-    deepLinkUrl.searchParams.set('scope', scope);
-    deepLinkUrl.searchParams.set('state', state);
-    deepLinkUrl.searchParams.set('code_challenge_method', 'S256');
-    deepLinkUrl.searchParams.set('code_challenge', codeChallenge);
+    // X uygulaması için doğru deep link formatı
+    // twitter://oauth/authorize yerine web URL'i kullan ama mobil-optimized
+    const url = new URL('https://twitter.com/i/oauth2/authorize');
+    url.searchParams.set('response_type', 'code');
+    url.searchParams.set('client_id', clientId);
+    url.searchParams.set('redirect_uri', redirectUri);
+    url.searchParams.set('scope', scope);
+    url.searchParams.set('state', state);
+    url.searchParams.set('code_challenge_method', 'S256');
+    url.searchParams.set('code_challenge', codeChallenge);
     
-    return deepLinkUrl.toString();
+    return url.toString();
   }
 
   // Desktop için normal web URL'i kullan

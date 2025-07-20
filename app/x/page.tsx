@@ -113,8 +113,34 @@ export default function XPage() {
         // Store session ID for callback
         localStorage.setItem('x_oauth_session_id', data.sessionId);
         
-        // X uygulamasına yönlendir (mobil veya desktop)
-        redirectToXApp(data.authUrl, data.isMobile);
+        // Mobil cihazlarda kullanıcıya seçenek sun
+        if (data.isMobile && typeof window !== 'undefined') {
+          const isAndroid = /Android/i.test(navigator.userAgent);
+          const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+          
+          if (isAndroid || isIOS) {
+            // Kullanıcıya seçenek sun
+            const useApp = confirm(
+              'X uygulamasını açmak istiyor musunuz?\n\n' +
+              '✅ "Tamam" - X uygulamasında açılır\n' +
+              '❌ "İptal" - Web sayfasında açılır'
+            );
+            
+            if (useApp) {
+              // X uygulamasında aç
+              redirectToXApp(data.authUrl, true);
+            } else {
+              // Web sayfasında aç
+              window.location.href = data.authUrl;
+            }
+          } else {
+            // Diğer mobil cihazlarda normal yönlendirme
+            redirectToXApp(data.authUrl, data.isMobile);
+          }
+        } else {
+          // Desktop'ta normal yönlendirme
+          redirectToXApp(data.authUrl, data.isMobile);
+        }
       } else {
         setConnectionStatus('disconnected');
         toast.error(data.error || 'Failed to start X authentication');
