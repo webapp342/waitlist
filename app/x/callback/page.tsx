@@ -41,10 +41,20 @@ function XCallbackContent() {
 
         // Validate state parameter (CSRF protection)
         const savedState = localStorage.getItem('x_auth_state');
+        const codeVerifier = localStorage.getItem('x_code_verifier');
+        
         if (state !== savedState) {
           setStatus('error');
           setMessage('Invalid state parameter');
           toast.error('Security validation failed');
+          setTimeout(() => router.push('/x'), 3000);
+          return;
+        }
+
+        if (!codeVerifier) {
+          setStatus('error');
+          setMessage('Missing code verifier');
+          toast.error('Authentication session expired');
           setTimeout(() => router.push('/x'), 3000);
           return;
         }
@@ -69,6 +79,7 @@ function XCallbackContent() {
           body: JSON.stringify({
             code,
             state,
+            codeVerifier,
             walletAddress: address
           }),
         });

@@ -8,11 +8,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     console.log('📦 Request body:', JSON.stringify(body, null, 2));
     
-    const { code, state, walletAddress } = body;
+    const { code, state, codeVerifier, walletAddress } = body;
 
-    if (!code || !state || !walletAddress) {
+    if (!code || !state || !codeVerifier || !walletAddress) {
       return NextResponse.json(
-        { error: 'Code, state, and wallet address are required' },
+        { error: 'Code, state, code verifier, and wallet address are required' },
         { status: 400 }
       );
     }
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
         grant_type: 'authorization_code',
         code: code,
         redirect_uri: `${process.env.NEXT_PUBLIC_APP_URL}/x/callback`,
-        code_verifier: 'challenge' // In production, store and retrieve the actual code verifier
+        code_verifier: codeVerifier // In production, store and retrieve the actual code verifier
       })
     });
 

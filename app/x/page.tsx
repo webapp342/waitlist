@@ -143,7 +143,7 @@ export default function XPage() {
     }
   };
 
-  const initiateXAuth = () => {
+  const initiateXAuth = async () => {
     if (!isConnected || !address) {
       toast.error('Please connect your wallet first');
       return;
@@ -174,10 +174,17 @@ export default function XPage() {
     const redirectUri = 'https://www.bblip.io/x/callback';
     const scope = 'tweet.read users.read offline.access';
     
+    // Generate PKCE code verifier and challenge
+    const codeVerifier = generateCodeVerifier();
+    const codeChallenge = await generateCodeChallenge(codeVerifier);
+    
+    // Store code verifier for later use
+    localStorage.setItem('x_code_verifier', codeVerifier);
+    
     // Generate personalization_id (required by X API)
     const personalizationId = 'v1_' + Math.random().toString(36).substring(2, 15) + '==';
     
-    // Try alternative OAuth URL format
+    // Build OAuth URL according to latest X documentation
     const authUrl = `https://twitter.com/i/oauth2/authorize?` +
       `response_type=code&` +
       `client_id=${clientId}&` +
@@ -185,11 +192,13 @@ export default function XPage() {
       `scope=${encodeURIComponent(scope)}&` +
       `state=${state}&` +
       `code_challenge_method=S256&` +
-      `code_challenge=${generateCodeChallenge()}&` +
+      `code_challenge=${codeChallenge}&` +
       `personalization_id=${encodeURIComponent(personalizationId)}`;
 
     console.log('Auth URL:', authUrl);
     console.log('Redirect URI:', redirectUri);
+    console.log('Code Verifier:', codeVerifier);
+    console.log('Code Challenge:', codeChallenge);
     
     // Try opening in new window first, fallback to redirect
     try {
@@ -202,6 +211,27 @@ export default function XPage() {
       console.error('Error opening auth window:', error);
       window.location.href = authUrl;
     }
+  };
+
+  // Generate PKCE code verifier
+  const generateCodeVerifier = () => {
+    const array = new Uint8Array(32);
+    crypto.getRandomValues(array);
+    return btoa(String.fromCharCode(...array))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
+  };
+
+  // Generate PKCE code challenge from verifier
+  const generateCodeChallenge = async (verifier: string) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(verifier);
+    const digest = await crypto.subtle.digest('SHA-256', data);
+    return btoa(String.fromCharCode(...new Uint8Array(digest)))
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=/g, '');
   };
 
   // Alternative OAuth method using web-based flow
@@ -261,16 +291,6 @@ export default function XPage() {
     } finally {
       setIsConnecting(false);
     }
-  };
-
-  const generateCodeChallenge = () => {
-    // Simple PKCE code challenge generation
-    const array = new Uint8Array(32);
-    crypto.getRandomValues(array);
-    return btoa(String.fromCharCode(...array))
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=/g, '');
   };
 
   const getConnectionStatusColor = () => {
