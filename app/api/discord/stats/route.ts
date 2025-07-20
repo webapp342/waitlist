@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { isUserInGuild } from '@/lib/discordOAuth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -47,8 +48,26 @@ export async function GET(request: NextRequest) {
         messageCount: 0,
         reactionsReceived: 0,
         dailyReward: 1,
-        canClaimReward: false
+        canClaimReward: false,
+        isInBBLIPGuild: false
       });
+    }
+
+    // Check if user is in BBLIP guild
+    let isInBBLIPGuild = false;
+    try {
+      if (discordUser.access_token) {
+        const guildId = process.env.DISCORD_GUILD_ID || '1396412220480426114';
+        isInBBLIPGuild = await isUserInGuild(discordUser.access_token, guildId);
+        console.log('Guild membership check result:', {
+          discordId: discordUser.discord_id,
+          guildId: guildId,
+          isInGuild: isInBBLIPGuild
+        });
+      }
+    } catch (guildError) {
+      console.error('Error checking guild membership:', guildError);
+      // Continue without guild information
     }
 
     // Get Discord activity data
@@ -94,6 +113,7 @@ export async function GET(request: NextRequest) {
       avatarUrl: discordUser.avatar_url,
       verified: discordUser.verified,
       premiumType: discordUser.premium_type,
+      isInBBLIPGuild,
       currentLevel: currentLevelData.name,
       currentLevelNumber: currentLevel,
       totalXP,

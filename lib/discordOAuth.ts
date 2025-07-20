@@ -165,6 +165,25 @@ export function getDiscordAvatarUrl(userId: string, avatar: string | null, discr
   return `https://cdn.discordapp.com/embed/avatars/${defaultAvatarId}.png`;
 }
 
+// Check if user is member of specific guild
+export async function isUserInGuild(accessToken: string, guildId: string): Promise<boolean> {
+  try {
+    const response = await fetch(`https://discord.com/api/users/@me/guilds/${guildId}/member`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    // If status is 200, user is a member
+    // If status is 403, user is not a member
+    // If status is 401, token is invalid
+    return response.status === 200;
+  } catch (error) {
+    console.error('Error checking guild membership:', error);
+    return false;
+  }
+}
+
 // Validate OAuth parameters
 export function validateOAuthParams(params: {
   clientId: string;
