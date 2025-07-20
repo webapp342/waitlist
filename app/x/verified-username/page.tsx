@@ -1,21 +1,21 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { useAccount } from 'wagmi';
-import { toast } from 'sonner';
-import { Twitter, CheckCircle, XCircle, Activity, Shield, AlertTriangle } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { useEffect, useState } from "react";
+import { useAccount } from "wagmi";
+import { toast } from "sonner";
+import { Twitter, CheckCircle, XCircle, Activity, Shield, AlertTriangle } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function VerifiedUsernamePage() {
   const { address, isConnected } = useAccount();
   const [isConnecting, setIsConnecting] = useState(false);
-  const [xUsername, setXUsername] = useState('');
-  const [verificationCode, setVerificationCode] = useState('');
+  const [xUsername, setXUsername] = useState("");
+  const [verificationCode, setVerificationCode] = useState("");
   const [showVerification, setShowVerification] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
+  const [connectionStatus, setConnectionStatus] = useState<"connected" | "connecting" | "disconnected">("disconnected");
   const [xUser, setXUser] = useState<any>(null);
 
   // Check existing X connection
@@ -23,10 +23,10 @@ export default function VerifiedUsernamePage() {
     if (!isConnected || !address) return;
 
     try {
-      const response = await fetch('/api/x/verified-username/status', {
-        method: 'POST',
+      const response = await fetch("/api/x/verified-username/status", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ walletAddress: address }),
       });
@@ -34,15 +34,15 @@ export default function VerifiedUsernamePage() {
       const data = await response.json();
 
       if (response.ok && data.connected) {
-        setConnectionStatus('connected');
+        setConnectionStatus("connected");
         setXUser(data.xUser);
         setXUsername(data.xUser.xUsername);
       } else {
-        setConnectionStatus('disconnected');
+        setConnectionStatus("disconnected");
       }
     } catch (error) {
-      console.error('Error checking X status:', error);
-      setConnectionStatus('disconnected');
+      console.error("Error checking X status:", error);
+      setConnectionStatus("disconnected");
     }
   };
 
@@ -52,22 +52,22 @@ export default function VerifiedUsernamePage() {
 
   const verifyUsername = async () => {
     if (!isConnected || !address) {
-      toast.error('Please connect your wallet first');
+      toast.error("Please connect your wallet first");
       return;
     }
 
     if (!xUsername.trim()) {
-      toast.error('Please enter your X username');
+      toast.error("Please enter your X username");
       return;
     }
 
     try {
       setIsConnecting(true);
 
-      const response = await fetch('/api/x/verified-username/verify', {
-        method: 'POST',
+      const response = await fetch("/api/x/verified-username/verify", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           walletAddress: address,
@@ -79,13 +79,13 @@ export default function VerifiedUsernamePage() {
 
       if (response.ok) {
         setShowVerification(true);
-        toast.success('Verification code sent! Please check your X account.');
+        toast.success("Verification code sent! Please check your X account.");
       } else {
-        toast.error(data.error || 'Failed to send verification');
+        toast.error(data.error || "Failed to send verification");
       }
     } catch (error) {
-      console.error('Error verifying username:', error);
-      toast.error('Failed to verify username');
+      console.error("Error verifying username:", error);
+      toast.error("Failed to verify username");
     } finally {
       setIsConnecting(false);
     }
@@ -93,17 +93,17 @@ export default function VerifiedUsernamePage() {
 
   const confirmVerification = async () => {
     if (!verificationCode.trim()) {
-      toast.error('Please enter the verification code');
+      toast.error("Please enter the verification code");
       return;
     }
 
     try {
       setIsConnecting(true);
 
-      const response = await fetch('/api/x/verified-username/confirm', {
-        method: 'POST',
+      const response = await fetch("/api/x/verified-username/confirm", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           walletAddress: address,
@@ -115,16 +115,16 @@ export default function VerifiedUsernamePage() {
       const data = await response.json();
 
       if (response.ok) {
-        setConnectionStatus('connected');
-        toast.success('X account verified and connected successfully! 🎉');
+        setConnectionStatus("connected");
+        toast.success("X account verified and connected successfully! 🎉");
         setShowVerification(false);
-        setVerificationCode('');
+        setVerificationCode("");
       } else {
-        toast.error(data.error || 'Verification failed');
+        toast.error(data.error || "Verification failed");
       }
     } catch (error) {
-      console.error('Error confirming verification:', error);
-      toast.error('Verification failed');
+      console.error("Error confirming verification:", error);
+      toast.error("Verification failed");
     } finally {
       setIsConnecting(false);
     }
@@ -154,7 +154,7 @@ export default function VerifiedUsernamePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {connectionStatus === 'connected' ? (
+              {connectionStatus === "connected" ? (
                 <div className="space-y-4">
                   <div className="bg-green-900/20 border border-green-500/20 rounded-lg p-4">
                     <p className="text-green-400 text-sm">
@@ -199,7 +199,7 @@ export default function VerifiedUsernamePage() {
                         disabled={isConnecting || !verificationCode.trim()}
                         className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50"
                       >
-                        {isConnecting ? 'Verifying...' : 'Confirm Verification'}
+                        {isConnecting ? "Verifying..." : "Confirm Verification"}
                       </Button>
                       <Button 
                         variant="outline"
@@ -241,7 +241,7 @@ export default function VerifiedUsernamePage() {
                         className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                       >
                         <Twitter className="w-4 h-4 mr-2" />
-                        {isConnecting ? 'Sending Verification...' : 'Send Verification Code'}
+                        {isConnecting ? "Sending Verification..." : "Send Verification Code"}
                       </Button>
                     </>
                   )}
