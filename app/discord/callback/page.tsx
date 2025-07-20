@@ -9,15 +9,68 @@ export default function DiscordCallbackPage() {
   const [message, setMessage] = useState('Processing Discord connection...');
 
   useEffect(() => {
-    // This page handles the OAuth callback
-    // The actual processing is done in the API route
-    // This is just a loading page that will redirect
-    const timer = setTimeout(() => {
-      // Redirect back to main Discord page
-      window.location.href = '/discord';
-    }, 2000);
+    // Get the current URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    const error = urlParams.get('error');
 
-    return () => clearTimeout(timer);
+    console.log('Discord callback received:', {
+      code: code ? 'present' : 'missing',
+      state: state ? 'present' : 'missing',
+      error: error || 'none'
+    });
+
+    if (error) {
+      setStatus('error');
+      setMessage(`Discord connection failed: ${error}`);
+      setTimeout(() => {
+        window.location.href = '/discord?error=' + encodeURIComponent(error);
+      }, 3000);
+      return;
+    }
+
+    if (!code || !state) {
+      setStatus('error');
+      setMessage('Missing required parameters');
+      setTimeout(() => {
+        window.location.href = '/discord?error=missing_parameters';
+      }, 3000);
+      return;
+    }
+
+    // Forward the OAuth callback to the API endpoint
+    const processCallback = async () => {
+      try {
+        const apiUrl = `/api/discord/callback?${window.location.search}`;
+        console.log('Forwarding to API endpoint:', apiUrl);
+        
+        const response = await fetch(apiUrl);
+        
+        if (response.ok) {
+          setStatus('success');
+          setMessage('Discord connected successfully!');
+          setTimeout(() => {
+            window.location.href = '/discord?success=connected';
+          }, 2000);
+        } else {
+          setStatus('error');
+          setMessage('Failed to process Discord connection');
+          setTimeout(() => {
+            window.location.href = '/discord?error=callback_error';
+          }, 3000);
+        }
+      } catch (error) {
+        console.error('Error processing Discord callback:', error);
+        setStatus('error');
+        setMessage('Error processing Discord connection');
+        setTimeout(() => {
+          window.location.href = '/discord?error=callback_error';
+        }, 3000);
+      }
+    };
+
+    processCallback();
   }, []);
 
   return (
@@ -30,12 +83,16 @@ export default function DiscordCallbackPage() {
             <p className="text-gray-300">{message}</p>
           </div>
           
-          <div className="flex justify-center">
-            <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
+          <div className="flex justify-center mb-4">
+            {status === 'loading' && <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />}
+            {status === 'success' && <CheckCircle className="w-8 h-8 text-green-400" />}
+            {status === 'error' && <XCircle className="w-8 h-8 text-red-400" />}
           </div>
           
-          <p className="text-sm text-gray-400 mt-4">
-            Redirecting you back to Discord page...
+          <p className="text-sm text-gray-400">
+            {status === 'loading' && 'Processing Discord connection...'}
+            {status === 'success' && 'Redirecting you back to Discord page...'}
+            {status === 'error' && 'Redirecting you back to Discord page...'}
           </p>
         </CardContent>
       </Card>
