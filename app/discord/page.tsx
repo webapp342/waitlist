@@ -370,7 +370,7 @@ export default function DiscordPage() {
                     </Button>
                     {!discordStats.isInBBLIPGuild && (
                       <Button
-                        onClick={() => window.open('https://discord.gg/bblip', '_blank')}
+                        onClick={() => window.open('https://discord.gg/9KABVSMynV', '_blank')}
                         className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2"
                       >
                         <ExternalLink className="w-4 h-4" />
