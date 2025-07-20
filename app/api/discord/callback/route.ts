@@ -204,7 +204,7 @@ export async function GET(request: NextRequest) {
     // Create Discord activity record
     const { error: activityError } = await supabaseAdmin
       .from('discord_activities')
-      .insert({
+      .upsert({
         discord_id: discordUser.id,
         message_count: 0,
         daily_active_days: 0,
@@ -213,6 +213,8 @@ export async function GET(request: NextRequest) {
         total_xp: 0,
         current_level: 1,
         guild_count: userGuilds.length
+      }, {
+        onConflict: 'discord_id'
       });
 
     if (activityError) {

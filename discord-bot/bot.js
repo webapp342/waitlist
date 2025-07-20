@@ -46,6 +46,11 @@ const REACTION_XP = 2;
 const DAILY_ACTIVITY_XP = 5;
 const WEEKLY_STREAK_XP = 10;
 
+// Discord invite tracking
+const DISCORD_INVITE_XP_REWARD = 25; // XP for successful Discord invite
+const DISCORD_INVITE_BBLP_REWARD = 3; // BBLP for successful Discord invite
+const DISCORD_INVITE_SYSTEM_ENABLED = true; // Enable/disable Discord invite system
+
 // Level configuration
 const LEVELS = [
   { name: 'Bronze', minXP: 0, maxXP: 100, reward: 1 },
@@ -63,6 +68,9 @@ const PERFORMANCE_LOG_INTERVAL = 100;
 // Batch processing queue
 const xpUpdateQueue = new Map(); // discordId -> { xpAmount, reason, timestamp }
 let batchProcessingInterval = null;
+
+// Discord invite tracking
+const discordInviteTracking = new Map(); // inviteCode -> { inviterId, uses, createdAt }
 
 console.log('🌐 [DISCORD BOT] Environment Configuration:');
 console.log('  - BOT_TOKEN:', BOT_TOKEN ? '✅ Set' : '❌ Missing');
@@ -182,6 +190,8 @@ async function processSingleXPUpdate(discordId, xpAmount, reason = 'activity') {
                      newLevel.name === 'Gold' ? 3 : 
                      newLevel.name === 'Platinum' ? 4 : 5,
         updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'discord_id'
       });
 
     if (updateError) {
