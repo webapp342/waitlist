@@ -5,7 +5,8 @@ import {
   generateCodeChallenge, 
   generateState, 
   generateSessionId,
-  buildAuthUrl 
+  buildAuthUrl,
+  isMobileDevice
 } from '@/lib/xOAuth';
 import { logTwitterDebugInfo, validateTwitterConfig, validateOAuthParams } from '@/lib/twitterDebug';
 
@@ -98,24 +99,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Mobil cihaz tespiti
+    const userAgent = request.headers.get('user-agent') || '';
+    const isMobile = isMobileDevice(userAgent);
+
     const authUrl = buildAuthUrl({
       clientId,
       redirectUri,
       state,
-      codeChallenge
+      codeChallenge,
+      isMobile
     });
 
     console.log('OAuth session created successfully:', {
       sessionId,
       walletAddress: walletAddress.substring(0, 8) + '...',
       state: state.substring(0, 8) + '...',
-      authUrl: authUrl.substring(0, 100) + '...'
+      authUrl: authUrl.substring(0, 100) + '...',
+      isMobile
     });
 
     return NextResponse.json({
       authUrl,
       sessionId,
-      state
+      state,
+      isMobile
     });
 
   } catch (error) {

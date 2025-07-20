@@ -19,7 +19,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { XUser } from '@/lib/xOAuth';
+import { XUser, redirectToXApp } from '@/lib/xOAuth';
 
 export default function XPage() {
   const { address, isConnected } = useAccount();
@@ -113,8 +113,8 @@ export default function XPage() {
         // Store session ID for callback
         localStorage.setItem('x_oauth_session_id', data.sessionId);
         
-        // Redirect to X OAuth
-        window.location.href = data.authUrl;
+        // X uygulamasına yönlendir (mobil veya desktop)
+        redirectToXApp(data.authUrl, data.isMobile);
       } else {
         setConnectionStatus('disconnected');
         toast.error(data.error || 'Failed to start X authentication');
@@ -189,14 +189,23 @@ export default function XPage() {
                     Disconnect
                   </Button>
                 ) : (
-                  <Button 
-                    onClick={initiateXAuth}
-                    disabled={!isConnected || isConnecting}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    <Twitter className="w-4 h-4 mr-2" />
-                    {isConnecting ? 'Connecting...' : 'Connect X Account'}
-                  </Button>
+                  <div className="flex flex-col gap-2">
+                    <Button 
+                      onClick={initiateXAuth}
+                      disabled={!isConnected || isConnecting}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      <Twitter className="w-4 h-4 mr-2" />
+                      {isConnecting ? 'Connecting...' : 'Connect X Account'}
+                    </Button>
+                    
+                    {/* Mobil cihazlarda ek bilgi */}
+                    {typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && (
+                      <div className="text-xs text-gray-400 text-center mt-2">
+                        📱 X uygulaması açılacak. Uygulama yüklü değilse web sayfasına yönlendirileceksiniz.
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
