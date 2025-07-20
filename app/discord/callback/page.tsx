@@ -1,76 +1,19 @@
 "use client";
 
-import { useEffect, useState } from 'react';
-import { MessageSquare, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { useEffect } from 'react';
+import { MessageSquare, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 export default function DiscordCallbackPage() {
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
-  const [message, setMessage] = useState('Processing Discord connection...');
-
   useEffect(() => {
-    // Get the current URL parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
-    const error = urlParams.get('error');
+    // Simple redirect to main Discord page
+    // This page is kept for backward compatibility
+    // Discord OAuth now redirects directly to /api/discord/callback
+    const timer = setTimeout(() => {
+      window.location.href = '/discord';
+    }, 1000);
 
-    console.log('Discord callback received:', {
-      code: code ? 'present' : 'missing',
-      state: state ? 'present' : 'missing',
-      error: error || 'none'
-    });
-
-    if (error) {
-      setStatus('error');
-      setMessage(`Discord connection failed: ${error}`);
-      setTimeout(() => {
-        window.location.href = '/discord?error=' + encodeURIComponent(error);
-      }, 3000);
-      return;
-    }
-
-    if (!code || !state) {
-      setStatus('error');
-      setMessage('Missing required parameters');
-      setTimeout(() => {
-        window.location.href = '/discord?error=missing_parameters';
-      }, 3000);
-      return;
-    }
-
-    // Forward the OAuth callback to the API endpoint
-    const processCallback = async () => {
-      try {
-        const apiUrl = `/api/discord/callback?${window.location.search}`;
-        console.log('Forwarding to API endpoint:', apiUrl);
-        
-        const response = await fetch(apiUrl);
-        
-        if (response.ok) {
-          setStatus('success');
-          setMessage('Discord connected successfully!');
-          setTimeout(() => {
-            window.location.href = '/discord?success=connected';
-          }, 2000);
-        } else {
-          setStatus('error');
-          setMessage('Failed to process Discord connection');
-          setTimeout(() => {
-            window.location.href = '/discord?error=callback_error';
-          }, 3000);
-        }
-      } catch (error) {
-        console.error('Error processing Discord callback:', error);
-        setStatus('error');
-        setMessage('Error processing Discord connection');
-        setTimeout(() => {
-          window.location.href = '/discord?error=callback_error';
-        }, 3000);
-      }
-    };
-
-    processCallback();
+    return () => clearTimeout(timer);
   }, []);
 
   return (
@@ -80,19 +23,15 @@ export default function DiscordCallbackPage() {
           <div className="mb-6">
             <MessageSquare className="w-16 h-16 mx-auto text-purple-400 mb-4" />
             <h1 className="text-2xl font-bold text-white mb-2">Discord Connection</h1>
-            <p className="text-gray-300">{message}</p>
+            <p className="text-gray-300">Redirecting to Discord page...</p>
           </div>
           
           <div className="flex justify-center mb-4">
-            {status === 'loading' && <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />}
-            {status === 'success' && <CheckCircle className="w-8 h-8 text-green-400" />}
-            {status === 'error' && <XCircle className="w-8 h-8 text-red-400" />}
+            <Loader2 className="w-8 h-8 text-purple-400 animate-spin" />
           </div>
           
           <p className="text-sm text-gray-400">
-            {status === 'loading' && 'Processing Discord connection...'}
-            {status === 'success' && 'Redirecting you back to Discord page...'}
-            {status === 'error' && 'Redirecting you back to Discord page...'}
+            If you're not redirected automatically, <a href="/discord" className="text-purple-400 hover:underline">click here</a>
           </p>
         </CardContent>
       </Card>
