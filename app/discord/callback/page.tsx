@@ -31,7 +31,7 @@ export default function DiscordCallbackPage() {
           </div>
           
           <p className="text-sm text-gray-400">
-            If you're not redirected automatically, <a href="/discord" className="text-purple-400 hover:underline">click here</a>
+            If you&apos;re not redirected automatically, <a href="/discord" className="text-purple-400 hover:underline">click here</a>
           </p>
         </CardContent>
       </Card>
