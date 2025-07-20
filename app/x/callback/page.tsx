@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { CheckCircle, XCircle, Activity } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function XCallbackPage() {
+function XCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<'processing' | 'success' | 'error'>('processing');
@@ -151,5 +151,37 @@ export default function XCallbackPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="container mx-auto px-4">
+        <div className="max-w-md mx-auto">
+          <Card className="bg-gray-900 border-gray-800">
+            <CardHeader className="text-center">
+              <div className="flex justify-center mb-4">
+                <Activity className="w-8 h-8 text-blue-500 animate-spin" />
+              </div>
+              <CardTitle className="text-2xl">
+                Loading...
+              </CardTitle>
+              <CardDescription className="text-gray-400">
+                Please wait while we load the callback page...
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function XCallbackPage() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <XCallbackContent />
+    </Suspense>
   );
 } 

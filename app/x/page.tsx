@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'sonner';
 import Image from 'next/image';
@@ -28,7 +28,7 @@ export default function XPage() {
   const [isConnecting, setIsConnecting] = useState(false);
 
   // Check X connection status
-  const checkXStatus = async () => {
+  const checkXStatus = useCallback(async () => {
     if (!isConnected || !address) return;
 
     try {
@@ -54,12 +54,12 @@ export default function XPage() {
       setConnectionStatus('disconnected');
       setXUser(null);
     }
-  };
+  }, [isConnected, address]);
 
   // Check status on mount and wallet connection
   useEffect(() => {
     checkXStatus();
-  }, [isConnected, address]);
+  }, [checkXStatus]);
 
   // Disconnect X account
   const disconnectX = async () => {
