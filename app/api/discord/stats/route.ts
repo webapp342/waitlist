@@ -6,6 +6,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const walletAddress = searchParams.get('walletAddress');
 
+    console.log('Discord stats request for wallet:', walletAddress?.substring(0, 8) + '...');
+
     if (!walletAddress) {
       return NextResponse.json(
         { error: 'Wallet address is required' },
@@ -21,7 +23,22 @@ export async function GET(request: NextRequest) {
       .eq('is_active', true)
       .single();
 
+    console.log('Discord user query result:', {
+      found: !!discordUser,
+      error: userError ? {
+        code: userError.code,
+        message: userError.message
+      } : null,
+      userData: discordUser ? {
+        id: discordUser.id,
+        discord_id: discordUser.discord_id,
+        username: discordUser.username,
+        is_active: discordUser.is_active
+      } : null
+    });
+
     if (userError || !discordUser) {
+      console.log('No Discord user found, returning disconnected state');
       return NextResponse.json({
         isConnected: false,
         currentLevel: 1,

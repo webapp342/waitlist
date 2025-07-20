@@ -115,12 +115,21 @@ export default function DiscordPage() {
   const checkDiscordStatus = async () => {
     if (!address) return;
     
+    console.log('Checking Discord status for wallet:', address.substring(0, 8) + '...');
+    
     try {
       const response = await fetch(`/api/discord/stats?walletAddress=${address}`);
       const data = await response.json();
       
+      console.log('Discord stats response:', {
+        status: response.status,
+        ok: response.ok,
+        data: data
+      });
+      
       if (response.ok) {
         setDiscordStats(data);
+        console.log('Discord stats updated:', data.isConnected ? 'Connected' : 'Not connected');
       } else {
         console.error('Error fetching Discord stats:', data.error);
       }

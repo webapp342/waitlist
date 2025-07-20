@@ -127,6 +127,23 @@ export async function GET(request: NextRequest) {
     // Save Discord user to database
     const avatarUrl = getDiscordAvatarUrl(discordUser.id, discordUser.avatar, discordUser.discriminator);
     
+    console.log('Attempting to save Discord user to database:', {
+      user_id: session.wallet_address,
+      discord_id: discordUser.id,
+      username: discordUser.username,
+      discriminator: discordUser.discriminator,
+      avatar_url: avatarUrl,
+      email: discordUser.email,
+      verified: discordUser.verified,
+      locale: discordUser.locale,
+      mfa_enabled: discordUser.mfa_enabled,
+      premium_type: discordUser.premium_type,
+      access_token: tokenData.access_token ? 'present' : 'missing',
+      refresh_token: tokenData.refresh_token ? 'present' : 'missing',
+      token_expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
+      is_active: true
+    });
+    
     const { data: newDiscordUser, error: insertError } = await supabase
       .from('discord_users')
       .insert({
@@ -150,10 +167,22 @@ export async function GET(request: NextRequest) {
 
     if (insertError) {
       console.error('Error saving Discord user:', insertError);
+      console.error('Insert error details:', {
+        code: insertError.code,
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint
+      });
       return NextResponse.redirect(
         `${process.env.NEXT_PUBLIC_APP_URL || 'https://bblip.io'}/discord?error=save_failed`
       );
     }
+
+    console.log('Discord user saved successfully:', {
+      id: newDiscordUser?.id,
+      discord_id: newDiscordUser?.discord_id,
+      username: newDiscordUser?.username
+    });
 
     // Create Discord activity record
     const { error: activityError } = await supabase
