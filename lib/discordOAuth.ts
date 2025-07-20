@@ -46,25 +46,52 @@ export async function exchangeCodeForToken(code: string): Promise<{
   refresh_token: string;
   scope: string;
 }> {
+  const requestBody = new URLSearchParams({
+    client_id: DISCORD_CONFIG.clientId,
+    client_secret: DISCORD_CONFIG.clientSecret,
+    grant_type: 'authorization_code',
+    code,
+    redirect_uri: DISCORD_CONFIG.redirectUri,
+  });
+
+  console.log('Discord token exchange request:', {
+    client_id: DISCORD_CONFIG.clientId,
+    client_secret: DISCORD_CONFIG.clientSecret ? 'present' : 'missing',
+    grant_type: 'authorization_code',
+    code: code ? 'present' : 'missing',
+    redirect_uri: DISCORD_CONFIG.redirectUri
+  });
+
   const response = await fetch('https://discord.com/api/oauth2/token', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
     },
-    body: new URLSearchParams({
-      client_id: DISCORD_CONFIG.clientId,
-      client_secret: DISCORD_CONFIG.clientSecret,
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: DISCORD_CONFIG.redirectUri,
-    }),
+    body: requestBody,
+  });
+
+  console.log('Discord token exchange response:', {
+    status: response.status,
+    statusText: response.statusText,
+    ok: response.ok
   });
 
   if (!response.ok) {
-    throw new Error(`Discord token exchange failed: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('Discord token exchange error response:', errorText);
+    throw new Error(`Discord token exchange failed: ${response.statusText} - ${errorText}`);
   }
 
-  return response.json();
+  const tokenData = await response.json();
+  console.log('Discord token exchange successful:', {
+    access_token: tokenData.access_token ? 'present' : 'missing',
+    token_type: tokenData.token_type,
+    expires_in: tokenData.expires_in,
+    refresh_token: tokenData.refresh_token ? 'present' : 'missing',
+    scope: tokenData.scope
+  });
+
+  return tokenData;
 }
 
 // Get Discord user information
