@@ -48,7 +48,7 @@ ALTER TABLE x_users
 ADD COLUMN IF NOT EXISTS verified_at TIMESTAMP WITH TIME ZONE,
 ADD COLUMN IF NOT EXISTS verification_method TEXT DEFAULT 'oauth';
 
--- Add index for verification status
+-- Add index for verification status ggfdg
 CREATE INDEX IF NOT EXISTS idx_x_users_verified ON x_users(verified_at);
 
 -- Comments
