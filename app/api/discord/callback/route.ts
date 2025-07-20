@@ -69,9 +69,15 @@ export async function GET(request: NextRequest) {
       discriminator: discordUser.discriminator
     });
 
-    // Get user's Discord guilds (servers)
-    const userGuilds = await getDiscordUserGuilds(tokenData.access_token);
-    console.log('Discord guilds retrieved:', userGuilds.length);
+    // Get user's Discord guilds (servers) - optional
+    let userGuilds = [];
+    try {
+      userGuilds = await getDiscordUserGuilds(tokenData.access_token);
+      console.log('Discord guilds retrieved:', userGuilds.length);
+    } catch (guildError) {
+      console.log('Could not retrieve Discord guilds (this is normal if guilds.join scope is not available):', guildError);
+      // Continue without guild information
+    }
 
     // Check if Discord ID is already connected to another wallet
     const { data: existingDiscordUser, error: discordCheckError } = await supabase

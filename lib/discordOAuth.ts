@@ -5,7 +5,7 @@ export const DISCORD_CONFIG = {
   clientId: process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '',
   clientSecret: process.env.DISCORD_CLIENT_SECRET || '',
   redirectUri: process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI || 'https://bblip.io/discord/callback',
-  scope: 'identify guilds.join',
+  scope: 'identify',
   apiBase: 'https://discord.com/api/v10'
 };
 
