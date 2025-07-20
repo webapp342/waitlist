@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get Discord user data
-    const { data: discordUser, error: userError } = await supabase
+    const { data: discordUser, error: userError } = await supabaseAdmin
       .from('discord_users')
       .select('*')
       .eq('user_id', walletAddress)
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get Discord activity data
-    const { data: activity, error: activityError } = await supabase
+    const { data: activity, error: activityError } = await supabaseAdmin
       .from('discord_activities')
       .select('*')
       .eq('discord_id', discordUser.discord_id)
@@ -77,7 +77,7 @@ export async function GET(request: NextRequest) {
 
     // Check if user can claim daily reward
     const today = new Date().toDateString();
-    const { data: lastClaim, error: claimError } = await supabase
+    const { data: lastClaim, error: claimError } = await supabaseAdmin
       .from('discord_daily_claims')
       .select('claimed_at')
       .eq('discord_id', discordUser.discord_id)

@@ -19,6 +19,13 @@ export const supabase = createClient(
   supabaseAnonKey || 'placeholder-key'
 )
 
+// Create Supabase client with service role for server-side operations
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+export const supabaseAdmin = createClient(
+  supabaseUrl || 'https://placeholder.supabase.co',
+  supabaseServiceKey || supabaseAnonKey || 'placeholder-key'
+)
+
 // Database types
 export interface User {
   id: number

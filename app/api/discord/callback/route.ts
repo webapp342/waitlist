@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { 
   exchangeCodeForToken, 
   getDiscordUser, 
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Validate OAuth session
-    const { data: session, error: sessionError } = await supabase
+    const { data: session, error: sessionError } = await supabaseAdmin
       .from('discord_oauth_sessions')
       .select('*')
       .eq('state', state)
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Mark session as used
-    await supabase
+    await supabaseAdmin
       .from('discord_oauth_sessions')
       .update({ used: true })
       .eq('session_id', session.session_id);
@@ -80,7 +80,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if Discord ID is already connected to another wallet
-    const { data: existingDiscordUser, error: discordCheckError } = await supabase
+    const { data: existingDiscordUser, error: discordCheckError } = await supabaseAdmin
       .from('discord_users')
       .select('user_id, discord_id')
       .eq('discord_id', discordUser.id)
@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if wallet already has another Discord account
-    const { data: existingWalletDiscord, error: walletDiscordError } = await supabase
+    const { data: existingWalletDiscord, error: walletDiscordError } = await supabaseAdmin
       .from('discord_users')
       .select('discord_id')
       .eq('user_id', session.wallet_address)
@@ -150,7 +150,7 @@ export async function GET(request: NextRequest) {
       is_active: true
     });
     
-    const { data: newDiscordUser, error: insertError } = await supabase
+    const { data: newDiscordUser, error: insertError } = await supabaseAdmin
       .from('discord_users')
       .insert({
         user_id: session.wallet_address,
@@ -191,7 +191,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Create Discord activity record
-    const { error: activityError } = await supabase
+    const { error: activityError } = await supabaseAdmin
       .from('discord_activities')
       .insert({
         discord_id: discordUser.id,

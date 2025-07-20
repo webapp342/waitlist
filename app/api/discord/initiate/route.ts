@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { 
   generateState, 
   generateSessionId,
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user exists
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('wallet_address', walletAddress)
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Store OAuth session in database
-    const { error: sessionError } = await supabase
+    const { error: sessionError } = await supabaseAdmin
       .from('discord_oauth_sessions')
       .insert({
         session_id: sessionId,
