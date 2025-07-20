@@ -1,0 +1,166 @@
+import crypto from 'crypto';
+
+// Discord OAuth2 Configuration
+export const DISCORD_CONFIG = {
+  clientId: process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || '',
+  clientSecret: process.env.DISCORD_CLIENT_SECRET || '',
+  redirectUri: process.env.NEXT_PUBLIC_DISCORD_REDIRECT_URI || 'https://bblip.io/discord/callback',
+  scope: 'identify guilds.join',
+  apiBase: 'https://discord.com/api/v10'
+};
+
+// Generate random state for OAuth security
+export function generateState(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// Generate session ID for tracking OAuth flow
+export function generateSessionId(): string {
+  return crypto.randomBytes(16).toString('hex');
+}
+
+// Build Discord OAuth authorization URL
+export function buildDiscordAuthUrl(params: {
+  clientId: string;
+  redirectUri: string;
+  state: string;
+  scope: string;
+}): string {
+  const { clientId, redirectUri, state, scope } = params;
+  
+  const url = new URL('https://discord.com/api/oauth2/authorize');
+  url.searchParams.set('client_id', clientId);
+  url.searchParams.set('redirect_uri', redirectUri);
+  url.searchParams.set('response_type', 'code');
+  url.searchParams.set('scope', scope);
+  url.searchParams.set('state', state);
+  
+  return url.toString();
+}
+
+// Exchange authorization code for access token
+export async function exchangeCodeForToken(code: string): Promise<{
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token: string;
+  scope: string;
+}> {
+  const response = await fetch('https://discord.com/api/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: new URLSearchParams({
+      client_id: DISCORD_CONFIG.clientId,
+      client_secret: DISCORD_CONFIG.clientSecret,
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: DISCORD_CONFIG.redirectUri,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Discord token exchange failed: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Get Discord user information
+export async function getDiscordUser(accessToken: string): Promise<{
+  id: string;
+  username: string;
+  discriminator: string;
+  avatar: string | null;
+  email?: string;
+  verified: boolean;
+  locale: string;
+  mfa_enabled: boolean;
+  flags: number;
+  premium_type: number;
+  public_flags: number;
+}> {
+  const response = await fetch('https://discord.com/api/users/@me', {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to get Discord user: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Get Discord user guilds (servers)
+export async function getDiscordUserGuilds(accessToken: string): Promise<Array<{
+  id: string;
+  name: string;
+  icon: string | null;
+  owner: boolean;
+  permissions: string;
+  features: string[];
+  permissions_new: string;
+}>> {
+  const response = await fetch('https://discord.com/api/users/@me/guilds', {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to get Discord guilds: ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+// Validate Discord configuration
+export function validateDiscordConfig(): boolean {
+  return !!(DISCORD_CONFIG.clientId && DISCORD_CONFIG.clientSecret && DISCORD_CONFIG.redirectUri);
+}
+
+// Check if device is mobile
+export function isMobileDevice(userAgent: string): boolean {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+}
+
+// Generate Discord avatar URL
+export function getDiscordAvatarUrl(userId: string, avatar: string | null, discriminator: string): string {
+  if (avatar) {
+    return `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png`;
+  }
+  
+  // Default avatar based on discriminator
+  const defaultAvatarId = parseInt(discriminator) % 5;
+  return `https://cdn.discordapp.com/embed/avatars/${defaultAvatarId}.png`;
+}
+
+// Validate OAuth parameters
+export function validateOAuthParams(params: {
+  clientId: string;
+  redirectUri: string;
+  state: string;
+}): string[] {
+  const issues: string[] = [];
+  
+  if (!params.clientId) {
+    issues.push('Discord Client ID is required');
+  }
+  
+  if (!params.redirectUri) {
+    issues.push('Redirect URI is required');
+  }
+  
+  if (!params.state) {
+    issues.push('State parameter is required');
+  }
+  
+  if (params.state.length < 32) {
+    issues.push('State parameter must be at least 32 characters');
+  }
+  
+  return issues;
+} 

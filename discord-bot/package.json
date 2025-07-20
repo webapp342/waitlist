@@ -1,0 +1,29 @@
+{
+  "name": "bblip-discord-bot",
+  "version": "1.0.0",
+  "description": "BBLIP Discord Bot for community engagement and XP tracking",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node bot.js",
+    "dev": "nodemon bot.js",
+    "deploy-commands": "node deploy-commands.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "@supabase/supabase-js": "^2.50.2",
+    "dotenv": "^17.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "bblip",
+    "crypto",
+    "xp",
+    "rewards"
+  ],
+  "author": "BBLIP Team",
+  "license": "MIT"
+} 
