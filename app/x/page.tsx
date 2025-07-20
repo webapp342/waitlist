@@ -155,9 +155,28 @@ export default function XPage() {
 
     // X OAuth URL
     const clientId = process.env.NEXT_PUBLIC_X_CLIENT_ID;
+    
+    // Debug logging
+    console.log('Client ID:', clientId);
+    console.log('Environment check:', {
+      NEXT_PUBLIC_X_CLIENT_ID: process.env.NEXT_PUBLIC_X_CLIENT_ID,
+      NODE_ENV: process.env.NODE_ENV
+    });
+    
+    // Check if client ID is available
+    if (!clientId) {
+      toast.error('X OAuth configuration is missing. Please check environment variables.');
+      console.error('NEXT_PUBLIC_X_CLIENT_ID is not defined');
+      return;
+    }
+    
     const redirectUri = `${window.location.origin}/x/callback`;
     const scope = 'tweet.read users.read offline.access';
     
+    // Generate personalization_id (required by X API)
+    const personalizationId = 'v1_' + Math.random().toString(36).substring(2, 15) + '==';
+    
+    // Try alternative OAuth URL format
     const authUrl = `https://twitter.com/i/oauth2/authorize?` +
       `response_type=code&` +
       `client_id=${clientId}&` +
@@ -165,8 +184,51 @@ export default function XPage() {
       `scope=${encodeURIComponent(scope)}&` +
       `state=${state}&` +
       `code_challenge_method=S256&` +
-      `code_challenge=${generateCodeChallenge()}`;
+      `code_challenge=${generateCodeChallenge()}&` +
+      `personalization_id=${encodeURIComponent(personalizationId)}`;
 
+    console.log('Auth URL:', authUrl);
+    
+    // Try opening in new window first, fallback to redirect
+    try {
+      const authWindow = window.open(authUrl, '_blank', 'width=600,height=700');
+      if (!authWindow) {
+        // Fallback to redirect if popup blocked
+        window.location.href = authUrl;
+      }
+    } catch (error) {
+      console.error('Error opening auth window:', error);
+      window.location.href = authUrl;
+    }
+  };
+
+  // Alternative OAuth method using web-based flow
+  const initiateXAuthAlternative = () => {
+    if (!isConnected || !address) {
+      toast.error('Please connect your wallet first');
+      return;
+    }
+
+    const clientId = process.env.NEXT_PUBLIC_X_CLIENT_ID;
+    if (!clientId) {
+      toast.error('X OAuth configuration is missing.');
+      return;
+    }
+
+    const state = Math.random().toString(36).substring(2, 15);
+    localStorage.setItem('x_auth_state', state);
+    
+    const redirectUri = `${window.location.origin}/x/callback`;
+    
+    // Use web-based OAuth flow
+    const authUrl = `https://twitter.com/i/oauth2/authorize?` +
+      `response_type=code&` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `scope=tweet.read%20users.read%20offline.access&` +
+      `state=${state}`;
+
+    console.log('Alternative Auth URL:', authUrl);
     window.location.href = authUrl;
   };
 
@@ -241,14 +303,26 @@ export default function XPage() {
                     Disconnect
                   </Button>
                 ) : (
-                  <Button 
-                    onClick={initiateXAuth}
-                    disabled={!isConnected || isConnecting}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
-                  >
-                    <Twitter className="w-4 h-4 mr-2" />
-                    {isConnecting ? 'Connecting...' : 'Connect X Account'}
-                  </Button>
+                  <div className="flex flex-col gap-2">
+                    <Button 
+                      onClick={initiateXAuth}
+                      disabled={!isConnected || isConnecting}
+                      className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      <Twitter className="w-4 h-4 mr-2" />
+                      {isConnecting ? 'Connecting...' : 'Connect X Account'}
+                    </Button>
+                    
+                    <Button 
+                      onClick={initiateXAuthAlternative}
+                      disabled={!isConnected || isConnecting}
+                      variant="outline"
+                      className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                    >
+                      <Twitter className="w-4 h-4 mr-2" />
+                      Alternative Connect Method
+                    </Button>
+                  </div>
                 )}
               </div>
 
