@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase, supabaseAdmin } from '@/lib/supabase';
-import { isUserInGuild } from '@/lib/discordOAuth';
+import { isUserInGuild, refreshDiscordToken } from '@/lib/discordOAuth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -58,7 +58,36 @@ export async function GET(request: NextRequest) {
     try {
       if (discordUser.access_token) {
         const guildId = process.env.DISCORD_GUILD_ID || '1396412220480426114';
-        isInBBLIPGuild = await isUserInGuild(discordUser.access_token, guildId);
+        
+        // Check if token is expired
+        const tokenExpiresAt = new Date(discordUser.token_expires_at);
+        const now = new Date();
+        let accessToken = discordUser.access_token;
+        
+        if (tokenExpiresAt <= now && discordUser.refresh_token) {
+          console.log('Discord token expired, attempting refresh...');
+          try {
+            const newTokenData = await refreshDiscordToken(discordUser.refresh_token);
+            accessToken = newTokenData.access_token;
+            
+            // Update the token in database
+            await supabaseAdmin
+              .from('discord_users')
+              .update({
+                access_token: newTokenData.access_token,
+                refresh_token: newTokenData.refresh_token,
+                token_expires_at: new Date(Date.now() + newTokenData.expires_in * 1000).toISOString()
+              })
+              .eq('discord_id', discordUser.discord_id);
+              
+            console.log('Discord token refreshed successfully');
+          } catch (refreshError) {
+            console.error('Failed to refresh Discord token:', refreshError);
+            // Continue with old token, it might still work
+          }
+        }
+        
+        isInBBLIPGuild = await isUserInGuild(accessToken, guildId);
         console.log('Guild membership check result:', {
           discordId: discordUser.discord_id,
           guildId: guildId,

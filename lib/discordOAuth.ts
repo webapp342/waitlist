@@ -168,20 +168,86 @@ export function getDiscordAvatarUrl(userId: string, avatar: string | null, discr
 // Check if user is member of specific guild
 export async function isUserInGuild(accessToken: string, guildId: string): Promise<boolean> {
   try {
-    const response = await fetch(`https://discord.com/api/users/@me/guilds/${guildId}/member`, {
+    // Get user's guilds and check if the target guild is in the list
+    const response = await fetch('https://discord.com/api/users/@me/guilds', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     });
 
-    // If status is 200, user is a member
-    // If status is 403, user is not a member
-    // If status is 401, token is invalid
-    return response.status === 200;
+    if (!response.ok) {
+      console.error('Failed to get user guilds:', response.status, response.statusText);
+      return false;
+    }
+
+    const guilds = await response.json();
+    const isMember = guilds.some((guild: any) => guild.id === guildId);
+    
+    console.log('Guild membership check:', {
+      guildId,
+      userGuilds: guilds.map((g: any) => ({ id: g.id, name: g.name })),
+      isMember
+    });
+    
+    return isMember;
   } catch (error) {
     console.error('Error checking guild membership:', error);
     return false;
   }
+}
+
+// Refresh Discord access token
+export async function refreshDiscordToken(refreshToken: string): Promise<{
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  refresh_token: string;
+  scope: string;
+}> {
+  const requestBody = new URLSearchParams({
+    client_id: DISCORD_CONFIG.clientId,
+    client_secret: DISCORD_CONFIG.clientSecret,
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken,
+  });
+
+  console.log('Discord token refresh request:', {
+    client_id: DISCORD_CONFIG.clientId,
+    client_secret: DISCORD_CONFIG.clientSecret ? 'present' : 'missing',
+    grant_type: 'refresh_token',
+    refresh_token: refreshToken ? 'present' : 'missing'
+  });
+
+  const response = await fetch('https://discord.com/api/oauth2/token', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: requestBody,
+  });
+
+  console.log('Discord token refresh response:', {
+    status: response.status,
+    statusText: response.statusText,
+    ok: response.ok
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Discord token refresh error response:', errorText);
+    throw new Error(`Discord token refresh failed: ${response.statusText} - ${errorText}`);
+  }
+
+  const tokenData = await response.json();
+  console.log('Discord token refresh successful:', {
+    access_token: tokenData.access_token ? 'present' : 'missing',
+    token_type: tokenData.token_type,
+    expires_in: tokenData.expires_in,
+    refresh_token: tokenData.refresh_token ? 'present' : 'missing',
+    scope: tokenData.scope
+  });
+
+  return tokenData;
 }
 
 // Validate OAuth parameters

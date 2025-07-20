@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
       clientId,
       redirectUri,
       state,
-      scope: 'identify guilds.join'
+      scope: 'identify guilds guilds.join'
     });
 
     console.log('Discord OAuth session created successfully:', {
