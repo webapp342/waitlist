@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
-  console.log('🚀 POST /api/x/status called');
-  
   try {
-    const body = await request.json();
-    const { walletAddress } = body;
+    const { walletAddress } = await request.json();
 
     if (!walletAddress) {
       return NextResponse.json(
@@ -15,37 +12,51 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if X account is connected to this wallet
-    const { data: xUser, error } = await supabase
+    // Get active X connection for wallet
+    const { data: xConnection, error } = await supabase
       .from('x_users')
-      .select('*')
+      .select(`
+        x_user_id,
+        x_username,
+        x_name,
+        x_profile_image_url,
+        x_verified,
+        x_followers_count,
+        x_following_count,
+        x_tweet_count,
+        token_expires_at,
+        created_at
+      `)
       .eq('wallet_address', walletAddress)
       .eq('is_active', true)
       .single();
 
-    if (error || !xUser) {
+    if (error || !xConnection) {
       return NextResponse.json({
         connected: false,
         xUser: null
       });
     }
 
+    // Check if token is expired
+    const isTokenExpired = new Date() > new Date(xConnection.token_expires_at);
+
     return NextResponse.json({
-      connected: true,
+      connected: !isTokenExpired,
       xUser: {
-        id: xUser.x_user_id,
-        username: xUser.x_username,
-        name: xUser.x_name,
-        profile_image_url: xUser.x_profile_image_url,
-        verified: xUser.x_verified,
-        followers_count: xUser.x_followers_count,
-        following_count: xUser.x_following_count,
-        tweet_count: xUser.x_tweet_count
+        id: xConnection.x_user_id,
+        username: xConnection.x_username,
+        name: xConnection.x_name,
+        profile_image_url: xConnection.x_profile_image_url,
+        verified: xConnection.x_verified,
+        followers_count: xConnection.x_followers_count,
+        following_count: xConnection.x_following_count,
+        tweet_count: xConnection.x_tweet_count
       }
     });
 
   } catch (error) {
-    console.error('❌ Error in X status endpoint:', error);
+    console.error('Error checking X status:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

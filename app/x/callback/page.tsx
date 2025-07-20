@@ -20,11 +20,12 @@ function XCallbackContent() {
         const code = searchParams.get('code');
         const state = searchParams.get('state');
         const error = searchParams.get('error');
+        const errorDescription = searchParams.get('error_description');
 
         // Check for errors
         if (error) {
           setStatus('error');
-          setMessage(`Authentication failed: ${error}`);
+          setMessage(`Authentication failed: ${errorDescription || error}`);
           toast.error('X authentication failed');
           setTimeout(() => router.push('/x'), 3000);
           return;
@@ -39,21 +40,11 @@ function XCallbackContent() {
           return;
         }
 
-        // Validate state parameter (CSRF protection)
-        const savedState = localStorage.getItem('x_auth_state');
-        const codeVerifier = localStorage.getItem('x_code_verifier');
-        
-        if (state !== savedState) {
+        // Get session ID from localStorage
+        const sessionId = localStorage.getItem('x_session_id');
+        if (!sessionId) {
           setStatus('error');
-          setMessage('Invalid state parameter');
-          toast.error('Security validation failed');
-          setTimeout(() => router.push('/x'), 3000);
-          return;
-        }
-
-        if (!codeVerifier) {
-          setStatus('error');
-          setMessage('Missing code verifier');
+          setMessage('Missing OAuth session');
           toast.error('Authentication session expired');
           setTimeout(() => router.push('/x'), 3000);
           return;
@@ -71,7 +62,7 @@ function XCallbackContent() {
         // Process the authentication
         setMessage('Connecting your X account...');
         
-        const response = await fetch('/api/x/connect', {
+        const response = await fetch('/api/x/callback', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -79,8 +70,7 @@ function XCallbackContent() {
           body: JSON.stringify({
             code,
             state,
-            codeVerifier,
-            walletAddress: address
+            sessionId
           }),
         });
 
@@ -97,7 +87,7 @@ function XCallbackContent() {
           }
           
           // Clean up
-          localStorage.removeItem('x_auth_state');
+          localStorage.removeItem('x_session_id');
           
           // Redirect after success
           setTimeout(() => router.push('/x'), 2000);

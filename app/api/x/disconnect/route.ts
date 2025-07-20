@@ -2,11 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
-  console.log('🚀 POST /api/x/disconnect called');
-  
   try {
-    const body = await request.json();
-    const { walletAddress } = body;
+    const { walletAddress } = await request.json();
 
     if (!walletAddress) {
       return NextResponse.json(
@@ -15,7 +12,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Deactivate X connection for this wallet
+    // Deactivate X connection
     const { error } = await supabase
       .from('x_users')
       .update({ 
@@ -26,14 +23,14 @@ export async function POST(request: NextRequest) {
       .eq('is_active', true);
 
     if (error) {
-      console.error('❌ Error disconnecting X user:', error);
+      console.error('Error disconnecting X account:', error);
       return NextResponse.json(
         { error: 'Failed to disconnect X account' },
         { status: 500 }
       );
     }
 
-    console.log('✅ X user disconnected successfully');
+    console.log('X account disconnected:', walletAddress);
 
     return NextResponse.json({
       success: true,
@@ -41,7 +38,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('❌ Error in X disconnect endpoint:', error);
+    console.error('Error disconnecting X account:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
