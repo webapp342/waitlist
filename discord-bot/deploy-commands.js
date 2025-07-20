@@ -26,6 +26,10 @@ const commands = [
     .setDescription('Get instructions to connect your account'),
   
   new SlashCommandBuilder()
+    .setName('invite')
+    .setDescription('Create your personal invite link for rewards'),
+  
+  new SlashCommandBuilder()
     .setName('help')
     .setDescription('Show bot commands and features'),
 ];

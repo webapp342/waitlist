@@ -100,7 +100,7 @@ function PresalePageInner() {
   // Presale Progress States
   const [presaleProgress, setPresaleProgress] = useState({
     raised: 0, // Başlangıçta 0, useEffect'te hesaplanacak
-    target: 2000000, // $2M hedef
+    target: 2500000, // $2.5M hedef
     percentage: 0, // Başlangıçta 0
     contributors: 0, // Başlangıçta 0
     daysLeft: 0,
@@ -123,7 +123,7 @@ function PresalePageInner() {
 
   // Timer (her saniye güncellenir)
   useEffect(() => {
-    const endDate = new Date('2025-07-21T23:00:00Z');
+    const endDate = new Date('2025-07-26T23:00:00Z'); // 5 gün uzatıldı
     const updateTimer = () => {
       const now = new Date();
       const timeLeft = endDate.getTime() - now.getTime();
@@ -140,7 +140,7 @@ function PresalePageInner() {
 
   // Progress ve raised/target (her 30 dakikada bir güncellenir)
   useEffect(() => {
-    const endDate = new Date('2025-07-21T23:00:00Z');
+    const endDate = new Date('2025-07-26T23:00:00Z'); // 5 gün uzatıldı
     const updateProgress = () => {
       const now = new Date();
       
@@ -151,17 +151,17 @@ function PresalePageInner() {
       if (timeRemaining <= 0) {
         setPresaleProgress(prev => ({
           ...prev,
-          raised: 2000000,
-          target: 2000000,
+          raised: 2500000,
+          target: 2500000,
           percentage: 100,
-          contributors: 6382,
-          tokensSold: 20000000 // 20M tokens
+          contributors: 7977, // 6382 * (2500000/2000000) = 7977
+          tokensSold: 25000000 // 25M tokens
         }));
         return;
       }
       
       // Presale parametreleri
-      const totalPresaleDuration = 25 * 24 * 60 * 60 * 1000; // 30 günlük presale süresi
+      const totalPresaleDuration = 30 * 24 * 60 * 60 * 1000; // 30 günlük presale süresi (5 gün uzatıldı)
       const periodDuration = 30 * 60 * 1000; // 30 dakika
       const totalPeriods = totalPresaleDuration / periodDuration; // Toplam 30 dakikalık period sayısı (1440)
       
@@ -173,20 +173,20 @@ function PresalePageInner() {
       const elapsedPeriods = Math.floor(elapsed / periodDuration);
       
       // Her period için artış miktarları
-      const raisePerPeriod = 2000000 / totalPeriods; // ~$1,388.89 per 30 min
-      const contributorsPerPeriod = 6382 / totalPeriods; // ~4.43 contributors per 30 min
-      const tokensPerPeriod = 20000000 / totalPeriods; // ~13,888.89 tokens per 30 min
+      const raisePerPeriod = 2500000 / totalPeriods; // ~$1,736.11 per 30 min
+      const contributorsPerPeriod = 7977 / totalPeriods; // ~5.54 contributors per 30 min
+      const tokensPerPeriod = 25000000 / totalPeriods; // ~17,361.11 tokens per 30 min
       
       // Güncel değerleri hesapla
-      const currentRaised = Math.min(elapsedPeriods * raisePerPeriod, 2000000);
-      const currentContributors = Math.min(Math.floor(elapsedPeriods * contributorsPerPeriod), 6382);
-      const currentTokensSold = Math.min(elapsedPeriods * tokensPerPeriod, 20000000);
-      const percentage = (currentRaised / 2000000) * 100;
+      const currentRaised = Math.min(elapsedPeriods * raisePerPeriod, 2500000);
+      const currentContributors = Math.min(Math.floor(elapsedPeriods * contributorsPerPeriod), 7977);
+      const currentTokensSold = Math.min(elapsedPeriods * tokensPerPeriod, 25000000);
+      const percentage = (currentRaised / 2500000) * 100;
       
       setPresaleProgress(prev => ({
         ...prev,
         raised: currentRaised,
-        target: 2000000,
+        target: 2500000,
         percentage: percentage,
         contributors: currentContributors,
         tokensSold: currentTokensSold

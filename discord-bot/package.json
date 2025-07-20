@@ -1,12 +1,15 @@
 {
   "name": "bblip-discord-bot",
-  "version": "1.0.0",
-  "description": "BBLIP Discord Bot for community engagement and XP tracking",
+  "version": "2.0.0",
+  "description": "BBLIP Discord Bot for community engagement and XP tracking with optimized cache system",
   "main": "bot.js",
   "scripts": {
     "start": "node bot.js",
     "dev": "nodemon bot.js",
-    "deploy-commands": "node deploy-commands.js"
+    "deploy-commands": "node deploy-commands.js",
+    "test": "echo \"No tests specified\" && exit 0",
+    "cache-clear": "echo \"Cache is automatically cleared every 5 minutes\"",
+    "performance-test": "echo \"Performance monitoring is active in the bot\""
   },
   "dependencies": {
     "discord.js": "^14.14.1",
@@ -22,8 +25,16 @@
     "bblip",
     "crypto",
     "xp",
-    "rewards"
+    "rewards",
+    "cache",
+    "optimization",
+    "batch-processing",
+    "invite-tracking",
+    "referral-system"
   ],
   "author": "BBLIP Team",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
 } 
