@@ -83,22 +83,21 @@ const userRateLimits = new Map();
 
 // XP configuration
 const MESSAGE_XP = 1;
-const REACTION_XP = 2;
 const DAILY_ACTIVITY_XP = 5;
 const WEEKLY_STREAK_XP = 10;
 
 // Discord invite tracking
 const DISCORD_INVITE_XP_REWARD = 25; // XP for successful Discord invite
-const DISCORD_INVITE_BBLP_REWARD = 3; // BBLP for successful Discord invite
+const DISCORD_INVITE_BBLP_REWARD = 5; // BBLP for successful Discord invite (daha önce 3 idi)
 const DISCORD_INVITE_SYSTEM_ENABLED = true; // Enable/disable Discord invite system
 
 // Level configuration
 const LEVELS = [
-  { name: 'Bronze', minXP: 0, maxXP: 100, reward: 1 },
-  { name: 'Silver', minXP: 101, maxXP: 250, reward: 3 },
-  { name: 'Gold', minXP: 251, maxXP: 500, reward: 5 },
-  { name: 'Platinum', minXP: 501, maxXP: 1000, reward: 10 },
-  { name: 'Diamond', minXP: 1001, maxXP: 999999, reward: 20 }
+  { name: 'Bronze', minXP: 0, maxXP: 250, reward: 1 },
+  { name: 'Silver', minXP: 251, maxXP: 500, reward: 2 },
+  { name: 'Gold', minXP: 501, maxXP: 1000, reward: 3 },
+  { name: 'Platinum', minXP: 1001, maxXP: 2000, reward: 4 },
+  { name: 'Diamond', minXP: 2001, maxXP: 999999, reward: 5 }
 ];
 
 // Performance monitoring
@@ -113,6 +112,9 @@ let batchProcessingInterval = null;
 // Discord invite tracking
 const discordInviteTracking = new Map(); // inviteCode -> { inviterId, uses, createdAt }
 const customInviteTracking = new Map(); // customCode -> { userId, inviteCode, createdAt }
+
+// Yeni anti-spam ve XP kontrolü (Telegram ile birebir)
+const userSpamData = new Map(); // userId -> { lastMessage: '', warnings: 0, messageTimestamps: [] }
 
 console.log('🌐 [DISCORD BOT] Environment Configuration:');
 console.log('  - BOT_TOKEN:', BOT_TOKEN ? '✅ Set' : '❌ Missing');
@@ -399,8 +401,51 @@ async function sendLevelUpNotification(channel, userId, oldLevel, newLevel, newX
 
 // Handle new messages
 client.on(Events.MessageCreate, async (message) => {
-  // Ignore bot messages
   if (message.author.bot) return;
+  const userId = message.author.id;
+  const channel = message.channel;
+  const now = Date.now();
+
+  // Kullanıcı spam verisi
+  let spamData = userSpamData.get(userId) || { lastMessage: '', warnings: 0, messageTimestamps: [] };
+  // 1 dakikalık mesaj zaman damgalarını güncelle
+  spamData.messageTimestamps = spamData.messageTimestamps.filter(ts => now - ts < 60000);
+  spamData.messageTimestamps.push(now);
+
+  // Kısa sürede 3 mesaj arka arkaya kontrolü (10 saniye içinde 3 mesaj)
+  const recentMessages = spamData.messageTimestamps.filter(ts => now - ts < 10000);
+  if (recentMessages.length >= 3) {
+    spamData.warnings++;
+    let timeoutDuration = 5 * 60 * 1000; // 5 dakika
+    if (spamData.warnings === 2) timeoutDuration = 30 * 60 * 1000; // 30 dakika
+    if (spamData.warnings >= 3) timeoutDuration = 24 * 60 * 60 * 1000; // 24 saat
+    try {
+      const member = await message.guild.members.fetch(userId);
+      await member.timeout(timeoutDuration, 'Spam/Arka arkaya mesaj');
+      await channel.send(`⚠️ <@${userId}> kısa sürede çok fazla mesaj attığı için ${timeoutDuration/60000} dakika susturuldu. (Uyarı: ${spamData.warnings})`);
+    } catch (error) { console.error('Timeout error:', error); }
+    userSpamData.set(userId, spamData);
+    return;
+  }
+
+  // Aynı mesajı tekrar atma kontrolü
+  if (message.content === spamData.lastMessage) {
+    await channel.send(`⚠️ <@${userId}> aynı mesajı tekrar atıyorsun, XP kazanamazsın!`);
+    spamData.lastMessage = message.content;
+    userSpamData.set(userId, spamData);
+    return;
+  }
+
+  // 10 karakterden kısa mesajlara XP verme
+  if (message.content.length < 10) {
+    userSpamData.set(userId, spamData);
+    return;
+  }
+
+  // XP ver ve son mesajı güncelle
+  addXP(userId, MESSAGE_XP, 'message');
+  spamData.lastMessage = message.content;
+  userSpamData.set(userId, spamData);
 
   // Only process in our guild
   if (message.guildId !== GUILD_ID) return;
@@ -408,9 +453,6 @@ client.on(Events.MessageCreate, async (message) => {
   // Prevent duplicate processing
   if (processedMessages.has(message.id)) return;
   processedMessages.add(message.id);
-
-  const userId = message.author.id;
-  const channel = message.channel;
 
   // Performance monitoring
   messageCount++;
@@ -501,43 +543,6 @@ client.on(Events.MessageCreate, async (message) => {
 
   // Add XP for message (batch processing)
   addXP(userId, MESSAGE_XP, 'message');
-});
-
-// Handle reactions
-client.on(Events.MessageReactionAdd, async (reaction, user) => {
-  // Ignore bot reactions
-  if (user.bot) return;
-
-  // Only process in our guild
-  if (reaction.message.guildId !== GUILD_ID) return;
-
-  // Prevent duplicate processing
-  const reactionId = `${reaction.message.id}-${user.id}-${reaction.emoji.name}`;
-  if (processedReactions.has(reactionId)) return;
-  processedReactions.add(reactionId);
-
-  const userId = user.id;
-  const channel = reaction.message.channel;
-
-  // Check if user is connected (use cache)
-  let discordUser = getCachedUser(userId)?.userData;
-  
-  if (!discordUser) {
-    const { data, error } = await supabase
-      .from('discord_users')
-      .select('discord_id')
-      .eq('discord_id', userId)
-      .eq('is_active', true)
-      .single();
-
-    if (error || !data) return;
-    
-    discordUser = data;
-    setCachedUser(userId, data);
-  }
-
-  // Add XP for reaction (batch processing)
-  addXP(userId, REACTION_XP, 'reaction');
 });
 
 // Handle new member joins
@@ -1291,8 +1296,8 @@ async function handleHelpCommand(interaction) {
       { name: '/invite', value: 'Get your saved invite link or create new one', inline: true },
       { name: '/help', value: 'Show this help message', inline: true },
       { name: '/cache', value: 'Manage bot cache (Admin only)', inline: true },
-      { name: 'XP System', value: '• Messages: +1 XP\n• Reactions: +2 XP\n• Daily activity: +5 XP\n• Weekly streak: +10 XP\n• Discord invites: +25 XP', inline: false },
-      { name: 'Levels', value: 'Bronze (0-100 XP): 1 BBLP/day\nSilver (101-250 XP): 3 BBLP/day\nGold (251-500 XP): 5 BBLP/day\nPlatinum (501-1000 XP): 10 BBLP/day\nDiamond (1001+ XP): 20 BBLP/day', inline: false },
+      { name: 'XP System', value: '• Messages: +1 XP\n• Daily activity: +5 XP\n• Weekly streak: +10 XP\n• Discord invites: +25 XP', inline: false },
+      { name: 'Levels', value: 'Bronze (0-250 XP): 1 BBLP/day\nSilver (251-500 XP): 2 BBLP/day\nGold (501-1000 XP): 3 BBLP/day\nPlatinum (1001-2000 XP): 4 BBLP/day\nDiamond (2001+ XP): 5 BBLP/day', inline: false },
       { name: 'Invite System', value: '• Your invite link is saved and reused\n• Faster response times\n• Automatic verification\n• Persistent across bot restarts', inline: false }
     )
     .setTimestamp();

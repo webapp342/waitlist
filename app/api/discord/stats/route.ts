@@ -139,10 +139,12 @@ export async function GET(request: NextRequest) {
       .from('discord_daily_claims')
       .select('claimed_at')
       .eq('discord_id', discordUser.discord_id)
-      .gte('claimed_at', new Date(today).toISOString())
+      .order('claimed_at', { ascending: false })
+      .limit(1)
       .single();
 
-    const canClaimReward = !lastClaim;
+    const canClaimReward = !lastClaim || (lastClaim && new Date(lastClaim.claimed_at).toDateString() !== today);
+    const lastClaimedAt = lastClaim ? lastClaim.claimed_at : null;
 
     return NextResponse.json({
       isConnected: true,
@@ -162,6 +164,7 @@ export async function GET(request: NextRequest) {
       guildCount: activity?.guild_count || 0,
       dailyReward: currentLevelData.reward,
       canClaimReward,
+      lastClaimedAt,
       nextLevelXP: currentLevelData.maxXP + 1,
       progressToNextLevel: totalXP - currentLevelData.minXP,
       maxXPForCurrentLevel: currentLevelData.maxXP - currentLevelData.minXP

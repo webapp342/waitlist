@@ -27,6 +27,13 @@ export default function AdminDashboard() {
   const pageSize = 20;
   const router = useRouter();
 
+  // Daily Task Modal State
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskLink, setTaskLink] = useState("");
+  const [taskReward, setTaskReward] = useState("");
+  const [taskLoading, setTaskLoading] = useState(false);
+
   useEffect(() => {
     // Admin session kontrolü
     const checkAdminSession = () => {
@@ -287,6 +294,32 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setTaskLoading(true);
+    try {
+      const res = await fetch("/api/admin/dailytasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: taskTitle, link: taskLink, reward: Number(taskReward) })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success("Daily task created!");
+        setTaskTitle("");
+        setTaskLink("");
+        setTaskReward("");
+        setShowTaskModal(false);
+      } else {
+        toast.error(data.error || "Failed to create task");
+      }
+    } catch (err) {
+      toast.error("Failed to create task");
+    } finally {
+      setTaskLoading(false);
+    }
+  };
+
   // Loading durumu
   if (isLoading) {
     return (
@@ -483,6 +516,19 @@ export default function AdminDashboard() {
                     <path d="M16 4c0-1.11.89-2 2-2s2 .89 2 2-.89 2-2 2-2-.89-2-2zm4 18v-6h2.5l-2.54-7.63A1.5 1.5 0 0 0 18.54 8H17c-.8 0-1.54.37-2.01 1l-4.7 6.27c-.41.55-.63 1.24-.63 1.93V20c0 1.1.9 2 2 2h6c1.1 0 2-.9 2-2z"/>
                   </svg>
                   <p className="text-sm">Referral Yönetimi</p>
+                </div>
+              </Button>
+
+              <Button
+                variant="outline"
+                className="bg-orange-900/20 border-orange-800/50 text-orange-400 hover:bg-orange-900/30 hover:border-orange-500/50 hover:text-orange-300 h-16"
+                onClick={() => setShowTaskModal(true)}
+              >
+                <div className="text-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 mx-auto mb-2">
+                    <path d="M12 2a1 1 0 0 1 1 1v8h8a1 1 0 1 1 0 2h-8v8a1 1 0 1 1-2 0v-8H3a1 1 0 1 1 0-2h8V3a1 1 0 0 1 1-1z" />
+                  </svg>
+                  <p className="text-sm">Create Daily Task</p>
                 </div>
               </Button>
 
@@ -736,6 +782,56 @@ export default function AdminDashboard() {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Daily Task Modal */}
+      <Dialog open={showTaskModal} onOpenChange={setShowTaskModal}>
+        <DialogContent className="max-w-md bg-[#18181B] border border-zinc-700">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-bold text-white">Create Daily Task</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleCreateTask} className="space-y-4 mt-2">
+            <div>
+              <label className="block text-sm text-zinc-300 mb-1">Title</label>
+              <input
+                type="text"
+                className="w-full rounded bg-zinc-900 border border-zinc-700 px-3 py-2 text-white"
+                value={taskTitle}
+                onChange={e => setTaskTitle(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-zinc-300 mb-1">Link</label>
+              <input
+                type="text"
+                className="w-full rounded bg-zinc-900 border border-zinc-700 px-3 py-2 text-white"
+                value={taskLink}
+                onChange={e => setTaskLink(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-zinc-300 mb-1">Reward</label>
+              <input
+                type="number"
+                className="w-full rounded bg-zinc-900 border border-zinc-700 px-3 py-2 text-white"
+                value={taskReward}
+                onChange={e => setTaskReward(e.target.value)}
+                min={1}
+                required
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button type="button" variant="outline" onClick={() => setShowTaskModal(false)} disabled={taskLoading}>
+                Cancel
+              </Button>
+              <Button type="submit" className="bg-orange-500 text-white hover:bg-orange-600" disabled={taskLoading}>
+                {taskLoading ? "Saving..." : "Create"}
+              </Button>
+            </div>
+          </form>
         </DialogContent>
       </Dialog>
     </div>

@@ -347,3 +347,47 @@ CREATE TABLE public.x_users (
   CONSTRAINT x_users_pkey PRIMARY KEY (id),
   CONSTRAINT x_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
+
+-- Extra rewards for level completion
+CREATE TABLE IF NOT EXISTS extra_rewards (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER REFERENCES users(id),
+    platform VARCHAR(20) NOT NULL, -- 'telegram' or 'discord'
+    level_name VARCHAR(20) NOT NULL, -- 'Bronze', 'Silver', 'Gold', etc.
+    xp_reward INTEGER NOT NULL,
+    claimed BOOLEAN DEFAULT FALSE,
+    claimed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW()
+);
+
+-- Index for faster queries
+CREATE INDEX IF NOT EXISTS idx_extra_rewards_user_platform ON extra_rewards(user_id, platform);
+CREATE INDEX IF NOT EXISTS idx_extra_rewards_claimed ON extra_rewards(claimed);
+
+CREATE TABLE dailytasks (
+  id SERIAL PRIMARY KEY,
+  title TEXT NOT NULL,
+  link TEXT NOT NULL,
+  reward INTEGER NOT NULL,
+  claimed BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE user_dailytask_claims (
+  id SERIAL PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  task_id INTEGER NOT NULL REFERENCES dailytasks(id),
+  reward INTEGER NOT NULL,
+  completed BOOLEAN NOT NULL DEFAULT TRUE,
+  claimed_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+-- Table to track claimed invite milestones for users
+CREATE TABLE IF NOT EXISTS invite_rewards (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    milestone_count INTEGER NOT NULL, -- e.g. 1, 3, 5, 10, ...
+    points_awarded INTEGER NOT NULL,
+    claimed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, milestone_count)
+);

@@ -59,6 +59,9 @@ const PERFORMANCE_LOG_INTERVAL = 100; // Log every 100 messages
 const userMessageHistory = new Map(); // userId -> { messages: [], warnings: 0, bannedUntil: null }
 const spamDetections = new Map(); // userId -> { count: 0, lastDetection: null }
 
+// Yeni anti-spam ve XP kontrolü
+global.userSpamData = global.userSpamData || new Map(); // telegramId -> { lastMessage: '', warnings: 0, messageTimestamps: [] }
+
 console.log('🌐 [BOT] Environment Configuration:');
 console.log('  - BOT_TOKEN:', BOT_TOKEN ? '✅ Set' : '❌ Missing');
 console.log('  - SUPABASE_URL:', SUPABASE_URL);
@@ -89,18 +92,17 @@ console.log('🔍 [BOT] Ready to listen for messages...');
 // XP calculation constants
 const XP_REWARDS = {
   MESSAGE: 1,
-  HELPFUL_MESSAGE: 5,
   DAILY_ACTIVE: 5,
   WEEKLY_STREAK: 10
 };
 
 // Level thresholds
 const LEVELS = [
-  { name: 'Bronze', minXP: 0, maxXP: 100, reward: 1 },
-  { name: 'Silver', minXP: 101, maxXP: 250, reward: 3 },
-  { name: 'Gold', minXP: 251, maxXP: 500, reward: 5 },
-  { name: 'Platinum', minXP: 501, maxXP: 1000, reward: 10 },
-  { name: 'Diamond', minXP: 1001, maxXP: 999999, reward: 20 }
+  { name: 'Bronze', minXP: 0, maxXP: 250, reward: 1 },
+  { name: 'Silver', minXP: 251, maxXP: 500, reward: 2 },
+  { name: 'Gold', minXP: 501, maxXP: 1000, reward: 3 },
+  { name: 'Platinum', minXP: 1001, maxXP: 2000, reward: 4 },
+  { name: 'Diamond', minXP: 2001, maxXP: 999999, reward: 5 }
 ];
 
 // Welcome message auto-delete configuration
@@ -108,7 +110,7 @@ const WELCOME_MESSAGE_DELETE_DELAY = 30 * 1000; // 30 seconds (30,000ms)
 const WELCOME_MESSAGE_DELETE_ENABLED = true; // Enable/disable auto-delete
 
 // Referral system configuration
-const REFERRAL_XP_REWARD = 50; // XP for successful referral
+const REFERRAL_XP_REWARD = 25; // XP for successful referral (daha önce 50 idi)
 const REFERRAL_BBLP_REWARD = 5; // BBLP tokens for successful referral
 const REFERRAL_SYSTEM_ENABLED = true; // Enable/disable referral system
 
@@ -2450,7 +2452,7 @@ async function processMessageAsync(msg, messageKey, userId, messageText, userDis
     }
     
     // Calculate XP for this message
-    const xpEarned = XP_REWARDS.MESSAGE + (isHelpfulMessage(messageText) ? XP_REWARDS.HELPFUL_MESSAGE : 0);
+    const xpEarned = XP_REWARDS.MESSAGE; // Faydalı mesaj XP'si kaldırıldı
     
     // Get current user activity to check level up
     const { data: currentActivity, error: activityError } = await supabase
@@ -3488,5 +3490,51 @@ console.log('👋 Auto Welcome: Enabled for new/returning members');
 console.log(`🗑️ Auto-delete: ${WELCOME_MESSAGE_DELETE_ENABLED ? 'Enabled' : 'Disabled'} (${WELCOME_MESSAGE_DELETE_DELAY/1000}s)`);
 console.log('📱 Private connection messages: Enabled for unconnected users');
 console.log(`🔗 Referral system: ${REFERRAL_SYSTEM_ENABLED ? 'Enabled' : 'Disabled'} (+${REFERRAL_XP_REWARD} XP, +${REFERRAL_BBLP_REWARD} BBLP per referral) - Bot first, then group`);
+
+// Yeni anti-spam ve XP kontrolü
+global.userSpamData = global.userSpamData || new Map(); // telegramId -> { lastMessage: '', warnings: 0, messageTimestamps: [] }
+
+async function handleAntiSpamAndXP(msg) {
+  const userId = msg.from.id;
+  const chatId = msg.chat.id;
+  const now = Date.now();
+  let spamData = global.userSpamData.get(userId) || { lastMessage: '', warnings: 0, messageTimestamps: [] };
+  // 1 dakikalık mesaj zaman damgalarını güncelle
+  spamData.messageTimestamps = spamData.messageTimestamps.filter(ts => now - ts < 60000);
+  spamData.messageTimestamps.push(now);
+
+  // Spam limiti kontrolü
+  if (spamData.messageTimestamps.length > 10) {
+    spamData.warnings++;
+    let timeoutDuration = 5 * 60; // 5 dakika (saniye)
+    if (spamData.warnings === 2) timeoutDuration = 30 * 60; // 30 dakika
+    if (spamData.warnings >= 3) timeoutDuration = 24 * 60 * 60; // 24 saat
+    try {
+      await bot.restrictChatMember(chatId, userId, { until_date: Math.floor(Date.now()/1000) + timeoutDuration });
+      await bot.sendMessage(chatId, `⚠️ <a href="tg://user?id=${userId}">Kullanıcı</a> spam nedeniyle ${Math.floor(timeoutDuration/60)} dakika susturuldu. (Uyarı: ${spamData.warnings})`, { parse_mode: 'HTML' });
+    } catch (error) { console.error('Timeout error:', error); }
+    global.userSpamData.set(userId, spamData);
+    return false;
+  }
+
+  // Aynı mesajı tekrar atma kontrolü
+  if (msg.text === spamData.lastMessage) {
+    await bot.sendMessage(chatId, `⚠️ Aynı mesajı tekrar atıyorsun, XP kazanamazsın!`, { reply_to_message_id: msg.message_id });
+    spamData.lastMessage = msg.text;
+    global.userSpamData.set(userId, spamData);
+    return false;
+  }
+
+  // 10 karakterden kısa mesajlara XP verme
+  if (!msg.text || msg.text.length < 10) {
+    global.userSpamData.set(userId, spamData);
+    return false;
+  }
+
+  // XP ver ve son mesajı güncelle
+  spamData.lastMessage = msg.text;
+  global.userSpamData.set(userId, spamData);
+  return true;
+}
 
 module.exports = bot; 
