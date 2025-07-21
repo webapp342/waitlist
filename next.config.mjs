@@ -1,6 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
+    domains: [
+      'pbs.twimg.com', // Twitter avatarları
+      'cdn.discordapp.com', // Discord avatarları
+    ],
     remotePatterns: [
       {
         protocol: 'https',
