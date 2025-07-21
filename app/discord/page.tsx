@@ -22,6 +22,7 @@ import {
   XCircle
 } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 interface DiscordStats {
   isConnected: boolean;
@@ -56,6 +57,7 @@ const LEVELS = [
 
 export default function DiscordPage() {
   const { address, isConnected } = useAccount();
+  const router = useRouter();
   const [discordStats, setDiscordStats] = useState<DiscordStats>({
     isConnected: false,
     currentLevel: 'Bronze',
@@ -113,6 +115,12 @@ export default function DiscordPage() {
       checkDiscordStatus();
     }
   }, [isConnected, address]);
+
+  useEffect(() => {
+    if (isConnected && discordStats.isConnected) {
+      router.replace('/social-connections');
+    }
+  }, [isConnected, discordStats.isConnected, router]);
 
   const checkDiscordStatus = async () => {
     if (!address) return;
@@ -267,36 +275,34 @@ export default function DiscordPage() {
 
   if (!isConnected) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-        <div className="container mx-auto px-4 py-16">
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="mb-8">
-              <MessageSquare className="w-16 h-16 mx-auto text-purple-400 mb-4" />
-              <h1 className="text-4xl font-bold text-white mb-4">Connect Discord</h1>
-              <p className="text-gray-300 text-lg">
-                Connect your Discord account to earn XP and BBLP rewards for your community activity!
-              </p>
-            </div>
-            
-            <Card className="bg-white/10 backdrop-blur-sm border-white/20">
-              <CardContent className="p-8">
-                <div className="text-center">
-                  <XCircle className="w-16 h-16 mx-auto text-red-400 mb-4" />
-                  <h2 className="text-2xl font-semibold text-white mb-2">Wallet Not Connected</h2>
-                  <p className="text-gray-300 mb-6">
-                    Please connect your wallet first to link your Discord account.
-                  </p>
-                  <Button 
-                    onClick={() => window.location.href = '/'}
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
-                  >
-                    Connect Wallet
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <MessageSquare className="w-20 h-20 text-purple-400 mb-6" />
+        <h1 className="text-3xl font-bold text-white mb-4">Connect Discord</h1>
+        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your Discord account to start earning XP and BBLP rewards for your community activity.</p>
+        <Button 
+          onClick={() => window.location.href = '/'}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg rounded-lg"
+        >
+          Connect Wallet
+        </Button>
+      </div>
+    );
+  }
+
+  // Minimal connect page if not connected
+  if (!discordStats.isConnected) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <MessageSquare className="w-20 h-20 text-purple-400 mb-6" />
+        <h1 className="text-3xl font-bold text-white mb-4">Connect Discord</h1>
+        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your Discord account to start earning XP and BBLP rewards for your community activity.</p>
+        <Button
+          onClick={connectDiscord}
+          disabled={isConnecting}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg rounded-lg"
+        >
+          {isConnecting ? 'Connecting...' : 'Connect Discord'}
+        </Button>
       </div>
     );
   }
