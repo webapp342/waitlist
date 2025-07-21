@@ -24,7 +24,6 @@ export async function POST(request: NextRequest) {
         x_followers_count,
         x_following_count,
         x_tweet_count,
-        token_expires_at,
         created_at
       `)
       .eq('wallet_address', walletAddress)
@@ -38,11 +37,10 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Check if token is expired
-    const isTokenExpired = new Date() > new Date(xConnection.token_expires_at);
-
+    // If user exists in database and is active, they are connected
+    // No need to check token expiration - one-time connection is enough
     return NextResponse.json({
-      connected: !isTokenExpired,
+      connected: true,
       xUser: {
         id: xConnection.x_user_id,
         username: xConnection.x_username,

@@ -14,6 +14,7 @@ A modern and beautiful waitlist template built with **Next.js**, featuring walle
 - 🎯 **Staking System** with transaction logging and rewards
 - 👥 **Referral Program** with unique codes and reward tracking
 - 📊 **Dashboard Analytics** with portfolio overview and transaction history
+- 🤖 **Discord Bot** with XP system, invite tracking, and persistent invite links
 
 ## 🚀 **Tech Stack**
 
@@ -310,6 +311,59 @@ The app includes a debug component that shows:
 
 Enable it in development by keeping the `<DebugChain />` component.
 
+## 🤖 **Discord Bot Features**
+
+The project includes a comprehensive Discord bot with the following features:
+
+### **Core Features**
+- 🎯 **XP System**: Users earn XP for messages, reactions, and daily activity
+- 🔗 **Invite Tracking**: Automatic tracking of Discord invites with rewards
+- 💾 **Persistent Invite Links**: Invite links are saved in database and reused
+- 🏆 **Leaderboard**: Real-time XP leaderboard with rankings
+- 🎮 **Level System**: 5 levels (Bronze, Silver, Gold, Platinum, Diamond) with BBLP rewards
+
+### **Invite System**
+- **Database-First Tracking**: Primary lookup from database (persistent)
+- **Memory Tracking**: Secondary lookup for performance (temporary)
+- **Custom Invite Codes**: `bblip-{userId}` format for easy tracking
+- **Fallback System**: Automatic fallback to random codes if custom fails
+- **Verification**: Validates saved invites against Discord before use
+- **Rewards**: +25 XP and +3 BBLP per successful invite
+
+### **Admin Commands**
+- `/admin list_invites` - List recent invite records
+- `/admin delete_invite` - Delete specific invite record
+- `/admin list_saved_invites` - List saved invite links from database
+- `/admin clear_saved_invite` - Clear saved invite link for user
+- `/admin sync_invites` - Sync between Discord and database
+- `/admin debug_invite` - Debug invite eligibility for user
+- `/admin batch_status` - Show batch processing status
+
+### **User Commands**
+- `/xp` - View your XP stats and level
+- `/leaderboard` - View top users by XP
+- `/invite` - Get your saved invite link or create new one
+- `/connect` - Get connection instructions
+- `/help` - Show all available commands
+
+### **Performance Features**
+- **Caching**: 10-minute cache TTL for user data
+- **Batch Processing**: 30-second batch updates for XP
+- **Memory Management**: Automatic cleanup of old data
+- **Rate Limiting**: Prevents spam and abuse
+
+### **Setup Instructions**
+1. Create a Discord bot at [discord.com/developers](https://discord.com/developers)
+2. Add bot token to environment variables
+3. Run the database migration: `scripts/add-invite-link-column.sql`
+4. Start the bot: `cd discord-bot && npm start`
+5. Test tracking system: `node scripts/test-invite-tracking.js`
+
+### **Troubleshooting**
+- **Invite tracking issues**: Use `/admin debug_tracking` to check tracking status
+- **Database sync issues**: Use `/admin sync_invites` to sync Discord and database
+- **Test tracking**: Run `node scripts/test-invite-tracking.js` to debug issues
+
 ## 🛡️ **Security Features**
 
 - ✅ Row Level Security (RLS) enabled on all tables
@@ -319,6 +373,7 @@ Enable it in development by keeping the `<DebugChain />` component.
 - ✅ Environment variable validation
 - ✅ Referral fraud prevention (self-referral blocking)
 - ✅ Transaction hash uniqueness validation
+- ✅ Discord bot rate limiting and abuse prevention
 
 ## 🤝 **Contributing**
 

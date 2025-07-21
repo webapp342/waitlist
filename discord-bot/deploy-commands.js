@@ -32,6 +32,94 @@ const commands = [
   new SlashCommandBuilder()
     .setName('help')
     .setDescription('Show bot commands and features'),
+  
+  new SlashCommandBuilder()
+    .setName('cache')
+    .setDescription('Manage bot cache (Admin only)')
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('clear')
+        .setDescription('Clear all bot caches')
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('stats')
+        .setDescription('Show cache statistics')
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('user')
+        .setDescription('Clear cache for specific user')
+        .addStringOption(option =>
+          option
+            .setName('user_id')
+            .setDescription('Discord user ID to clear cache for')
+            .setRequired(true)
+        )
+    ),
+  
+  new SlashCommandBuilder()
+    .setName('admin')
+    .setDescription('Admin commands for managing bot (Admin only)')
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('delete_invite')
+        .setDescription('Delete invite record for a user')
+        .addStringOption(option =>
+          option
+            .setName('user_id')
+            .setDescription('Discord user ID to delete invite record for')
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('list_invites')
+        .setDescription('List recent invite records')
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('reset_user')
+        .setDescription('Reset user invite status to eligible')
+        .addStringOption(option =>
+          option
+            .setName('user_id')
+            .setDescription('Discord user ID to reset invite status for')
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('clear_invites')
+        .setDescription('Delete ALL Discord invite links (DANGEROUS)')
+        .addStringOption(option =>
+          option
+            .setName('confirmation')
+            .setDescription('Type YES_DELETE_ALL to confirm')
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('reset_invite_tracking')
+        .setDescription('Reset bot invite tracking cache')
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('debug_invite')
+        .setDescription('Debug invite eligibility for a user')
+        .addStringOption(option =>
+          option
+            .setName('user_id')
+            .setDescription('Discord user ID to debug')
+            .setRequired(true)
+        )
+    )
+    .addSubcommand(subcommand =>
+      subcommand
+        .setName('batch_status')
+        .setDescription('Show batch processing status')
+    ),
 ];
 
 // Deploy commands
