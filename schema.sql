@@ -35,6 +35,15 @@ CREATE TABLE public.claim_history (
   CONSTRAINT claim_history_pkey PRIMARY KEY (id),
   CONSTRAINT claim_history_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
+CREATE TABLE public.dailytasks (
+  id integer NOT NULL DEFAULT nextval('dailytasks_id_seq'::regclass),
+  title text NOT NULL,
+  link text NOT NULL,
+  reward integer NOT NULL,
+  claimed boolean NOT NULL DEFAULT false,
+  created_at timestamp without time zone NOT NULL DEFAULT now(),
+  CONSTRAINT dailytasks_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.discord_activities (
   id bigint NOT NULL DEFAULT nextval('discord_activities_id_seq'::regclass),
   discord_id character varying NOT NULL UNIQUE,
@@ -60,8 +69,8 @@ CREATE TABLE public.discord_daily_claims (
   claimed_at timestamp with time zone DEFAULT now(),
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT discord_daily_claims_pkey PRIMARY KEY (id),
-  CONSTRAINT discord_daily_claims_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.discord_users(discord_id),
-  CONSTRAINT discord_daily_claims_wallet_address_fkey FOREIGN KEY (wallet_address) REFERENCES public.users(wallet_address)
+  CONSTRAINT discord_daily_claims_wallet_address_fkey FOREIGN KEY (wallet_address) REFERENCES public.users(wallet_address),
+  CONSTRAINT discord_daily_claims_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.discord_users(discord_id)
 );
 CREATE TABLE public.discord_invited_users (
   id bigint NOT NULL DEFAULT nextval('discord_invited_users_id_seq'::regclass),
@@ -146,6 +155,27 @@ CREATE TABLE public.discord_users (
   invite_link character varying,
   CONSTRAINT discord_users_pkey PRIMARY KEY (id),
   CONSTRAINT discord_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(wallet_address)
+);
+CREATE TABLE public.extra_rewards (
+  id integer NOT NULL DEFAULT nextval('extra_rewards_id_seq'::regclass),
+  user_id integer,
+  platform character varying NOT NULL,
+  level_name character varying NOT NULL,
+  xp_reward integer NOT NULL,
+  claimed boolean DEFAULT false,
+  claimed_at timestamp without time zone,
+  created_at timestamp without time zone DEFAULT now(),
+  CONSTRAINT extra_rewards_pkey PRIMARY KEY (id),
+  CONSTRAINT extra_rewards_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.invite_rewards (
+  id integer NOT NULL DEFAULT nextval('invite_rewards_id_seq'::regclass),
+  user_id integer NOT NULL,
+  milestone_count integer NOT NULL,
+  points_awarded integer NOT NULL,
+  claimed_at timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT invite_rewards_pkey PRIMARY KEY (id),
+  CONSTRAINT invite_rewards_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.referral_codes (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -300,6 +330,16 @@ CREATE TABLE public.telegram_users (
   CONSTRAINT telegram_users_pkey PRIMARY KEY (id),
   CONSTRAINT telegram_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
 );
+CREATE TABLE public.user_dailytask_claims (
+  id integer NOT NULL DEFAULT nextval('user_dailytask_claims_id_seq'::regclass),
+  user_id text NOT NULL,
+  task_id integer NOT NULL,
+  reward integer NOT NULL,
+  completed boolean NOT NULL DEFAULT true,
+  claimed_at timestamp without time zone NOT NULL DEFAULT now(),
+  CONSTRAINT user_dailytask_claims_pkey PRIMARY KEY (id),
+  CONSTRAINT user_dailytask_claims_task_id_fkey FOREIGN KEY (task_id) REFERENCES public.dailytasks(id)
+);
 CREATE TABLE public.users (
   id bigint NOT NULL DEFAULT nextval('users_id_seq'::regclass),
   wallet_address character varying NOT NULL UNIQUE,
@@ -346,48 +386,4 @@ CREATE TABLE public.x_users (
   verification_method text DEFAULT 'oauth'::text,
   CONSTRAINT x_users_pkey PRIMARY KEY (id),
   CONSTRAINT x_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
-);
-
--- Extra rewards for level completion
-CREATE TABLE IF NOT EXISTS extra_rewards (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
-    platform VARCHAR(20) NOT NULL, -- 'telegram' or 'discord'
-    level_name VARCHAR(20) NOT NULL, -- 'Bronze', 'Silver', 'Gold', etc.
-    xp_reward INTEGER NOT NULL,
-    claimed BOOLEAN DEFAULT FALSE,
-    claimed_at TIMESTAMP,
-    created_at TIMESTAMP DEFAULT NOW()
-);
-
--- Index for faster queries
-CREATE INDEX IF NOT EXISTS idx_extra_rewards_user_platform ON extra_rewards(user_id, platform);
-CREATE INDEX IF NOT EXISTS idx_extra_rewards_claimed ON extra_rewards(claimed);
-
-CREATE TABLE dailytasks (
-  id SERIAL PRIMARY KEY,
-  title TEXT NOT NULL,
-  link TEXT NOT NULL,
-  reward INTEGER NOT NULL,
-  claimed BOOLEAN NOT NULL DEFAULT FALSE,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE user_dailytask_claims (
-  id SERIAL PRIMARY KEY,
-  user_id TEXT NOT NULL,
-  task_id INTEGER NOT NULL REFERENCES dailytasks(id),
-  reward INTEGER NOT NULL,
-  completed BOOLEAN NOT NULL DEFAULT TRUE,
-  claimed_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
--- Table to track claimed invite milestones for users
-CREATE TABLE IF NOT EXISTS invite_rewards (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    milestone_count INTEGER NOT NULL, -- e.g. 1, 3, 5, 10, ...
-    points_awarded INTEGER NOT NULL,
-    claimed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(user_id, milestone_count)
 );

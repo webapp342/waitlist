@@ -262,9 +262,54 @@ export default function SocialConnectionsPage() {
     setTaskTimers(prev => ({ ...prev, [taskId]: 60 }));
   };
 
-  // Check connections on mount and wallet connection
+  // Replace all separate connection fetches with a single fast fetch
   useEffect(() => {
-    checkAllConnections();
+    if (!isConnected || !address) return;
+    const fetchAllConnections = async () => {
+      try {
+        const res = await fetch(`/api/social-connections/status?walletAddress=${address}`);
+        const data = await res.json();
+        setConnections({
+          x: {
+            isConnected: !!data.x?.connected,
+            platform: 'x',
+            username: data.x?.username || undefined,
+            stats: {
+              xp: data.x?.xp || 0,
+              level: data.x?.level || 0,
+              dailyReward: data.x?.dailyReward || 0
+            }
+          },
+          telegram: {
+            isConnected: !!data.telegram?.connected,
+            platform: 'telegram',
+            username: data.telegram?.username || undefined,
+            stats: {
+              xp: data.telegram?.xp || 0,
+              level: data.telegram?.level || 0,
+              dailyReward: data.telegram?.dailyReward || 0
+            }
+          },
+          discord: {
+            isConnected: !!data.discord?.connected,
+            platform: 'discord',
+            username: data.discord?.username || undefined,
+            stats: {
+              xp: data.discord?.xp || 0,
+              level: data.discord?.level || 0,
+              dailyReward: data.discord?.dailyReward || 0
+            }
+          }
+        });
+      } catch (e) {
+        setConnections({
+          x: { isConnected: false, platform: 'x' },
+          telegram: { isConnected: false, platform: 'telegram' },
+          discord: { isConnected: false, platform: 'discord' }
+        });
+      }
+    };
+    fetchAllConnections();
   }, [isConnected, address]);
 
   useEffect(() => {
@@ -884,47 +929,25 @@ export default function SocialConnectionsPage() {
                       </div>
                       {/* Stats */}
                       {connection.stats && (
-                        <div className="grid grid-cols-2 gap-3">
-                          {connection.stats.followers && (
-                            <div className="text-center p-2 bg-[#23232A] rounded">
-                              <p className="text-lg font-bold text-[#F3F3F3]">
-                                {connection.stats.followers.toLocaleString()}
-                              </p>
-                              <p className="text-xs text-[#A1A1AA]">Followers</p>
-                            </div>
-                          )}
-                          {connection.stats.messages && (
-                            <div className="text-center p-2 bg-[#23232A] rounded">
-                              <p className="text-lg font-bold text-[#F3F3F3]">
-                                {connection.stats.messages.toLocaleString()}
-                              </p>
-                              <p className="text-xs text-[#A1A1AA]">Messages</p>
-                            </div>
-                          )}
-                          {connection.stats.xp && (
-                            <div className="text-center p-2 bg-[#23232A] rounded">
-                              <p className="text-lg font-bold text-[#F3F3F3]">
-                                {connection.stats.xp.toLocaleString()}
-                              </p>
-                              <p className="text-xs text-[#A1A1AA]">XP</p>
-                            </div>
-                          )}
-                          {connection.stats.level && (
-                            <div className="text-center p-2 bg-[#23232A] rounded">
-                              <p className="text-lg font-bold text-[#F3F3F3]">
-                                {connection.stats.level}
-                              </p>
-                              <p className="text-xs text-[#A1A1AA]">Level</p>
-                            </div>
-                          )}
-                          {connection.stats.dailyReward && (
-                            <div className="text-center p-2 bg-[#23232A] rounded">
-                              <p className="text-lg font-bold text-[#F3F3F3]">
-                                {connection.stats.dailyReward} BBLP
-                              </p>
-                              <p className="text-xs text-[#A1A1AA]">Daily Reward</p>
-                            </div>
-                          )}
+                        <div className="grid grid-cols-2 gap-3 mt-4">
+                          <div className="text-center p-2 bg-[#23232A] rounded">
+                            <p className="text-lg font-bold text-[#F3F3F3]">
+                              {connection.stats.xp}
+                            </p>
+                            <p className="text-xs text-[#A1A1AA]">XP</p>
+                          </div>
+                          <div className="text-center p-2 bg-[#23232A] rounded">
+                            <p className="text-lg font-bold text-[#F3F3F3]">
+                              {connection.stats.level}
+                            </p>
+                            <p className="text-xs text-[#A1A1AA]">Level</p>
+                          </div>
+                          <div className="text-center p-2 bg-[#23232A] rounded col-span-2">
+                            <p className="text-lg font-bold text-[#F3F3F3]">
+                              {connection.stats.dailyReward}
+                            </p>
+                            <p className="text-xs text-[#A1A1AA]">Daily Reward</p>
+                          </div>
                         </div>
                       )}
                     </div>
