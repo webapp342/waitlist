@@ -29,6 +29,7 @@ import { useMemo } from 'react';
 import { referralService, userService } from '@/lib/supabase';
 import { useWallet } from '@/hooks/useWallet';
 import Header from '@/components/header';
+import WalletModal from '@/components/WalletModal';
 
 interface ConnectionStatus {
   isConnected: boolean;
@@ -112,6 +113,7 @@ export default function SocialConnectionsPage() {
 
   // Sonsuz loading önleyici: kısa süre loading, sonra fallback
   const [showLoading, setShowLoading] = useState(true);
+  const [showWalletModal, setShowWalletModal] = useState(false);
   useEffect(() => {
     if (isConnected === false || !address) {
       setShowLoading(false);
@@ -938,14 +940,25 @@ export default function SocialConnectionsPage() {
       <>
         <Header />
         <div className="min-h-screen bg-black text-white flex items-center justify-center">
-          <Card className="w-full max-w-md bg-gray-900 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-center">Connect Wallet First</CardTitle>
-              <CardDescription className="text-center text-gray-400">
-                Please connect your wallet to manage social connections
-              </CardDescription>
-            </CardHeader>
-          </Card>
+          <div className="w-full max-w-xs sm:max-w-md bg-[#181C23] border border-[#232A36] rounded-2xl shadow-2xl px-4 py-6 flex flex-col items-center justify-center">
+            <div className="w-full flex flex-col items-center mb-2">
+              <div className="text-center text-lg sm:text-xl font-bold text-white mb-1">Connect Wallet </div>
+              <div className="text-center text-sm text-[#A1A1AA] mb-0">
+                Please connect your wallet 
+              </div>
+            </div>
+            <div className="w-full flex flex-col items-center mt-2">
+              <Button
+                size="lg"
+                variant="default"
+                onClick={() => setShowWalletModal(true)}
+                className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-xl px-6 font-medium shadow-md w-full max-w-[180px] mt-2"
+              >
+                Connect Wallet
+              </Button>
+              <WalletModal open={showWalletModal} onClose={() => setShowWalletModal(false)} />
+            </div>
+          </div>
         </div>
       </>
     );
