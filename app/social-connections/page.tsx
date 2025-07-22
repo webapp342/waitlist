@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card as UICard, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { 
   Twitter, 
@@ -26,7 +26,8 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useMemo } from 'react';
-import { referralService, userService, cardService, Card } from '@/lib/supabase';
+import { referralService, userService, cardService } from '@/lib/supabase';
+import type { Card as CardType } from '@/lib/supabase';
 import { useWallet } from '@/hooks/useWallet';
 import Header from '@/components/header';
 import WalletModal from '@/components/WalletModal';
@@ -116,7 +117,7 @@ export default function SocialConnectionsPage() {
   const [showWalletModal, setShowWalletModal] = useState(false);
   const [userRegistering, setUserRegistering] = useState(false);
   const [userRegistered, setUserRegistered] = useState(false);
-  const [userCards, setUserCards] = useState<Card[]>([]);
+  const [userCards, setUserCards] = useState<CardType[]>([]);
 
   useEffect(() => {
     if (isConnected === false || !address) {
