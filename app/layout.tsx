@@ -5,6 +5,7 @@ import { Figtree } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
 import { Providers } from "@/components/providers";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const FigtreeFont = Figtree({ subsets: ["latin"] });
 
@@ -21,7 +22,27 @@ export const metadata: Metadata = {
     "crypto to fiat",
     "blockchain cards",
     "crypto spending",
-    "digital currency cards"
+    "digital currency cards",
+    "bblip",
+    "bblip.io",
+    "bblip.com",
+    "bblip.net",
+    "bblip.org",
+    "bblip.co",
+    "btc card",
+    "eth card",
+    "usdt card",
+    "usdc card",
+    "dai card",
+    "usdc card",
+    "usdc card",
+    "bblip.de",
+    "bblip protocol",
+    "bblip protocol card", 
+    "bblip finance",
+    "bblip finance card",
+    "bblip finance protocol",
+    "bblip finance protocol card",  
   ],
   authors: [{ name: "Bblip Team" }],
   creator: "Bblip",
@@ -142,6 +163,7 @@ export default function RootLayout({
               duration: 3000,
             }}
           />
+                  <SpeedInsights />
           <Analytics />
         </Providers>
       </body>
