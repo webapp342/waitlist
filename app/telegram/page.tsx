@@ -22,6 +22,7 @@ import {
   XCircle
 } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 // Telegram Login Widget için global type
 declare global {
@@ -65,6 +66,7 @@ const LEVELS = [
 
 export default function TelegramPage() {
   const { address, isConnected } = useAccount();
+  const router = useRouter();
   const [telegramStats, setTelegramStats] = useState<TelegramStats>({
     isConnected: false,
     currentLevel: 1,
@@ -77,6 +79,13 @@ export default function TelegramPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showTelegramWidget, setShowTelegramWidget] = useState(false);
+
+  // Otomatik yönlendirme: Telegram bağlıysa
+  useEffect(() => {
+    if (isConnected && telegramStats.isConnected) {
+      router.replace('/social-connections');
+    }
+  }, [isConnected, telegramStats.isConnected, router]);
 
   // Telegram callback fonksiyonu - global olarak tanımla
   useEffect(() => {
@@ -339,17 +348,98 @@ export default function TelegramPage() {
     return Math.min((userProgress / currentLevelXP) * 100, 100);
   };
 
-  if (!isConnected) {
+  // Gateway ekranı: Cüzdan bağlı değilse veya Telegram bağlı değilse sadece bağlantı ekranı göster
+  if (isConnected === undefined || isConnected === null || address === undefined) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <Card className="w-full max-w-md bg-gray-900 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-center">Connect Wallet First</CardTitle>
-            <CardDescription className="text-center text-gray-400">
-              Please connect your wallet to access Telegram features
-            </CardDescription>
-          </CardHeader>
-        </Card>
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2 bg-black">
+        <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
+          <div className="flex items-center justify-center py-20 mt-20">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
+              <Image 
+                src="/logo.svg" 
+                alt="BBLP" 
+                width={32} 
+                height={32} 
+                className="absolute inset-0 m-auto animate-pulse" 
+              />
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if ((isConnected === false || !address)) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+        <MessageSquare className="w-20 h-20 text-blue-400 mb-6" />
+        <h1 className="text-3xl font-bold text-white mb-4">Connect Telegram</h1>
+        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your Telegram account to start earning XP and BBLP rewards for your community activity.</p>
+        <Button 
+          onClick={() => window.location.href = '/'}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg rounded-lg"
+        >
+          Connect Wallet
+        </Button>
+      </div>
+    );
+  }
+
+  if (!telegramStats.isConnected) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+        <MessageSquare className="w-20 h-20 text-blue-400 mb-6" />
+        <h1 className="text-3xl font-bold text-white mb-4">Connect Telegram</h1>
+        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your Telegram account to start earning XP and BBLP rewards for your community activity.</p>
+        <Button
+          onClick={() => setShowTelegramWidget(true)}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg rounded-lg"
+        >
+          Connect Telegram
+        </Button>
+        {/* Telegram Login Widget Modal */}
+        {showTelegramWidget && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-900 p-6 rounded-lg max-w-md w-full mx-4">
+              <h3 className="text-xl font-bold mb-4">Connect Telegram</h3>
+              <p className="text-gray-400 mb-4">
+                Click the button below to connect your Telegram account and start earning XP!
+              </p>
+              <div id="telegram-login-widget" className="flex justify-center mb-4 min-h-[80px] items-center"></div>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowTelegramWidget(false)}
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={() => {
+                    const widgetContainer = document.getElementById('telegram-login-widget');
+                    if (widgetContainer) {
+                      widgetContainer.innerHTML = '';
+                      const widgetScript = document.createElement('script');
+                      widgetScript.setAttribute('data-telegram-login', 'denemebot45bot');
+                      widgetScript.setAttribute('data-size', 'large');
+                      widgetScript.setAttribute('data-auth-url', 'https://bblip.io/telegram?auth=1');
+                      widgetScript.setAttribute('data-request-access', 'write');
+                      widgetScript.setAttribute('data-radius', '8');
+                      widgetScript.setAttribute('data-lang', 'en');
+                      widgetScript.src = 'https://telegram.org/js/telegram-widget.js?22';
+                      widgetScript.async = true;
+                      widgetContainer.appendChild(widgetScript);
+                    }
+                  }}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  Reload Widget
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }

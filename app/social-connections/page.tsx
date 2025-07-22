@@ -27,6 +27,8 @@ import {
 import Image from 'next/image';
 import { useMemo } from 'react';
 import { referralService, userService } from '@/lib/supabase';
+import { useWallet } from '@/hooks/useWallet';
+import Header from '@/components/header';
 
 interface ConnectionStatus {
   isConnected: boolean;
@@ -64,6 +66,19 @@ interface DailyTask {
 
 export default function SocialConnectionsPage() {
   const { address, isConnected } = useAccount();
+  
+  // Get staking data from both networks
+  const { userData: bscUserData } = useWallet(56); // BSC Mainnet
+  const { userData: ethUserData } = useWallet(1); // Ethereum Mainnet
+  
+  // Combine data from both networks
+  const combinedUserData = {
+    ...bscUserData,
+    stakedAmount: (parseFloat(bscUserData?.stakedAmount || '0') + parseFloat(ethUserData?.stakedAmount || '0')).toString(),
+    pendingRewards: (parseFloat(bscUserData?.pendingRewards || '0') + parseFloat(ethUserData?.pendingRewards || '0')).toString(),
+    stakes: [...(bscUserData?.stakes || []), ...(ethUserData?.stakes || [])]
+  };
+  
   const [connections, setConnections] = useState<SocialConnections>({
     x: { isConnected: false, platform: 'x' },
     telegram: { isConnected: false, platform: 'telegram' },
@@ -87,6 +102,36 @@ export default function SocialConnectionsPage() {
   const [referralStats, setReferralStats] = useState<{ totalReferrals: number; totalRewards: string; referralCode?: any }>({ totalReferrals: 0, totalRewards: '0', referralCode: null });
   const [referralLoading, setReferralLoading] = useState(false);
 
+  // Staking tasks states
+  const [claimedStakeTasks, setClaimedStakeTasks] = useState<Record<number, any>>({});
+  const [stakingTasksLoading, setStakingTasksLoading] = useState(false);
+
+  // Toplam ödül state'i
+  const [totalSocialPoints, setTotalSocialPoints] = useState<number>(0);
+  const [totalSocialPointsLoading, setTotalSocialPointsLoading] = useState(false);
+
+  // Toplam ödül bilgisini çek
+  useEffect(() => {
+    const fetchTotalSocialPoints = async () => {
+      if (!address) return;
+      setTotalSocialPointsLoading(true);
+      try {
+        const res = await fetch(`/api/social-connections/total-rewards?walletAddress=${address}`);
+        const data = await res.json();
+        if (data.success) {
+          setTotalSocialPoints(data.totalPoints);
+        }
+      } catch (error) {
+        setTotalSocialPoints(0);
+      } finally {
+        setTotalSocialPointsLoading(false);
+      }
+    };
+    if (isConnected && address) {
+      fetchTotalSocialPoints();
+    }
+  }, [isConnected, address]);
+
   // Check all social connections
   const checkAllConnections = async () => {
     if (!isConnected || !address) return;
@@ -94,87 +139,90 @@ export default function SocialConnectionsPage() {
     setIsLoading(true);
     
     try {
-      // Check X connection
-      const xResponse = await fetch('/api/x/status', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ walletAddress: address }),
-      });
-      
+      // Paralel API çağrıları
+      const [xResponse, telegramResponse, discordResponse] = await Promise.all([
+        // X connection
+        fetch('/api/x/status', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ walletAddress: address }),
+        }),
+        // Telegram stats
+        fetch(`/api/telegram/stats?walletAddress=${address}`),
+        // Discord stats
+        fetch(`/api/discord/stats?walletAddress=${address}`)
+      ]);
+
+      // X data
+      let xData = null;
       if (xResponse.ok) {
-        const xData = await xResponse.json();
-        setConnections(prev => ({
-          ...prev,
-          x: {
-            isConnected: xData.connected,
-            platform: 'x',
-            username: xData.xUser?.username,
-            avatarUrl: xData.xUser?.profile_image_url,
-            verified: xData.xUser?.verified,
-            stats: {
-              followers: xData.xUser?.followers_count,
-              messages: xData.xUser?.tweet_count
-            }
-          }
-        }));
+        xData = await xResponse.json();
       }
 
-      // Check Telegram connection
-      const telegramResponse = await fetch(`/api/telegram/stats?walletAddress=${address}`);
-      let telegramData: any;
+      // Telegram data
+      let telegramData = null;
       if (telegramResponse.ok) {
         telegramData = await telegramResponse.json();
-        setConnections(prev => ({
-          ...prev,
-          telegram: {
-            isConnected: telegramData.isConnected,
-            platform: 'telegram',
-            username: telegramData.username,
-            canClaimReward: telegramData.canClaimReward,
-            stats: {
-              messages: telegramData.messageCount,
-              xp: telegramData.totalXP,
-              level: `Level ${telegramData.currentLevel}`,
-              dailyReward: telegramData.dailyReward
-            }
-          }
-        }));
       }
 
-      // Check Discord connection
-      const discordResponse = await fetch(`/api/discord/stats?walletAddress=${address}`);
-      let discordData: any;
+      // Discord data
+      let discordData = null;
       if (discordResponse.ok) {
         discordData = await discordResponse.json();
-        setConnections(prev => ({
-          ...prev,
-          discord: {
-            isConnected: discordData.isConnected,
-            platform: 'discord',
-            username: discordData.username,
-            avatarUrl: discordData.avatarUrl,
-            verified: discordData.verified,
-            canClaimReward: discordData.canClaimReward,
-            discordId: discordData.discordId,
-            stats: {
-              messages: discordData.messageCount,
-              xp: discordData.totalXP,
-              level: discordData.currentLevel,
-              dailyReward: discordData.dailyReward,
-              lastClaimedAt: discordData.lastClaimedAt // add this
-            }
-          }
-        }));
-
-        // Check extra rewards for Discord
-        if (discordData.isConnected) {
-          await checkExtraRewards('discord', discordData.totalXP);
-        }
       }
 
-      // Telegram için extra reward kontrolü, yeni XP ile
-      if (telegramData && telegramData.isConnected) {
+      // State'i güncelle
+      setConnections(prev => ({
+        x: {
+          isConnected: xData?.connected || false,
+          platform: 'x',
+          username: xData?.xUser?.username,
+          avatarUrl: xData?.xUser?.profile_image_url,
+          verified: xData?.xUser?.verified,
+          stats: {
+            followers: xData?.xUser?.followers_count,
+            messages: xData?.xUser?.tweet_count,
+            xp: xData?.xp || 0,
+            level: xData?.level || 0,
+            dailyReward: xData?.dailyReward || 0
+          }
+        },
+        telegram: {
+          isConnected: telegramData?.isConnected || false,
+          platform: 'telegram',
+          username: telegramData?.username,
+          canClaimReward: telegramData?.canClaimReward || false,
+          stats: {
+            messages: telegramData?.messageCount,
+            xp: telegramData?.totalXP,
+            level: `Level ${telegramData?.currentLevel}`,
+            dailyReward: telegramData?.dailyReward
+          }
+        },
+        discord: {
+          isConnected: discordData?.isConnected || false,
+          platform: 'discord',
+          username: discordData?.username,
+          avatarUrl: discordData?.avatarUrl,
+          verified: discordData?.verified,
+          canClaimReward: discordData?.canClaimReward || false,
+          discordId: discordData?.discordId,
+          stats: {
+            messages: discordData?.messageCount,
+            xp: discordData?.totalXP,
+            level: discordData?.currentLevel,
+            dailyReward: discordData?.dailyReward,
+            lastClaimedAt: discordData?.lastClaimedAt
+          }
+        }
+      }));
+
+      // Extra rewards kontrolü
+      if (telegramData?.isConnected) {
         await checkExtraRewards('telegram', telegramData.totalXP);
+      }
+      if (discordData?.isConnected) {
+        await checkExtraRewards('discord', discordData.totalXP);
       }
 
     } catch (error) {
@@ -265,51 +313,7 @@ export default function SocialConnectionsPage() {
   // Replace all separate connection fetches with a single fast fetch
   useEffect(() => {
     if (!isConnected || !address) return;
-    const fetchAllConnections = async () => {
-      try {
-        const res = await fetch(`/api/social-connections/status?walletAddress=${address}`);
-        const data = await res.json();
-        setConnections({
-          x: {
-            isConnected: !!data.x?.connected,
-            platform: 'x',
-            username: data.x?.username || undefined,
-            stats: {
-              xp: data.x?.xp || 0,
-              level: data.x?.level || 0,
-              dailyReward: data.x?.dailyReward || 0
-            }
-          },
-          telegram: {
-            isConnected: !!data.telegram?.connected,
-            platform: 'telegram',
-            username: data.telegram?.username || undefined,
-            stats: {
-              xp: data.telegram?.xp || 0,
-              level: data.telegram?.level || 0,
-              dailyReward: data.telegram?.dailyReward || 0
-            }
-          },
-          discord: {
-            isConnected: !!data.discord?.connected,
-            platform: 'discord',
-            username: data.discord?.username || undefined,
-            stats: {
-              xp: data.discord?.xp || 0,
-              level: data.discord?.level || 0,
-              dailyReward: data.discord?.dailyReward || 0
-            }
-          }
-        });
-      } catch (e) {
-        setConnections({
-          x: { isConnected: false, platform: 'x' },
-          telegram: { isConnected: false, platform: 'telegram' },
-          discord: { isConnected: false, platform: 'discord' }
-        });
-      }
-    };
-    fetchAllConnections();
+    checkAllConnections();
   }, [isConnected, address]);
 
   useEffect(() => {
@@ -510,7 +514,9 @@ export default function SocialConnectionsPage() {
     const telegramClaimable = connections.telegram.isConnected && connections.telegram.canClaimReward;
     const discordClaimable = connections.discord.isConnected && connections.discord.canClaimReward;
     
-    console.log('Claimable Rewards Debug:', {
+    const hasClaimable = telegramClaimable || discordClaimable;
+    
+    console.log('🔍 Claimable Rewards Check:', {
       telegram: {
         isConnected: connections.telegram.isConnected,
         canClaimReward: connections.telegram.canClaimReward,
@@ -521,41 +527,74 @@ export default function SocialConnectionsPage() {
         canClaimReward: connections.discord.canClaimReward,
         claimable: discordClaimable
       },
-      totalClaimable: telegramClaimable || discordClaimable
+      totalClaimable: hasClaimable
     });
     
-    return telegramClaimable || discordClaimable;
+    return hasClaimable;
   };
 
   const claimAllRewards = async () => {
     if (!address || !hasClaimableRewards()) return;
 
     setIsClaiming(true);
+    
+    // Optimistic update: Hemen butonları disable et
+    setConnections(prev => ({
+      ...prev,
+      telegram: {
+        ...prev.telegram,
+        canClaimReward: false
+      },
+      discord: {
+        ...prev.discord,
+        canClaimReward: false
+      }
+    }));
+
     const claimedRewards = [];
+    const errors = [];
 
     try {
-      // Claim Telegram reward if available
+      // Telegram claim
       if (connections.telegram.isConnected && connections.telegram.canClaimReward) {
         try {
-          const response = await fetch('/api/telegram/claim', {
+          const telegramRes = await fetch('/api/telegram/claim', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ walletAddress: address }),
           });
 
-          if (response.ok) {
-            const data = await response.json();
+          if (telegramRes.ok) {
+            const data = await telegramRes.json();
             claimedRewards.push(`Telegram: ${data.reward.amount} BBLP`);
+          } else {
+            const err = await telegramRes.json();
+            errors.push(`Telegram: ${err.error || 'Failed to claim'}`);
+            // Hata durumunda optimistic update'i geri al
+            setConnections(prev => ({
+              ...prev,
+              telegram: {
+                ...prev.telegram,
+                canClaimReward: true
+              }
+            }));
           }
         } catch (error) {
-          console.error('Error claiming Telegram reward:', error);
+          errors.push('Telegram: Network error');
+          setConnections(prev => ({
+            ...prev,
+            telegram: {
+              ...prev.telegram,
+              canClaimReward: true
+            }
+          }));
         }
       }
 
-      // Claim Discord reward if available
-      if (connections.discord.isConnected && connections.discord.canClaimReward) {
+      // Discord claim
+      if (connections.discord.isConnected && connections.discord.canClaimReward && connections.discord.discordId) {
         try {
-          const response = await fetch('/api/discord/claim', {
+          const discordRes = await fetch('/api/discord/claim', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -564,25 +603,65 @@ export default function SocialConnectionsPage() {
             }),
           });
 
-          if (response.ok) {
-            const data = await response.json();
+          if (discordRes.ok) {
+            const data = await discordRes.json();
             claimedRewards.push(`Discord: ${data.rewardAmount} BBLP`);
+          } else {
+            const err = await discordRes.json();
+            errors.push(`Discord: ${err.error || 'Failed to claim'}`);
+            // Hata durumunda optimistic update'i geri al
+            setConnections(prev => ({
+              ...prev,
+              discord: {
+                ...prev.discord,
+                canClaimReward: true
+              }
+            }));
           }
         } catch (error) {
-          console.error('Error claiming Discord reward:', error);
+          errors.push('Discord: Network error');
+          setConnections(prev => ({
+            ...prev,
+            discord: {
+              ...prev.discord,
+              canClaimReward: true
+            }
+          }));
         }
       }
 
+      // Sonuçları göster
       if (claimedRewards.length > 0) {
-        toast.success(`Successfully claimed: ${claimedRewards.join(', ')}`);
-        // Refresh connections to update claim status
-        await checkAllConnections();
-      } else {
-        toast.error('No rewards available to claim');
+        toast.success(`Başarıyla alındı: ${claimedRewards.join(', ')}`);
       }
+      if (errors.length > 0) {
+        toast.error(errors.join(' | '));
+      }
+      if (claimedRewards.length === 0 && errors.length === 0) {
+        toast.error('Alınabilir ödül yok');
+      }
+
+      // State'i güncelle (background'da)
+      setTimeout(() => {
+        checkAllConnections();
+      }, 1000);
+
     } catch (error) {
       console.error('Error claiming rewards:', error);
-      toast.error('Failed to claim rewards');
+      toast.error('Ödüller alınırken hata oluştu');
+      
+      // Hata durumunda optimistic update'i geri al
+      setConnections(prev => ({
+        ...prev,
+        telegram: {
+          ...prev.telegram,
+          canClaimReward: connections.telegram.canClaimReward
+        },
+        discord: {
+          ...prev.discord,
+          canClaimReward: connections.discord.canClaimReward
+        }
+      }));
     } finally {
       setIsClaiming(false);
     }
@@ -626,19 +705,18 @@ export default function SocialConnectionsPage() {
     return total;
   };
 
-  // Helper to get next claim time (24h after lastClaimedAt)
-  const getNextClaimTime = () => {
-    const last = connections.discord.stats?.lastClaimedAt;
-    if (!last) return null;
-    const lastDate = new Date(last);
-    return new Date(lastDate.getTime() + 24 * 60 * 60 * 1000);
-  };
-
-  const getCountdown = () => {
-    const next = getNextClaimTime();
-    if (!next) return null;
+  // --- Geri sayım için yardımcı fonksiyonlar ---
+  // Discord için son claim zamanı ve kalan süre
+  const getDiscordNextClaimCountdown = () => {
+    // Varsayılan: null
+    if (!connections.discord.isConnected || connections.discord.canClaimReward) return null;
+    // Son claim zamanı yoksa null
+    const lastClaimedAt = connections.discord.stats?.lastClaimedAt;
+    if (!lastClaimedAt) return null;
+    const lastDate = new Date(lastClaimedAt);
+    const nextClaimDate = new Date(lastDate.getTime() + 24 * 60 * 60 * 1000);
     const now = new Date();
-    const diff = next.getTime() - now.getTime();
+    const diff = nextClaimDate.getTime() - now.getTime();
     if (diff <= 0) return null;
     const hours = Math.floor(diff / (1000 * 60 * 60));
     const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
@@ -647,6 +725,9 @@ export default function SocialConnectionsPage() {
       .toString()
       .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
+
+  // Telegram için claim tablosunda lastClaimedAt yok, claim hakkı yoksa kalan süreyi gösteremeyiz (geliştirilebilir)
+  // Şimdilik sadece Discord için gösterelim
 
   // Fetch referral stats when address changes
   useEffect(() => {
@@ -723,18 +804,162 @@ export default function SocialConnectionsPage() {
     <div className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm pointer-events-auto" />
   ) : null;
 
-  if (!isConnected) {
+  // Claim stake task
+  const handleClaimStakeTask = async (amount: number, points: number) => {
+    if (!address) return;
+    
+    try {
+      const response = await fetch('/api/staking-tasks/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          walletAddress: address,
+          stakeAmount: amount,
+          points: points
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        toast.success(`Successfully claimed ${points} points for staking ${amount} BBLP!`);
+        // Update local state to mark as claimed
+        setClaimedStakeTasks(prev => ({
+          ...prev,
+          [amount]: {
+            points: points,
+            claimed: true,
+            claimedAt: new Date().toISOString()
+          }
+        }));
+      } else {
+        const errorData = await response.json();
+        toast.error(errorData.error || 'Failed to claim stake task');
+      }
+    } catch (error) {
+      console.error('Error claiming stake task:', error);
+      toast.error('Failed to claim stake task');
+    }
+  };
+
+  // Fetch claimed staking tasks
+  useEffect(() => {
+    const fetchClaimedStakeTasks = async () => {
+      if (!address) return;
+      setStakingTasksLoading(true);
+      try {
+        const res = await fetch(`/api/staking-tasks/status?walletAddress=${address}`);
+        const data = await res.json();
+        if (data.success) {
+          setClaimedStakeTasks(data.claimedTasks);
+        }
+      } catch (error) {
+        console.error('Error fetching staking tasks:', error);
+        setClaimedStakeTasks({});
+      } finally {
+        setStakingTasksLoading(false);
+      }
+    };
+    if (isConnected && address) {
+      fetchClaimedStakeTasks();
+    }
+  }, [isConnected, address]);
+
+  // Invite your first friend tamam mı?
+  const hasInvitedFirstFriend = claimedMilestones.includes(1);
+
+  // Günlük ödül claim butonu aktif mi?
+  const canClaimDailyReward = hasClaimableRewards() && hasInvitedFirstFriend;
+  const shouldShowInviteWarning = hasClaimableRewards() && !hasInvitedFirstFriend;
+
+  // --- MOBİLDE SADECE BUTONLAR ---
+  // CSS'i head'e ekle
+  if (typeof window !== 'undefined') {
+    const styleId = 'social-connections-mobile-hide-style';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.innerHTML = `
+        @media (max-width: 640px) {
+          .hide-on-mobile-inner { display: none !important; }
+          .only-mobile-flex { display: flex !important; flex-direction: column; align-items: center; gap: 8px; }
+          .only-mobile-w-full { width: 100% !important; }
+          .mobile-card-compact { padding: 12px !important; border-radius: 12px !important; margin-bottom: 10px !important; }
+          .mobile-btn-compact { padding-top: 10px !important; padding-bottom: 10px !important; font-size: 1rem !important; border-radius: 8px !important; }
+          .mobile-hero-compact { font-size: 1.1rem !important; margin-bottom: 0.5rem !important; margin-top: 1.5rem !important; text-align: center !important; font-weight: 700 !important; }
+          .mobile-hero-desc { font-size: 0.95rem !important; color: #A1A1AA !important; margin-bottom: 1.2rem !important; text-align: center !important; font-weight: 400 !important; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }
+
+  // Yeni: Sosyal bağlantıların yüklenip yüklenmediğini kontrol et
+  const isConnectionsLoading = isLoading; // isLoading zaten bağlantı fetch edilirken true
+
+  if (isConnected === undefined || isConnected === null || address === undefined) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <Card className="w-full max-w-md bg-gray-900 border-gray-700">
-          <CardHeader>
-            <CardTitle className="text-center">Connect Wallet First</CardTitle>
-            <CardDescription className="text-center text-gray-400">
-              Please connect your wallet to manage social connections
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
+      <>
+        <Header />
+        <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2">
+          <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
+            <div className="flex items-center justify-center py-20 mt-20">
+              <div className="relative">
+                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
+                <Image 
+                  src="/logo.svg" 
+                  alt="BBLP" 
+                  width={32} 
+                  height={32} 
+                  className="absolute inset-0 m-auto animate-pulse" 
+                />
+              </div>
+            </div>
+          </section>
+        </main>
+      </>
+    );
+  }
+
+  if ((isConnected === false || !address)) {
+    return (
+      <>
+        <Header />
+        <div className="min-h-screen bg-black text-white flex items-center justify-center">
+          <Card className="w-full max-w-md bg-gray-900 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-center">Connect Wallet First</CardTitle>
+              <CardDescription className="text-center text-gray-400">
+                Please connect your wallet to manage social connections
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      </>
+    );
+  }
+
+  // YENİ: Bağlantı bilgileri yükleniyorsa loading animasyonu göster
+  if (isConnectionsLoading) {
+    return (
+      <>
+        <Header />
+        <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2">
+          <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
+            <div className="flex items-center justify-center py-20 mt-20">
+              <div className="relative">
+                <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
+                <Image 
+                  src="/logo.svg" 
+                  alt="BBLP" 
+                  width={32} 
+                  height={32} 
+                  className="absolute inset-0 m-auto animate-pulse" 
+                />
+              </div>
+            </div>
+          </section>
+        </main>
+      </>
     );
   }
 
@@ -746,65 +971,87 @@ export default function SocialConnectionsPage() {
         <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
         {/* Motivational Explanation */}
         <div className="relative z-50 flex flex-col items-center justify-center w-full mb-8">
-          <div className="text-2xl font-bold text-white text-center mb-2">Connect all your social accounts to continue and start farming points!</div>
-          <div className="text-base text-[#A1A1AA] text-center max-w-xl mb-8">You need to connect your X, Telegram, and Discord accounts to unlock all features and maximize your rewards. Please connect all platforms to proceed.</div>
+          <div className="text-2xl font-bold text-white text-center mb-2 px-4 mobile-hero-compact">Connect your accounts !</div>
+          <div className="text-base text-[#A1A1AA] text-center px-4 mb-2 mobile-hero-desc">Connect X, Telegram, and Discord to unlock all features and maximize rewards.</div>
         </div>
         {/* Connect Cards */}
         <div className="relative z-50 flex flex-col items-center justify-center w-full">
-          <div className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-4">
+          <div className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-4 only-mobile-flex">
             {[
               {
                 platform: 'x',
                 name: 'X (Twitter)',
-                icon: <svg viewBox="0 0 32 32" className="w-12 h-12 mb-4" fill="#1DA1F2"><path d="M32 6.076a13.14 13.14 0 0 1-3.769 1.031A6.601 6.601 0 0 0 31.115 4.1a13.195 13.195 0 0 1-4.169 1.594A6.563 6.563 0 0 0 22.155 2c-3.626 0-6.563 2.938-6.563 6.563 0 .514.058 1.016.17 1.496C10.303 9.87 5.47 7.38 2.228 3.671a6.544 6.544 0 0 0-.888 3.3c0 2.277 1.159 4.287 2.924 5.464a6.533 6.533 0 0 1-2.975-.822v.083c0 3.18 2.263 5.833 5.267 6.437a6.575 6.575 0 0 1-2.968.112c.837 2.614 3.263 4.516 6.142 4.567A13.18 13.18 0 0 1 0 27.026 18.616 18.616 0 0 0 10.063 30c12.072 0 18.681-10.002 18.681-18.682 0-.285-.007-.568-.02-.85A13.354 13.354 0 0 0 32 6.076z"/></svg>,
+                icon: <svg viewBox="0 0 32 32" className="w-6 h-6 mr-2" fill="#1DA1F2"><path d="M32 6.076a13.14 13.14 0 0 1-3.769 1.031A6.601 6.601 0 0 0 31.115 4.1a13.195 13.195 0 0 1-4.169 1.594A6.563 6.563 0 0 0 22.155 2c-3.626 0-6.563 2.938-6.563 6.563 0 .514.058 1.016.17 1.496C10.303 9.87 5.47 7.38 2.228 3.671a6.544 6.544 0 0 0-.888 3.3c0 2.277 1.159 4.287 2.924 5.464a6.533 6.533 0 0 1-2.975-.822v.083c0 3.18 2.263 5.833 5.267 6.437a6.575 6.575 0 0 1-2.968.112c.837 2.614 3.263 4.516 6.142 4.567A13.18 13.18 0 0 1 0 27.026 18.616 18.616 0 0 0 10.063 30c12.072 0 18.681-10.002 18.681-18.682 0-.285-.007-.568-.02-.85A13.354 13.354 0 0 0 32 6.076z"/></svg>,
                 color: '#1DA1F2',
                 connectUrl: '/x',
-                desc: 'Connect your X account to earn social rewards.',
+                desc: 'Connect your X account.',
                 isConnected: connections.x.isConnected
               },
               {
                 platform: 'telegram',
                 name: 'Telegram',
-                icon: <svg viewBox="0 0 32 32" className="w-12 h-12 mb-4" fill="#229ED9"><path d="M16 32c8.837 0 16-7.163 16-16S24.837 0 16 0 0 7.163 0 16s7.163 16 16 16zm6.406-21.406l-2.75 12.969c-.207.93-.75 1.156-1.519.72l-4.188-3.094-2.022 1.947c-.223.223-.41.41-.84.41l.299-4.23 7.688-6.938c.334-.299-.073-.465-.517-.166l-9.5 5.98-4.094-1.281c-.889-.277-.906-.889.186-1.316l16.031-6.188c.748-.277 1.406.166 1.166 1.314z"/></svg>,
+                icon: <svg viewBox="0 0 32 32" className="w-6 h-6 mr-2" fill="#229ED9"><path d="M16 32c8.837 0 16-7.163 16-16S24.837 0 16 0 0 7.163 0 16s7.163 16 16 16zm6.406-21.406l-2.75 12.969c-.207.93-.75 1.156-1.519.72l-4.188-3.094-2.022 1.947c-.223.223-.41.41-.84.41l.299-4.23 7.688-6.938c.334-.299-.073-.465-.517-.166l-9.5 5.98-4.094-1.281c-.889-.277-.906-.889.186-1.316l16.031-6.188c.748-.277 1.406.166 1.166 1.314z"/></svg>,
                 color: '#229ED9',
                 connectUrl: '/telegram',
-                desc: 'Connect your Telegram account to earn community rewards.',
+                desc: 'Connect your Telegram account.',
                 isConnected: connections.telegram.isConnected
               },
               {
                 platform: 'discord',
                 name: 'Discord',
-                icon: <svg viewBox="0 0 32 32" className="w-12 h-12 mb-4" fill="#5865F2"><path d="M27.2 6.8A26.9 26.9 0 0 0 20.5 4a1 1 0 0 0-.5.1c-.2.1-.3.3-.3.5l-.3 1.2a24.2 24.2 0 0 0-7.8 0l-.3-1.2a.7.7 0 0 0-.3-.5A1 1 0 0 0 11.5 4a26.9 26.9 0 0 0-6.7 2.8c-.2.1-.3.3-.3.5C2.1 13.1 1.2 19.2 2.1 25.2c0 .2.2.4.4.5A27.2 27.2 0 0 0 11.5 28a1 1 0 0 0 .5-.1c.2-.1.3-.3.3-.5l.3-1.2a24.2 24.2 0 0 0 7.8 0l.3 1.2c.1.2.2.4.3.5a1 1 0 0 0 .5.1 27.2 27.2 0 0 0 8.9-2.3c.2-.1.4-.3.4-.5.9-6 .1-12.1-1.7-17.9a.7.7 0 0 0-.3-.5zM11.1 20.2c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm9.8 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>,
+                icon: <svg viewBox="0 0 32 32" className="w-6 h-6 mr-2" fill="#5865F2"><path d="M27.2 6.8A26.9 26.9 0 0 0 20.5 4a1 1 0 0 0-.5.1c-.2.1-.3.3-.3.5l-.3 1.2a24.2 24.2 0 0 0-7.8 0l-.3-1.2a.7.7 0 0 0-.3-.5A1 1 0 0 0 11.5 4a26.9 26.9 0 0 0-6.7 2.8c-.2.1-.3.3-.3.5C2.1 13.1 1.2 19.2 2.1 25.2c0 .2.2.4.4.5A27.2 27.2 0 0 0 11.5 28a1 1 0 0 0 .5-.1c.2-.1.3-.3.3-.5l.3-1.2a24.2 24.2 0 0 0 7.8 0l.3 1.2c.1.2.2.4.3.5a1 1 0 0 0 .5.1 27.2 27.2 0 0 0 8.9-2.3c.2-.1.4-.3.4-.5.9-6 .1-12.1-1.7-17.9a.7.7 0 0 0-.3-.5zM11.1 20.2c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm9.8 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>,
                 color: '#5865F2',
                 connectUrl: '/discord',
-                desc: 'Connect your Discord account to earn community rewards.',
+                desc: 'Connect your Discord account.',
                 isConnected: connections.discord.isConnected
               }
-            ].map(({ platform, name, icon, color, connectUrl, desc, isConnected }) => (
-              <div
-                key={platform}
-                className="bg-[#23232A] border border-[#35353B] rounded-2xl shadow-xl p-8 flex flex-col items-center transition-transform duration-200 hover:scale-105 hover:shadow-2xl"
-              >
-                {icon}
-                <div className="text-xl font-bold text-white mb-2">{name}</div>
-                <div className="text-sm text-[#A1A1AA] mb-4 text-center">{desc}</div>
-                {isConnected ? (
-                  <div className="w-full flex items-center justify-center gap-2 py-2 rounded-lg font-semibold bg-green-900/30 text-green-400 border border-green-700">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                    Connected
+            ].map(({ platform, name, icon, color, connectUrl, desc, isConnected }) => {
+              // Yeni: Küçük ikon ve kısa açıklama
+              let compactIcon, compactTitle, compactDesc;
+              if (platform === 'x') {
+                compactIcon = <svg viewBox="0 0 32 32" className="w-6 h-6 mr-2" fill="#1DA1F2"><path d="M32 6.076a13.14 13.14 0 0 1-3.769 1.031A6.601 6.601 0 0 0 31.115 4.1a13.195 13.195 0 0 1-4.169 1.594A6.563 6.563 0 0 0 22.155 2c-3.626 0-6.563 2.938-6.563 6.563 0 .514.058 1.016.17 1.496C10.303 9.87 5.47 7.38 2.228 3.671a6.544 6.544 0 0 0-.888 3.3c0 2.277 1.159 4.287 2.924 5.464a6.533 6.533 0 0 1-2.975-.822v.083c0 3.18 2.263 5.833 5.267 6.437a6.575 6.575 0 0 1-2.968.112c.837 2.614 3.263 4.516 6.142 4.567A13.18 13.18 0 0 1 0 27.026 18.616 18.616 0 0 0 10.063 30c12.072 0 18.681-10.002 18.681-18.682 0-.285-.007-.568-.02-.85A13.354 13.354 0 0 0 32 6.076z"/></svg>;
+                compactTitle = 'X (Twitter)';
+                compactDesc = 'Connect your X account.';
+              } else if (platform === 'telegram') {
+                compactIcon = <svg viewBox="0 0 32 32" className="w-6 h-6 mr-2" fill="#229ED9"><path d="M16 32c8.837 0 16-7.163 16-16S24.837 0 16 0 0 7.163 0 16s7.163 16 16 16zm6.406-21.406l-2.75 12.969c-.207.93-.75 1.156-1.519.72l-4.188-3.094-2.022 1.947c-.223.223-.41.41-.84.41l.299-4.23 7.688-6.938c.334-.299-.073-.465-.517-.166l-9.5 5.98-4.094-1.281c-.889-.277-.906-.889.186-1.316l16.031-6.188c.748-.277 1.406.166 1.166 1.314z"/></svg>;
+                compactTitle = 'Telegram';
+                compactDesc = 'Connect your Telegram account.';
+              } else {
+                compactIcon = <svg viewBox="0 0 32 32" className="w-6 h-6 mr-2" fill="#5865F2"><path d="M27.2 6.8A26.9 26.9 0 0 0 20.5 4a1 1 0 0 0-.5.1c-.2.1-.3.3-.3.5l-.3 1.2a24.2 24.2 0 0 0-7.8 0l-.3-1.2a.7.7 0 0 0-.3-.5A1 1 0 0 0 11.5 4a26.9 26.9 0 0 0-6.7 2.8c-.2.1-.3.3-.3.5C2.1 13.1 1.2 19.2 2.1 25.2c0 .2.2.4.4.5A27.2 27.2 0 0 0 11.5 28a1 1 0 0 0 .5-.1c.2-.1.3-.3.3-.5l.3-1.2a24.2 24.2 0 0 0 7.8 0l.3 1.2c.1.2.2.4.3.5a1 1 0 0 0 .5.1 27.2 27.2 0 0 0 8.9-2.3c.2-.1.4-.3.4-.5.9-6 .1-12.1-1.7-17.9a.7.7 0 0 0-.3-.5zM11.1 20.2c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm9.8 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>;
+                compactTitle = 'Discord';
+                compactDesc = 'Connect your Discord account.';
+              }
+              return (
+                <div
+                  key={platform}
+                  className="bg-[#23232A] border border-[#35353B] rounded-2xl shadow-xl p-8 flex flex-col items-center transition-transform duration-200 hover:scale-105 hover:shadow-2xl only-mobile-w-full mobile-card-compact"
+                >
+                  {/* Başlık ve ikon satırı */}
+                  <div className="w-full flex items-center justify-center mb-1">
+                    {compactIcon}
+                    <span className="text-lg font-bold text-white">{compactTitle}</span>
                   </div>
-                ) : (
-                  <Button
-                    onClick={() => window.location.href = connectUrl}
-                    className="w-full py-2 rounded-lg font-semibold transition bg-[#28282D] hover:bg-[#35353B] flex items-center justify-center gap-2"
-                  >
-                    Connect {name}
-                  </Button>
-                )}
-              </div>
-            ))}
+                  {/* Açıklama */}
+                  <div className="w-full text-center text-xs text-[#A1A1AA] mb-3">{compactDesc}</div>
+                  {/* Buton */}
+                  {isConnected ? (
+                    <div className="w-full flex items-center justify-center gap-2 py-2 rounded-lg font-semibold bg-green-900/30 text-green-400 border border-green-700 mobile-btn-compact">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+                      Connected
+                    </div>
+                  ) : (
+                    <Button
+                      onClick={() => window.location.href = connectUrl}
+                      className="w-full py-2 rounded-lg font-semibold transition  flex items-center justify-center gap-2 mobile-btn-compact"
+                    >
+                      Connect {compactTitle}
+                    </Button>
+                  )}
+                </div>
+              );
+            })}
           </div>
-          <div className="flex flex-col items-center mt-8">
+          <div className="flex flex-col items-center mt-8 hide-on-mobile-inner">
             <div className="flex items-center gap-2 text-[#A1A1AA] text-xs">
               <svg className="w-4 h-4" fill="none" stroke="#A1A1AA" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0-1.105.895-2 2-2s2 .895 2 2-.895 2-2 2-2-.895-2-2zm0 0V7m0 4v4m0 0c-4.418 0-8-1.79-8-4V7a2 2 0 012-2h2.586a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293h2.172a1 1 0 00.707-.293l1.414-1.414A1 1 0 0117.414 5H20a2 2 0 012 2v4c0 2.21-3.582 4-8 4z"/></svg>
               <span>Your data is safe</span>
@@ -816,184 +1063,93 @@ export default function SocialConnectionsPage() {
   }
 
   return (
-    <div className="min-h-screen" style={{ background: '#18181B', color: '#F3F3F3', position: 'relative' }}>
-      {blurOverlay}
-      <div className={allDisconnected ? 'pointer-events-none select-none filter blur-sm opacity-60' : ''}>
-        {/* Referral Stats Card */}
-        <div className="max-w-4xl mx-auto mb-8">
-          <Card className="bg-[#222226] border-[#2A2A2E]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Users className="w-6 h-6 text-yellow-400" />
-                Referral Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {referralLoading ? (
-                <div className="text-center py-6 text-gray-400">Loading referral info...</div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="text-center p-4 bg-[#23232A] rounded-lg">
-                    <div className="text-3xl font-bold text-yellow-400 mb-2">
-                      {referralStats.totalReferrals}
-                    </div>
-                    <p className="text-[#A1A1AA]">Total Referrals</p>
-                  </div>
-                  <div className="text-center p-4 bg-[#23232A] rounded-lg">
-                    <div className="text-base break-all font-mono font-bold text-yellow-400 mb-2">
-                      {referralStats.referralCode?.code ? (
-                        <span>https://bblip.io/?ref={referralStats.referralCode.code}</span>
-                      ) : (
-                        <span>No referral link</span>
-                      )}
-                    </div>
-                    <p className="text-[#A1A1AA]">Your Referral Link</p>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+    <>
+      <Header />
+      <div className="min-h-screen px-2 sm:px-4 md:px-0" style={{ color: '#F3F3F3', position: 'relative' }}>
+        {/* Overview Başlık ve Açıklama */}
+        <div className="w-full max-w-6xl mx-auto mt-20 mb-2">
+          <h1 className="text-3xl font-bold text-white mb-2">Social Connections Overview</h1>
+          <p className="text-base text-[#A1A1AA]">Being active in our community. The more you engage, the more you earn!</p>
         </div>
-        {/* Header */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-6xl font-bold mb-4" style={{ color: '#F3F3F3' }}>
-            Social Connections
-          </h1>
-          <p className="text-xl" style={{ color: '#A1A1AA' }}>
-            Connect your social media accounts to maximize your rewards and community engagement
-          </p>
-        </div>
+        {blurOverlay}
+        <div className={allDisconnected ? 'pointer-events-none select-none filter blur-sm opacity-60' : ''}>
+          {/* Referral Stats Card */}
+         
+         
 
-        {/* Connection Overview */}
-        <div className="max-w-4xl mx-auto mb-8">
-          <Card className="bg-[#222226] border-[#2A2A2E]">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-3">
-                <Zap className="w-6 h-6 text-[#F3F3F3]" />
-                Connection Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="text-center p-4 bg-[#23232A] rounded-lg">
-                  <div className="text-3xl font-bold text-[#F3F3F3] mb-2">
-                    {getTotalXP()} XP
-                  </div>
-                  <p className="text-[#A1A1AA]">Total XP</p>
-                </div>
-                <div className="text-center p-4 bg-[#23232A] rounded-lg">
-                  <div className="text-3xl font-bold text-[#F3F3F3] mb-2">
-                    {getConnectedCount()} / 3
-                  </div>
-                  <p className="text-[#A1A1AA]">Platforms Connected</p>
-                </div>
+          {/* Connection Overview - Responsive Grid: Estimated üstte tam genişlikte, altta iki kart yan yana */}
+          <div className="w-full max-w-6xl mx-auto mb-10 grid mt-2 grid-cols-2 gap-2 md:px-0">
+            {/* Estimated BBLP Reward Kartı */}
+            <div className="col-span-2 text-center p-8 bg-[#23232A] rounded-2xl border border-[#2A2A2E] flex flex-col items-center justify-center shadow-lg">
+              <div className="text-4xl font-bold text-yellow-400 mb-2">
+                {totalSocialPointsLoading ? '...' : ((getTotalXP() + totalSocialPoints) * 0.02).toLocaleString(undefined, { maximumFractionDigits: 2 })} BBLP
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              <p className="text-[#A1A1AA] text-base">Estimated BBLP Reward </p>
+            </div>
+            <div className="text-center p-8 bg-[#23232A] rounded-2xl border border-[#2A2A2E] flex flex-col items-center justify-center shadow-lg">
+              <div className="text-4xl font-bold text-[#F3F3F3] mb-2">{getTotalXP()} XP</div>
+              <p className="text-[#A1A1AA] text-base">Total XP</p>
+            </div>
+            <div className="text-center p-8 bg-[#23232A] rounded-2xl border border-[#2A2A2E] flex flex-col items-center justify-center shadow-lg">
+              <div className="text-4xl font-bold text-[#F3F3F3] mb-2">{totalSocialPointsLoading ? '...' : totalSocialPoints}</div>
+              <p className="text-[#A1A1AA] text-base">Total Social Points</p>
+            </div>
+          </div>
 
-        {/* Platform Cards */}
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-6">
-          {(['x', 'telegram', 'discord'] as const).map((platform) => {
-            const connection = connections[platform];
-            const platformInfo = getPlatformInfo(platform);
-            const IconComponent = platformInfo.icon;
+          
 
-            return (
-              <Card key={platform} className="bg-[#222226] border-[#2A2A2E]">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-3">
-                    <IconComponent className="w-6 h-6 text-[#F3F3F3]" />
-                    {platformInfo.name}
-                  </CardTitle>
-                  <CardDescription className="text-[#A1A1AA]">
-                    {platformInfo.description}
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  {connection.isConnected ? (
-                    <div className="space-y-4">
-                      {/* Connected Status */}
-                      <div className="flex items-center gap-3">
-                        <CheckCircle className="w-5 h-5 text-[#4ADE80]" />
-                        <span className="font-semibold text-[#4ADE80]">Connected</span>
-                      </div>
-                      {/* User Info */}
-                      <div className="flex items-center gap-3">
-                        <div>
-                          <p className="font-semibold text-[#F3F3F3]">{connection.username}</p>
-                          {connection.verified && (
-                            <Badge className="bg-[#35353B] text-xs text-[#A1A1AA] border-none">Verified</Badge>
-                          )}
-                        </div>
-                      </div>
-                      {/* Stats */}
-                      {connection.stats && (
-                        <div className="grid grid-cols-2 gap-3 mt-4">
-                          <div className="text-center p-2 bg-[#23232A] rounded">
-                            <p className="text-lg font-bold text-[#F3F3F3]">
-                              {connection.stats.xp}
-                            </p>
-                            <p className="text-xs text-[#A1A1AA]">XP</p>
-                          </div>
-                          <div className="text-center p-2 bg-[#23232A] rounded">
-                            <p className="text-lg font-bold text-[#F3F3F3]">
-                              {connection.stats.level}
-                            </p>
-                            <p className="text-xs text-[#A1A1AA]">Level</p>
-                          </div>
-                          <div className="text-center p-2 bg-[#23232A] rounded col-span-2">
-                            <p className="text-lg font-bold text-[#F3F3F3]">
-                              {connection.stats.dailyReward}
-                            </p>
-                            <p className="text-xs text-[#A1A1AA]">Daily Reward</p>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {/* Not Connected Status */}
-                      <div className="flex items-center gap-3">
-                        <XCircle className="w-5 h-5 text-[#F87171]" />
-                        <span className="font-semibold text-[#F87171]">Not Connected</span>
-                      </div>
-                      <p className="text-[#A1A1AA] text-sm">
-                        Connect your {platformInfo.name} account to start earning rewards
-                      </p>
-                      {/* Connect Button */}
-                      <Button 
-                        onClick={() => window.location.href = platformInfo.connectUrl}
-                        className="w-full bg-[#28282D] border border-[#35353B] text-[#F3F3F3] hover:bg-[#35353B]"
-                      >
-                        <IconComponent className="w-4 h-4 mr-2 text-[#F3F3F3]" />
-                        Connect {platformInfo.name}
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-
-      
-
-        {/* Level Tasks Section */}
-        <div className="max-w-6xl mx-auto mt-12">
-          <div className="space-y-6">
-            {/* Daily Check In & Claim Box - moved here */}
         
-            {/* Daily Tasks Section (like Telegram XP Journey) */}
-            <div className="max-w-6xl mx-auto mt-12">
-              {/* Section Header */}
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-1.5 h-6 rounded bg-[#F59E42] mr-2" />
-                <h3 className="text-2xl font-extrabold tracking-tight text-[#F3F3F3]">Daily Tasks</h3>
+
+          {/* Level Tasks Section */}
+          <div className="max-w-6xl mx-auto mt-12 ">
+            <div className="space-y-6">
+              {/* Referral Links Section - NEW */}
+              <div className="max-w-6xl mx-auto -mb-4">
+                {/* Section Header */}
+             
+                
+                
+                
+                {/* Referral Link Başlık ve Açıklama */}
+               
+                {/* Referral Link Card */}
+                <div className="px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A] flex flex-row items-stretch gap-2 mb-6">
+                  <div className="flex flex-col justify-center flex-1 min-w-0">
+                    <div className="text-xs text-yellow-400 font-semibold mb-1">Your Referral Link</div>
+                    <div className="w-full bg-transparent text-[#F3F3F3] font-mono text-sm overflow-x-auto whitespace-nowrap">
+                      {referralStats.referralCode?.code ? (
+                        `https://bblip.io/?ref=${referralStats.referralCode.code}`
+                      ) : (
+                        'No referral link available'
+                      )}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      if (referralStats.referralCode?.code) {
+                        navigator.clipboard.writeText(`https://bblip.io/?ref=${referralStats.referralCode.code}`);
+                        toast.success('Referral link copied to clipboard!');
+                      } else {
+                        toast.error('No referral link available');
+                      }
+                    }}
+                    className="flex-shrink-0 bg-white text-black font-semibold rounded-lg px-4 py-2 ml-2 transition hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-yellow-400 flex items-center justify-center h-full self-stretch"
+                    style={{ minWidth: 44 }}
+                  >
+                    <span className="hidden md:inline">Copy Referral Link</span>
+                    <svg className="w-5 h-5 md:ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                  </button>
+                </div>
               </div>
-              <div className="text-xs text-[#F59E42] font-semibold mb-4 pl-6">Complete daily tasks and claim your rewards!</div>
-              <div className="space-y-2">
-                {/* Daily Check In as a card */}
+              
+              {/* Daily Check In Section */}
+              <div className="max-w-6xl mx-auto">
+                {/* Section Header */}
+             
+                
+                {/* Daily Check In Card */}
                 <div className="flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A]">
                   <div className="flex flex-col min-w-[120px]">
                     <span className="text-xs text-[#F59E42] mb-1 font-semibold flex items-center gap-1 relative">
@@ -1021,9 +1177,9 @@ export default function SocialConnectionsPage() {
                   <div className="flex flex-col items-end gap-1 min-w-[120px]">
                     <Button
                       onClick={claimAllRewards}
-                      disabled={!hasClaimableRewards() || isClaiming}
+                      disabled={!canClaimDailyReward || isClaiming}
                       size="sm"
-                      className={`bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B] ${!hasClaimableRewards() ? 'opacity-60 cursor-not-allowed' : ''}`}
+                      className={`bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B] ${!canClaimDailyReward ? 'opacity-60 cursor-not-allowed' : ''}`}
                       style={{ boxShadow: 'none' }}
                     >
                       {isClaiming ? (
@@ -1031,357 +1187,165 @@ export default function SocialConnectionsPage() {
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#F3F3F3]"></div>
                           Claiming...
                         </div>
-                      ) : hasClaimableRewards() ? (
+                      ) : (hasClaimableRewards() ? (
                         <>
                           <Gift className="w-3 h-3 mr-1 text-[#F3F3F3]" />
                           Claim Daily Rewards
                         </>
-                      ) : getCountdown() ? (
+                      ) : getDiscordNextClaimCountdown() ? (
                         <>
                           <Clock className="w-4 h-4 mr-1 text-[#4ADE80]" />
-                          Next claim in {getCountdown()}
+                          Next claim in {getDiscordNextClaimCountdown()}
                         </>
                       ) : (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-1 text-[#4ADE80]" />
-                          All Rewards Claimed
-                        </>
-                      )}
+                        <div>
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium  flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4" />
+                          </span>
+                        </div>
+                      ))}
                     </Button>
+                    {shouldShowInviteWarning && (
+                      <div className="text-xs text-red-400 mt-2">You need to invite at least one friend to claim your daily reward.</div>
+                    )}
                   </div>
                 </div>
-                {/* Daily Tasks List */}
-                {dailyTasks.length > 0 && dailyTasks.map(task => (
-                  <div
-                    key={task.id}
-                    className="flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A] cursor-pointer hover:bg-[#23232A]"
-                    onClick={() => window.open(task.link, '_blank', 'noopener,noreferrer')}
-                  >
-                    {/* Left: Title and Reward */}
-                    <div className="flex flex-col min-w-[120px]">
-                      <span className="text-xs text-[#F59E42] mb-1 font-semibold">{task.title}</span>
-                      <span className="px-2 py-0.5 -mb-1 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent text-xs w-fit">
-                        {task.reward} BBLP
-                      </span>
-                    </div>
-                    {/* Right: Claimed Status or Timer/Claim */}
-                    <div className="flex flex-col items-end gap-1 min-w-[120px]">
-                      {taskClaimed[task.id] || task.claimed ? (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium  flex items-center gap-1">
-                          <CheckCircle className="w-4 h-4" /> 
-                        </span>
-                      ) : taskTimers[task.id] > 0 ? (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-800 text-zinc-400">
-                          {taskTimers[task.id]}s
-                        </span>
-                      ) : taskTimers[task.id] === 0 && !taskClaimed[task.id] && !task.claimed ? (
-                        <button
-                          className="mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-600 text-white hover:bg-orange-700"
-                          onClick={e => { e.stopPropagation(); handleClaimTask(task); }}
-                        >
-                          Claim
-                        </button>
-                      ) : (
-                        <button
-                          className="px-2 py-0.5 text-xs font-medium text-zinc-400 flex items-center gap-1"
-                          onClick={e => { e.stopPropagation(); startTaskTimer(task.id); window.open(task.link, '_blank', 'noopener,noreferrer'); }}
-                          disabled={!!taskTimers[task.id]}
-                          title="Start 60s timer"
-                        >
-                          <Repeat className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
               </div>
-            </div>
-            {/* Telegram Level Tasks */}
-            <div>
-              {/* Telegram Level Tasks başlığı */}
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-1.5 h-6 rounded bg-[#60A5FA] mr-2" />
-                <h3 className="text-2xl font-extrabold tracking-tight text-[#F3F3F3]">Telegram XP Journey</h3>
-              </div>
-              <div className="text-xs text-[#60A5FA] font-semibold mb-4 pl-6">Level up your chat game and unlock exclusive rewards!</div>
-              <div className="space-y-2">
-                {(() => {
-                  const tasks = getLevelTasks('telegram');
-                  const claimed = tasks.filter(t => t.isClaimed);
-                  const unclaimed = tasks.filter(t => !t.isClaimed);
-                  return [
-                    ...unclaimed,
-                    ...claimed
-                  ].map((task, index) => (
-                    <div
-                      key={index}
-                      className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A]`}
-                    >
-                      {/* Sol: Seviye numarası ve adı */}
-                      <div className="flex items-center gap-3 min-w-[120px]">
-                        <div className="flex flex-col">
-                          {/* Sadece açıklama */}
-                          <span className="text-xs text-[#60A5FA] mb-1 font-semibold">{TELEGRAM_LEVEL_META[task.levelName]?.desc}</span>
-                          {/* XP kutusu */}
-                          <span className="text-xs mt-1">
-                            <span className="px-2 py-0.5 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent">
-                              {task.xpRequired} XP
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                      {/* Orta: Progress */}
-                      <div className="flex-1 flex flex-col items-center justify-center px-2">
-                        {task.inProgress && (
-                          <div className="w-full max-w-[160px] h-2 bg-[#23232A] rounded-full overflow-hidden">
-                            <div
-                              className="h-2 rounded-full bg-[#818CF8] transition-all duration-300"
-                              style={{ width: `${task.progress}%` }}
-                            ></div>
-                          </div>
-                        )}
-                        {task.inProgress && (
-                          <span className="text-xs text-[#A1A1AA] mt-1">{task.currentXP}/{task.xpRequired} XP</span>
-                        )}
-                      </div>
-                      {/* Sağ: Durum ve buton */}
-                      <div className="flex flex-col items-end gap-1 min-w-[120px]">
-                        {task.isClaimed ? (
-                          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold  text-[#4ADE80] ">
-                            <CheckCircle className="w-4 h-4 text-[#4ADE80]" />
-                          </span>
-                        ) : task.completed ? (
-                          <>
-                            {task.canClaim && (
-                              <Button
-                                onClick={() => claimExtraReward('telegram', task.levelName)}
-                                size="sm"
-                                className="bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
-                              >
-                                <Gift className="w-3 h-3 mr-1 text-[#F3F3F3]" />
-                                Claim {task.extraRewardXP} XP
-                              </Button>
-                            )}
-                            {!task.canClaim && !task.rewardExists && (
-                              <Button
-                                disabled
-                                size="sm"
-                                className="bg-[#35353B] text-[#A1A1AA] px-3 py-1 rounded-full text-xs font-semibold shadow-none cursor-not-allowed border-none"
-                              >
-                                <Gift className="w-3 h-3 mr-1 text-[#A1A1AA]" />
-                                Claim Reward
-                              </Button>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              task.inProgress
-                                ? 'bg-[#35353B] text-[#F3F3F3]'
-                                : 'bg-[#23232A] text-[#A1A1AA]'
-                            }`}>
-                              {task.inProgress ? 'In Progress' : 'Not Started'}
-                            </span>
-                            {task.inProgress && task.canClaim && (
-                              <Button
-                                onClick={() => claimExtraReward('telegram', task.levelName)}
-                                size="sm"
-                                className="mt-1 bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
-                              >
-                                <Gift className="w-3 h-3 mr-1 text-[#F3F3F3]" />
-                                Claim {task.extraRewardXP} XP
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ));
-                })()}
-              </div>
-            </div>
-            {/* Discord Level Tasks */}
-            <div className="mt-8">
-              {/* Discord Level Tasks başlığı */}
-              <div className="flex items-center gap-2 mb-1">
-                <div className="w-1.5 h-6 rounded bg-[#818CF8] mr-2" />
-                <h3 className="text-2xl font-extrabold tracking-tight text-[#F3F3F3]">Discord Power Levels</h3>
-              </div>
-              <div className="text-xs text-[#818CF8] font-semibold mb-4 pl-6">Boost your presence, climb the ranks, claim your perks!</div>
-              <div className="space-y-2">
-                {(() => {
-                  const tasks = getLevelTasks('discord');
-                  const claimed = tasks.filter(t => t.isClaimed);
-                  const unclaimed = tasks.filter(t => !t.isClaimed);
-                  return [
-                    ...unclaimed,
-                    ...claimed
-                  ].map((task, index) => (
-                    <div
-                      key={index}
-                      className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A]`}
-                    >
-                      {/* Sol: Seviye numarası ve adı */}
-                      <div className="flex items-center gap-3 min-w-[120px]">
-                        <div className="flex flex-col">
-                          {/* Sadece açıklama */}
-                          <span className="text-xs text-[#818CF8] mb-1 font-semibold">{DISCORD_LEVEL_META[task.levelName]?.desc}</span>
-                          {/* XP kutusu */}
-                          <span className="text-xs mt-1">
-                            <span className="px-2 py-0.5 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent">
-                              {task.xpRequired} XP
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                      {/* Orta: Progress */}
-                      <div className="flex-1 flex flex-col items-center justify-center px-2">
-                        {task.inProgress && (
-                          <div className="w-full max-w-[160px] h-2 bg-[#23232A] rounded-full overflow-hidden">
-                            <div
-                              className="h-2 rounded-full bg-[#818CF8] transition-all duration-300"
-                              style={{ width: `${task.progress}%` }}
-                            ></div>
-                          </div>
-                        )}
-                        {task.inProgress && (
-                          <span className="text-xs text-[#A1A1AA] mt-1">{task.currentXP}/{task.xpRequired} XP</span>
-                        )}
-                      </div>
-                      {/* Sağ: Durum ve buton */}
-                      <div className="flex flex-col items-end gap-1 min-w-[120px]">
-                        {task.isClaimed ? (
-                          <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold  text-[#4ADE80] ">
-                            <CheckCircle className="w-4 h-4 text-[#4ADE80]" />
-                          </span>
-                        ) : task.completed ? (
-                          <>
-                            {task.canClaim && (
-                              <Button
-                                onClick={() => claimExtraReward('discord', task.levelName)}
-                                size="sm"
-                                className="bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
-                              >
-                                <Gift className="w-3 h-3 mr-1 text-[#F3F3F3]" />
-                                Claim {task.extraRewardXP} XP
-                              </Button>
-                            )}
-                            {!task.canClaim && !task.rewardExists && (
-                              <Button
-                                disabled
-                                size="sm"
-                                className="bg-[#35353B] text-[#A1A1AA] px-3 py-1 rounded-full text-xs font-semibold shadow-none cursor-not-allowed border-none"
-                              >
-                                <Gift className="w-3 h-3 mr-1 text-[#A1A1AA]" />
-                                Claim Reward
-                              </Button>
-                            )}
-                          </>
-                        ) : (
-                          <>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                              task.inProgress
-                                ? 'bg-[#35353B] text-[#F3F3F3]'
-                                : 'bg-[#23232A] text-[#A1A1AA]'
-                            }`}>
-                              {task.inProgress ? 'In Progress' : 'Not Started'}
-                            </span>
-                            {task.inProgress && task.canClaim && (
-                              <Button
-                                onClick={() => claimExtraReward('discord', task.levelName)}
-                                size="sm"
-                                className="mt-1 bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
-                              >
-                                <Gift className="w-3 h-3 mr-1 text-[#F3F3F3]" />
-                                Claim {task.extraRewardXP} XP
-                              </Button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  ));
-                })()}
-              </div>
-              {/* Invite Friends Milestones */}
-              <div className="mt-8">
+          
+              {/* X Tasks Section (was Daily Tasks) */}
+              <div className="max-w-6xl mx-auto mt-12">
+                {/* Section Header */}
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-1.5 h-6 rounded bg-yellow-400 mr-2" />
-                  <h3 className="text-2xl font-extrabold tracking-tight text-white">Invite Friends Milestones</h3>
+                  <div className="w-1.5 h-6 rounded bg-[#1DA1F2] mr-2" />
+                  <h3 className="text-2xl font-extrabold tracking-tight text-[#F3F3F3]">X Tasks</h3>
                 </div>
-                <div className="text-xs text-yellow-400 font-semibold mb-4 pl-6">Invite friends and earn points for each milestone!</div>
+                <div className="text-xs text-[#1DA1F2] font-semibold mb-4 pl-6">Complete X tasks and claim your rewards!</div>
+                <div className="space-y-2">
+                  {/* Daily Tasks List */}
+                  {dailyTasks.length > 0 && dailyTasks.map(task => (
+                    <div
+                      key={task.id}
+                      className="flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A] cursor-pointer hover:bg-[#23232A]"
+                      onClick={() => window.open(task.link, '_blank', 'noopener,noreferrer')}
+                    >
+                      {/* Left: Title and Reward */}
+                      <div className="flex flex-col min-w-[120px]">
+                        <span className="text-xs text-[#1DA1F2] mb-1 font-semibold">{task.title}</span>
+                        <span className="px-2 py-0.5 -mb-1 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent text-xs w-fit">
+                          {task.reward} BBLP
+                        </span>
+                      </div>
+                      {/* Right: Claimed Status or Timer/Claim */}
+                      <div className="flex flex-col items-end gap-1 min-w-[120px]">
+                        {taskClaimed[task.id] || task.claimed ? (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium  flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4" /> 
+                          </span>
+                        ) : taskTimers[task.id] > 0 ? (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-800 text-zinc-400">
+                            {taskTimers[task.id]}s
+                          </span>
+                        ) : taskTimers[task.id] === 0 && !taskClaimed[task.id] && !task.claimed ? (
+                          <button
+                            className="mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-600 text-white hover:bg-orange-700"
+                            onClick={e => { e.stopPropagation(); handleClaimTask(task); }}
+                          >
+                            Claim
+                          </button>
+                        ) : (
+                          <button
+                            className="px-2 py-0.5 text-xs font-medium text-zinc-400 flex items-center gap-1"
+                            onClick={e => { e.stopPropagation(); startTaskTimer(task.id); window.open(task.link, '_blank', 'noopener,noreferrer'); }}
+                            disabled={!!taskTimers[task.id]}
+                            title="Start 60s timer"
+                          >
+                            <Repeat className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Onchain Tasks Section - NEW */}
+              <div className="max-w-6xl mx-auto mt-12">
+                {/* Section Header */}
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1.5 h-6 rounded bg-[#10B981] mr-2" />
+                  <h3 className="text-2xl font-extrabold tracking-tight text-[#F3F3F3]">Onchain Tasks</h3>
+                  <Info className="w-4 h-4 text-[#A1A1AA]" />
+                </div>
+                <div className="text-xs text-[#10B981] font-semibold mb-4 pl-6">Stake BBLP tokens and earn rewards!</div>
+                
+                {/* Onchain Tasks List */}
                 <div className="space-y-2">
                   {(() => {
-                    const milestones = [
-                      { count: 1, points: 50, label: 'Invite your first friend' },
-                      { count: 3, points: 75, label: 'Invite 3 friends' },
-                      { count: 5, points: 150, label: 'Invite 5 friends' },
-                      { count: 10, points: 350, label: 'Invite 10 friends' },
-                      { count: 50, points: 600, label: 'Invite 50 friends' },
-                      { count: 100, points: 1200, label: 'Invite 100 friends' },
-                      { count: 1000, points: 1500, label: 'Invite 1000 friends' },
+                    const stakeTasks = [
+                      { amount: 50, points: 50, label: 'Stake 50 BBLP' },
+                      { amount: 100, points: 100, label: 'Stake 100 BBLP' },
+                      { amount: 500, points: 500, label: 'Stake 500 BBLP' },
+                      { amount: 1000, points: 1000, label: 'Stake 1000 BBLP' },
+                      { amount: 2500, points: 2500, label: 'Stake 2500 BBLP' },
+                      { amount: 3500, points: 3500, label: 'Stake 3500 BBLP' },
                     ];
-                    const current = referralStats.totalReferrals || 0;
-                    const claimed = (milestone: any) => claimedMilestones.includes(milestone.count);
-                    // Split milestones into completed and not completed
-                    const completedMilestones = milestones.filter(claimed);
-                    const inProgressMilestones = milestones.filter(m => !claimed(m));
-                    // Find the first in-progress or claimable milestone
-                    let currentIndex = inProgressMilestones.findIndex(m => current < m.count || current === m.count);
-                    if (currentIndex === -1 && inProgressMilestones.length > 0) currentIndex = 0;
-                    // Show in-progress/claimable first, then completed
-                    const ordered = [...inProgressMilestones, ...completedMilestones];
-                    return ordered.map((milestone, idx) => {
-                      const milestoneCompleted = current >= milestone.count;
-                      const milestoneClaimed = claimed(milestone);
-                      const isCurrent = idx === currentIndex && idx < inProgressMilestones.length;
-                      const progress = Math.min((current / milestone.count) * 100, 100);
-                      // Unified card style for all (no yellow bg/border)
-                      let cardClass = 'flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A]';
+                    
+                    // Get total staked amount from wallet data
+                    const totalStaked = parseFloat(combinedUserData?.stakedAmount || '0');
+                    
+                    return stakeTasks.map((task, index) => {
+                      const isCompleted = totalStaked >= task.amount;
+                      const isClaimed = claimedStakeTasks[task.amount]?.claimed || false;
+                      
                       return (
                         <div
-                          key={milestone.count}
-                          className={cardClass}
+                          key={index}
+                          className="flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A]"
                         >
-                          {/* Left: Milestone label */}
+                          {/* Left: Task label and points */}
                           <div className="flex flex-col min-w-[120px]">
-                            <span className="text-xs text-yellow-400 mb-1 font-semibold">{milestone.label}</span>
-                            <span className="px-2 py-0.5 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent text-xs w-fit">
-                              {milestone.points} Points
+                            <span className="text-xs text-[#10B981] mb-1 font-semibold">{task.label}</span>
+                            <span className="text-xs mt-1">
+                              <span className="px-2 py-0.5 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent">
+                                {task.points} Points
+                              </span>
                             </span>
                           </div>
-                          {/* Center: Progress bar only for current */}
+                          
+                          {/* Center: Progress */}
                           <div className="flex-1 flex flex-col items-center justify-center px-2">
-                            {isCurrent && !milestoneClaimed && (
-                              <>
-                                <div className="w-full max-w-[160px] h-2 bg-[#23232A] rounded-full overflow-hidden">
-                                  <div
-                                    className="h-2 rounded-full bg-yellow-400 transition-all duration-300"
-                                    style={{ width: `${progress}%` }}
-                                  ></div>
-                                </div>
-                                <span className="text-xs text-[#A1A1AA] mt-1">{Math.min(current, milestone.count)}/{milestone.count}</span>
-                              </>
+                            {isCompleted && (
+                              <div className="w-full max-w-[160px] h-2 bg-[#23232A] rounded-full overflow-hidden">
+                                <div
+                                  className="h-2 rounded-full bg-[#10B981] transition-all duration-300"
+                                  style={{ width: '100%' }}
+                                ></div>
+                              </div>
+                            )}
+                            {isCompleted && (
+                              <span className="text-xs text-[#A1A1AA] mt-1">{task.amount}/{task.amount} BBLP</span>
                             )}
                           </div>
-                          {/* Right: Status/Claim */}
+                          
+                          {/* Right: Status and claim button */}
                           <div className="flex flex-col items-end gap-1 min-w-[120px]">
-                            {milestoneClaimed ? (
-                              <span className="flex items-center gap-2 px-3 py-1  text-xs font-semibold ">
-                                <CheckCircle className="w-4 h-4 " /> 
+                            {isClaimed ? (
+                              <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold text-[#4ADE80]">
+                                <CheckCircle className="w-4 h-4 text-[#4ADE80]" />
+                                Claimed
                               </span>
-                            ) : milestoneCompleted ? (
+                            ) : isCompleted ? (
                               <Button
+                                onClick={() => handleClaimStakeTask(task.amount, task.points)}
                                 size="sm"
-                                className="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-yellow-400"
-                                disabled={claimingMilestone === milestone.count}
-                                onClick={() => handleClaimInviteMilestone(milestone.count, milestone.points)}
+                                className="bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
                               >
-                                {claimingMilestone === milestone.count ? 'Claiming...' : 'Claim'}
+                                <Gift className="w-3 h-3 mr-1 text-[#F3F3F3]" />
+                                Claim {task.points} Points
                               </Button>
                             ) : (
                               <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#23232A] text-[#A1A1AA]">
-                                In Progress
+                                {totalStaked >= task.amount * 0.5 ? 'In Progress' : 'Stake requirement not met'}
                               </span>
                             )}
                           </div>
@@ -1389,6 +1353,299 @@ export default function SocialConnectionsPage() {
                       );
                     });
                   })()}
+                </div>
+              </div>
+              
+              {/* Telegram Level Tasks */}
+              <div>
+                {/* Telegram Level Tasks başlığı */}
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1.5 h-6 rounded bg-[#60A5FA] mr-2" />
+                  <h3 className="text-2xl font-extrabold tracking-tight text-[#F3F3F3]">Telegram XP Journey</h3>
+                </div>
+                <div className="text-xs text-[#60A5FA] font-semibold mb-4 pl-6">Level up your chat game and unlock exclusive rewards!</div>
+                <div className="space-y-2">
+                  {(() => {
+                    const tasks = getLevelTasks('telegram');
+                    const claimed = tasks.filter(t => t.isClaimed);
+                    const unclaimed = tasks.filter(t => !t.isClaimed);
+                    const allTasks = [...unclaimed, ...claimed];
+                    return allTasks.map((task, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A]`}
+                      >
+                        {/* Sol: Seviye numarası ve adı */}
+                        <div className="flex items-center gap-3 min-w-[120px]">
+                          <div className="flex flex-col">
+                            {/* Sadece açıklama */}
+                            <span className="text-xs text-[#60A5FA] mb-1 font-semibold">{TELEGRAM_LEVEL_META[task.levelName]?.desc}</span>
+                            {/* XP kutusu */}
+                            <span className="text-xs mt-1">
+                              <span className="px-2 py-0.5 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent">
+                                {task.xpRequired} XP
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                        {/* Orta: Progress */}
+                        <div className="flex-1 flex flex-col items-center justify-center px-2">
+                          {task.inProgress && (
+                            <div className="w-full max-w-[160px] h-2 bg-[#23232A] rounded-full overflow-hidden">
+                              <div
+                                className="h-2 rounded-full bg-[#818CF8] transition-all duration-300"
+                                style={{ width: `${task.progress}%` }}
+                              ></div>
+                            </div>
+                          )}
+                          {task.inProgress && (
+                            <span className="text-xs text-[#A1A1AA] mt-1">{task.currentXP}/{task.xpRequired} XP</span>
+                          )}
+                        </div>
+                        {/* Sağ: Durum ve buton */}
+                        <div className="flex flex-col items-end gap-1 min-w-[120px]">
+                          {task.isClaimed ? (
+                            <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold  text-[#4ADE80] ">
+                              <CheckCircle className="w-4 h-4 text-[#4ADE80]" />
+                            </span>
+                          ) : task.completed ? (
+                            <>
+                              {task.canClaim && (
+                                <Button
+                                  onClick={() => claimExtraReward('telegram', task.levelName)}
+                                  size="sm"
+                                  className="bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
+                                >
+                                  <Gift className="w-3 h-3 mr-1 text-[#F3F3F3]" />
+                                  Claim {task.extraRewardXP} XP
+                                </Button>
+                              )}
+                              {!task.canClaim && !task.rewardExists && (
+                                <Button
+                                  disabled
+                                  size="sm"
+                                  className="bg-[#35353B] text-[#A1A1AA] px-3 py-1 rounded-full text-xs font-semibold shadow-none cursor-not-allowed border-none"
+                                >
+                                  <Gift className="w-3 h-3 mr-1 text-[#A1A1AA]" />
+                                  Claim Reward
+                                </Button>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                task.inProgress
+                                  ? 'bg-[#35353B] text-[#F3F3F3]'
+                                  : 'bg-[#23232A] text-[#A1A1AA]'
+                              }`}>
+                                {task.inProgress ? 'In Progress' : 'Not Started'}
+                              </span>
+                              {task.inProgress && task.canClaim && (
+                                <Button
+                                  onClick={() => claimExtraReward('telegram', task.levelName)}
+                                  size="sm"
+                                  className="mt-1 bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
+                                >
+                                  <Gift className="w-3 h-3 mr-1 text-[#F3F3F3]" />
+                                  Claim {task.extraRewardXP} XP
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </div>
+              {/* Discord Level Tasks */}
+              <div className="mt-8">
+                {/* Discord Level Tasks başlığı */}
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-1.5 h-6 rounded bg-[#818CF8] mr-2" />
+                  <h3 className="text-2xl font-extrabold tracking-tight text-[#F3F3F3]">Discord Power Levels</h3>
+                </div>
+                <div className="text-xs text-[#818CF8] font-semibold mb-4 pl-6">Boost your presence, climb the ranks, claim your perks!</div>
+                <div className="space-y-2">
+                  {(() => {
+                    const tasks = getLevelTasks('discord');
+                    const claimed = tasks.filter(t => t.isClaimed);
+                    const unclaimed = tasks.filter(t => !t.isClaimed);
+                    const allTasks = [...unclaimed, ...claimed];
+                    return allTasks.map((task, index) => (
+                      <div
+                        key={index}
+                        className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A]`}
+                      >
+                        {/* Sol: Seviye numarası ve adı */}
+                        <div className="flex items-center gap-3 min-w-[120px]">
+                          <div className="flex flex-col">
+                            {/* Sadece açıklama */}
+                            <span className="text-xs text-[#818CF8] mb-1 font-semibold">{DISCORD_LEVEL_META[task.levelName]?.desc}</span>
+                            {/* XP kutusu */}
+                            <span className="text-xs mt-1">
+                              <span className="px-2 py-0.5 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent">
+                                {task.xpRequired} XP
+                              </span>
+                            </span>
+                          </div>
+                        </div>
+                        {/* Orta: Progress */}
+                        <div className="flex-1 flex flex-col items-center justify-center px-2">
+                          {task.inProgress && (
+                            <div className="w-full max-w-[160px] h-2 bg-[#23232A] rounded-full overflow-hidden">
+                              <div
+                                className="h-2 rounded-full bg-[#818CF8] transition-all duration-300"
+                                style={{ width: `${task.progress}%` }}
+                              ></div>
+                            </div>
+                          )}
+                          {task.inProgress && (
+                            <span className="text-xs text-[#A1A1AA] mt-1">{task.currentXP}/{task.xpRequired} XP</span>
+                          )}
+                        </div>
+                        {/* Sağ: Durum ve buton */}
+                        <div className="flex flex-col items-end gap-1 min-w-[120px]">
+                          {task.isClaimed ? (
+                            <span className="flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold  text-[#4ADE80] ">
+                              <CheckCircle className="w-4 h-4 text-[#4ADE80]" />
+                            </span>
+                          ) : task.completed ? (
+                            <>
+                              {task.canClaim && (
+                                <Button
+                                  onClick={() => claimExtraReward('discord', task.levelName)}
+                                  size="sm"
+                                  className="bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
+                                >
+                                  <Gift className="w-3 h-3 mr-1 text-[#F3F3F3]" />
+                                  Claim {task.extraRewardXP} XP
+                                </Button>
+                              )}
+                              {!task.canClaim && !task.rewardExists && (
+                                <Button
+                                  disabled
+                                  size="sm"
+                                  className="bg-[#35353B] text-[#A1A1AA] px-3 py-1 rounded-full text-xs font-semibold shadow-none cursor-not-allowed border-none"
+                                >
+                                  <Gift className="w-3 h-3 mr-1 text-[#A1A1AA]" />
+                                  Claim Reward
+                                </Button>
+                              )}
+                            </>
+                          ) : (
+                            <>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                task.inProgress
+                                  ? 'bg-[#35353B] text-[#F3F3F3]'
+                                  : 'bg-[#23232A] text-[#A1A1AA]'
+                              }`}>
+                                {task.inProgress ? 'In Progress' : 'Not Started'}
+                              </span>
+                              {task.inProgress && task.canClaim && (
+                                <Button
+                                  onClick={() => claimExtraReward('discord', task.levelName)}
+                                  size="sm"
+                                  className="mt-1 bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
+                                >
+                                  <Gift className="w-3 h-3 mr-1 text-[#F3F3F3]" />
+                                  Claim {task.extraRewardXP} XP
+                                </Button>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+                {/* Invite Friends Milestones */}
+                <div className="mt-8">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-1.5 h-6 rounded bg-yellow-400 mr-2" />
+                    <h3 className="text-2xl font-extrabold tracking-tight text-white">Invite Friends Milestones</h3>
+                  </div>
+                  <div className="text-xs text-yellow-400 font-semibold mb-4 pl-6">Invite friends and earn points for each milestone!</div>
+                  <div className="space-y-2">
+                    {(() => {
+                      const milestones = [
+                        { count: 1, points: 50, label: 'Invite your first friend' },
+                        { count: 3, points: 75, label: 'Invite 3 friends' },
+                        { count: 5, points: 150, label: 'Invite 5 friends' },
+                        { count: 10, points: 350, label: 'Invite 10 friends' },
+                        { count: 50, points: 600, label: 'Invite 50 friends' },
+                        { count: 100, points: 1200, label: 'Invite 100 friends' },
+                        { count: 1000, points: 1500, label: 'Invite 1000 friends' },
+                      ];
+                      const current = referralStats.totalReferrals || 0;
+                      const claimed = (milestone: any) => claimedMilestones.includes(milestone.count);
+                      // Split milestones into completed and not completed
+                      const completedMilestones = milestones.filter(claimed);
+                      const inProgressMilestones = milestones.filter(m => !claimed(m));
+                      // Find the first in-progress or claimable milestone
+                      let currentIndex = inProgressMilestones.findIndex(m => current < m.count || current === m.count);
+                      if (currentIndex === -1 && inProgressMilestones.length > 0) currentIndex = 0;
+                      // Show in-progress/claimable first, then completed
+                      const ordered = [...inProgressMilestones, ...completedMilestones];
+                      return ordered.map((milestone, idx) => {
+                        const milestoneCompleted = current >= milestone.count;
+                        const milestoneClaimed = claimed(milestone);
+                        const isCurrent = idx === currentIndex && idx < inProgressMilestones.length;
+                        const progress = Math.min((current / milestone.count) * 100, 100);
+                        // Unified card style for all (no yellow bg/border)
+                        let cardClass = 'flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A]';
+                        return (
+                          <div
+                            key={milestone.count}
+                            className={cardClass}
+                          >
+                            {/* Left: Milestone label */}
+                            <div className="flex flex-col min-w-[120px]">
+                              <span className="text-xs text-yellow-400 mb-1 font-semibold">{milestone.label}</span>
+                              <span className="px-2 py-0.5 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent text-xs w-fit">
+                                {milestone.points} Points
+                              </span>
+                            </div>
+                            {/* Center: Progress bar only for current */}
+                            <div className="flex-1 flex flex-col items-center justify-center px-2">
+                              {isCurrent && !milestoneClaimed && (
+                                <>
+                                  <div className="w-full max-w-[160px] h-2 bg-[#23232A] rounded-full overflow-hidden">
+                                    <div
+                                      className="h-2 rounded-full bg-yellow-400 transition-all duration-300"
+                                      style={{ width: `${progress}%` }}
+                                    ></div>
+                                  </div>
+                                  <span className="text-xs text-[#A1A1AA] mt-1">{Math.min(current, milestone.count)}/{milestone.count}</span>
+                                </>
+                              )}
+                            </div>
+                            {/* Right: Status/Claim */}
+                            <div className="flex flex-col items-end gap-1 min-w-[120px]">
+                              {milestoneClaimed ? (
+                                <span className="flex items-center gap-2 px-3 py-1  text-xs font-semibold ">
+                                  <CheckCircle className="w-4 h-4 " /> 
+                                </span>
+                              ) : milestoneCompleted ? (
+                                <Button
+                                  size="sm"
+                                  className="bg-yellow-400 hover:bg-yellow-500 text-black px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-yellow-400"
+                                  disabled={claimingMilestone === milestone.count}
+                                  onClick={() => handleClaimInviteMilestone(milestone.count, milestone.points)}
+                                >
+                                  {claimingMilestone === milestone.count ? 'Claiming...' : 'Claim'}
+                                </Button>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-[#23232A] text-[#A1A1AA]">
+                                  In Progress
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
                 </div>
               </div>
             </div>
@@ -1416,6 +1673,6 @@ export default function SocialConnectionsPage() {
           </Button>
         </div>
       </div>
-    </div>
+    </>
   );
 } 
