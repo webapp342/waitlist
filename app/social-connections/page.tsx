@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { useMemo } from 'react';
-import { referralService, userService } from '@/lib/supabase';
+import { referralService, userService, cardService, Card } from '@/lib/supabase';
 import { useWallet } from '@/hooks/useWallet';
 import Header from '@/components/header';
 import WalletModal from '@/components/WalletModal';
@@ -114,6 +114,10 @@ export default function SocialConnectionsPage() {
   // Sonsuz loading önleyici: kısa süre loading, sonra fallback
   const [showLoading, setShowLoading] = useState(true);
   const [showWalletModal, setShowWalletModal] = useState(false);
+  const [userRegistering, setUserRegistering] = useState(false);
+  const [userRegistered, setUserRegistered] = useState(false);
+  const [userCards, setUserCards] = useState<Card[]>([]);
+
   useEffect(() => {
     if (isConnected === false || !address) {
       setShowLoading(false);
@@ -911,6 +915,42 @@ export default function SocialConnectionsPage() {
   // Yeni: Sosyal bağlantıların yüklenip yüklenmediğini kontrol et
   const isConnectionsLoading = isLoading; // isLoading zaten bağlantı fetch edilirken true
 
+  // Connect Wallet butonu ana sayfadaki gibi modal açacak
+  const handleConnectWallet = () => {
+    setShowWalletModal(true);
+  };
+
+  // Cüzdan bağlandığında kullanıcı ekle ve kartları oluştur
+  useEffect(() => {
+    const registerUserAndLoadCards = async () => {
+      if (!isConnected || !address || userRegistering || userRegistered) return;
+      setUserRegistering(true);
+      try {
+        // Kullanıcıyı ekle
+        const user = await userService.addUser(address);
+        if (user) {
+          setUserRegistered(true);
+          toast.success('Kullanıcı kaydı başarılı!');
+          // Kartları yükle
+          const cards = await cardService.getUserCards(address);
+          setUserCards(cards);
+          if (cards && cards.length > 0) {
+            toast.success('Kartlarınız oluşturuldu!');
+          }
+        } else {
+          toast.error('Kullanıcı kaydı başarısız.');
+        }
+      } catch (error) {
+        toast.error('Kullanıcı kaydı sırasında hata oluştu.');
+        console.error(error);
+      } finally {
+        setUserRegistering(false);
+      }
+    };
+    registerUserAndLoadCards();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected, address]);
+
   if (showLoading && (isConnected === undefined || isConnected === null || address === undefined)) {
     return (
       <>
@@ -951,7 +991,7 @@ export default function SocialConnectionsPage() {
               <Button
                 size="lg"
                 variant="default"
-                onClick={() => setShowWalletModal(true)}
+                onClick={handleConnectWallet}
                 className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-xl px-6 font-medium shadow-md w-full max-w-[180px] mt-2"
               >
                 Connect Wallet

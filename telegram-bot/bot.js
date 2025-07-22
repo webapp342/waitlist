@@ -258,42 +258,15 @@ async function awardReferralXP(telegramId, xpAmount) {
     // Send congratulation message to referrer
     try {
       // Get or create referral link for this user
-      const referralLink = await generateReferralLink(telegramId);
-      
-      const congratulationMessage = `🎉 *Congratulations\\!* 🎉
-
-👥 *You successfully referred a new user\\!*
-
-🎁 *Rewards Earned:*
-• XP: \\+${xpAmount}
-• BBLP: \\+${REFERRAL_BBLP_REWARD}
-
-📊 *Your New Stats:*
-• Total XP: ${newTotalXP.toLocaleString()}
-• Level: ${calculateLevel(newTotalXP)} \\(${getLevelName(calculateLevel(newTotalXP))}\\)
-
-💎 *Keep sharing your referral link to earn more rewards\\!*
-
-🚀 *Next Goal:*
-Share your link with more friends and earn even more XP\\!`;
-
-      const keyboard = {
-        inline_keyboard: [[
-          {
-            text: '🔗 Share My Referral Link',
-            url: referralLink
-          }
-        ]]
-      };
-
-      await bot.sendMessage(telegramId, congratulationMessage, { 
-        parse_mode: 'Markdown',
-        reply_markup: keyboard
-      });
-      console.log(`✅ Congratulation message sent to referrer ${telegramId}`);
-    } catch (error) {
-      console.error(`❌ Error sending congratulation message:`, error);
-    }
+      // const referralLink = await generateReferralLink(telegramId); // no longer needed for button
+      const congratulationMessage = `🎉 *Congratulations\!* 🎉\n\n👥 *You successfully referred a new user\!*\n\n🎁 *Rewards Earned:*\n• XP: \\+${xpAmount}\n• BBLP: \\+${REFERRAL_BBLP_REWARD}\n\n📊 *Your New Stats:*\n• Total XP: ${newTotalXP.toLocaleString()}\n• Level: ${calculateLevel(newTotalXP)} \\(${getLevelName(calculateLevel(newTotalXP))}\\)\n\n💎 *Keep sharing your referral link to earn more rewards\!*\n\n🚀 *Next Goal:*\nShare your link with more friends and earn even more XP\!`;
+        await bot.sendMessage(telegramId, congratulationMessage, { 
+          parse_mode: 'Markdown'
+        });
+        console.log(`✅ Congratulation message sent to referrer ${telegramId}`);
+      } catch (error) {
+        console.error(`❌ Error sending congratulation message:`, error);
+      }
     
   } catch (error) {
     console.error(`❌ Error awarding referral XP:`, error);
@@ -388,9 +361,9 @@ async function sendAccountConnectedMessage(telegramId, username) {
     // Get or create referral link for newly connected user
     const referralLink = await generateReferralLink(telegramId);
     
-    const message = `🎉 *Account Successfully Connected\\!* 🎉
+    const message = `🎉 *Account Successfully Connected\!* 🎉
 
-👋 *Hello @${username}\\!* Welcome to BBLIP Community\\!
+👋 *Hello @${username}\!* Welcome to BBLIP Community\!
 
 ✅ *Status: Connected*
 🔗 *Wallet: Connected*
@@ -404,14 +377,14 @@ async function sendAccountConnectedMessage(telegramId, username) {
 • Climb the leaderboard
 
 ⚡ *Quick Commands:*
-/my\\_xp - Check your progress
+/my\_xp - Check your progress
 /leaderboard - See top players
 /help - Show all commands
 
-🚀 *Start earning XP by chatting\\!*
-Your messages will earn you XP automatically\\!
+🚀 *Start earning XP by chatting\!*
+Your messages will earn you XP automatically\!
 
-🔗 *Connect wallet to get your referral link and earn BBLP rewards\\!*`;
+🔗 *Connect wallet to get your referral link and earn BBLP rewards\!*`;
 
     const keyboard = {
       inline_keyboard: [
@@ -754,9 +727,9 @@ bot.onText(/\/start/, async (msg) => {
                 console.log(`✅ Referral processed successfully for unconnected user ${userId}`);
                 
                 // Only show success message for new users
-                const successMessage = `🎉 *Referral Success\\!* 🎉
+                const successMessage = `🎉 *Referral Success\!* 🎉
 
-👋 *Hello @${username}\\!* Welcome to BBLIP Community\\!
+👋 *Hello @${username}\\!* Welcome to BBLIP Community\!
 
 ✅ *Referral Processed:*
 • You joined using a referral link
@@ -769,7 +742,7 @@ bot.onText(/\/start/, async (msg) => {
 3️⃣ Start chatting to earn rewards
 
 💎 *What You'll Get:*
-• Real\\-time XP from messages
+• Real\-time XP from messages
 • Daily BBLP token rewards
 • Level up notifications
 • Community leaderboards
@@ -984,9 +957,9 @@ Click the button below to connect your account!`;
               console.log(`✅ Referral processed successfully for user ${userId}`);
               
               // Only show success message for new users
-              const successMessage = `🎉 *Referral Success\\!* 🎉
+              const successMessage = `🎉 *Referral Success\!* 🎉
 
-👋 *Hello @${username}\\!* Welcome to BBLIP Community\\!
+👋 *Hello @${username}\\!* Welcome to BBLIP Community\!
 
 ✅ *Referral Processed:*
 • You joined using a referral link
@@ -999,7 +972,7 @@ Click the button below to connect your account!`;
 3️⃣ Connect your wallet for BBLP rewards
 
 💎 *What You'll Get:*
-• Real\\-time XP from messages
+• Real\-time XP from messages
 • Daily BBLP token rewards
 • Level up notifications
 • Community leaderboards
