@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'sonner';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { 
   Twitter, 
   CheckCircle, 
@@ -23,14 +24,19 @@ import { XUser, redirectToXApp } from '@/lib/xOAuth';
 
 export default function XPage() {
   const { address, isConnected } = useAccount();
+  const router = useRouter();
   const [xUser, setXUser] = useState<XUser | null>(null);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'connecting' | 'disconnected'>('disconnected');
   const [isConnecting, setIsConnecting] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Check X connection status
   const checkXStatus = useCallback(async () => {
-    if (!isConnected || !address) return;
-
+    if (!isConnected || !address) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     try {
       const response = await fetch('/api/x/status', {
         method: 'POST',
@@ -39,9 +45,7 @@ export default function XPage() {
         },
         body: JSON.stringify({ walletAddress: address }),
       });
-
       const data = await response.json();
-
       if (response.ok) {
         setConnectionStatus(data.connected ? 'connected' : 'disconnected');
         setXUser(data.xUser);
@@ -50,9 +54,10 @@ export default function XPage() {
         setXUser(null);
       }
     } catch (error) {
-      console.error('Error checking X status:', error);
       setConnectionStatus('disconnected');
       setXUser(null);
+    } finally {
+      setLoading(false);
     }
   }, [isConnected, address]);
 
@@ -60,6 +65,13 @@ export default function XPage() {
   useEffect(() => {
     checkXStatus();
   }, [checkXStatus]);
+
+  // Otomatik yönlendirme: X bağlıysa
+  useEffect(() => {
+    if (isConnected && connectionStatus === 'connected') {
+      router.replace('/social-connections');
+    }
+  }, [isConnected, connectionStatus, router]);
 
   // Disconnect X account
   const disconnectX = async () => {
@@ -169,6 +181,61 @@ export default function XPage() {
       default: return <XCircle className="w-5 h-5" />;
     }
   };
+
+  // Gateway ve loading mantığı
+  if (loading || isConnecting || isConnected === undefined || isConnected === null || address === undefined) {
+    return (
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2 bg-black">
+        <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
+          <div className="flex items-center justify-center py-20 mt-20">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
+              <Image 
+                src="/logo.svg" 
+                alt="BBLP" 
+                width={32} 
+                height={32} 
+                className="absolute inset-0 m-auto animate-pulse" 
+              />
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (isConnected === false || !address) {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+        <Twitter className="w-20 h-20 text-blue-400 mb-6" />
+        <h1 className="text-3xl font-bold text-white mb-4">Connect X</h1>
+        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your X (Twitter) account to start earning XP and BBLP rewards for your social activity.</p>
+        <Button 
+          onClick={() => window.location.href = '/'}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg rounded-lg"
+        >
+          Connect Wallet
+        </Button>
+      </div>
+    );
+  }
+
+  if (connectionStatus !== 'connected') {
+    return (
+      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
+        <Twitter className="w-20 h-20 text-blue-400 mb-6" />
+        <h1 className="text-3xl font-bold text-white mb-4">Connect X</h1>
+        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your X (Twitter) account to start earning XP and BBLP rewards for your social activity.</p>
+        <Button
+          onClick={initiateXAuth}
+          disabled={isConnecting}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg rounded-lg"
+        >
+          {isConnecting ? 'Connecting...' : 'Connect X'}
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-black text-white">
