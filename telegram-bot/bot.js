@@ -122,7 +122,6 @@ const referralLinkUsage = new Map(); // referralCode -> usageCount
 async function generateReferralLink(userId) {
   try {
     console.log(`🔗 Getting referral link for user ${userId}`);
-    
     // First check if user already has an active referral link
     const { data: existingLink, error: checkError } = await supabase
       .from('telegram_referral_links')
@@ -132,22 +131,18 @@ async function generateReferralLink(userId) {
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
-    
     if (existingLink && !checkError) {
+      // Legacy referral code düzeltme bloğu kaldırıldı, doğrudan invite_link döndürülüyor
       console.log(`✅ Found existing referral link for user ${userId}: ${existingLink.invite_link}`);
       return existingLink.invite_link;
     }
-    
     // Create new referral link if none exists
     console.log(`🔗 Creating new referral link for user ${userId}`);
-    
-    // Create unique referral code
+    // Create unique referral code (always with underscore)
     const referralCode = `REF${userId}_${Date.now()}`;
-    
     // Create bot referral link (kullanıcıyı önce bota yönlendir)
     const botUsername = 'denemebot45bot'; // Bot'un username'i
     const botReferralLink = `https://t.me/${botUsername}?start=${referralCode}`;
-    
     // Store the referral link in database for tracking
     const { data: referralLink, error } = await supabase
       .from('telegram_referral_links')
@@ -162,12 +157,10 @@ async function generateReferralLink(userId) {
       }])
       .select()
       .single();
-    
     if (error) {
       console.error(`❌ Error storing referral link:`, error);
       return null;
     }
-    
     console.log(`✅ New bot referral link generated for user ${userId}: ${botReferralLink}`);
     return botReferralLink;
   } catch (error) {
@@ -179,62 +172,56 @@ async function generateReferralLink(userId) {
 async function processReferral(referrerId, referredId, referralCode = null) {
   try {
     console.log(`🎯 Processing referral: ${referrerId} -> ${referredId} with code: ${referralCode}`);
-    
+    // Fallback: If referralCode is missing underscore, try to fix it
+    let codeToUse = referralCode;
+    if (referralCode && !referralCode.includes('_')) {
+      codeToUse = referralCode.replace(/^REF(\d+)/, (m, p1) => `REF${p1}_${Date.now()}`);
+      console.warn(`⚠️ Legacy referral code without underscore detected in processReferral. Fixed: ${codeToUse}`);
+    }
     // Check if user already joined via referral
     const { data: existingTracking, error: checkError } = await supabase
       .from('telegram_referral_tracking')
       .select('*')
       .eq('telegram_id', referredId)
       .single();
-    
     if (existingTracking) {
       console.log(`⚠️ User ${referredId} already joined via referral: ${existingTracking.referrer_id}`);
       return false;
     }
-    
     // Check if referred user is already registered in telegram_users
     const { data: existingUser, error: userCheckError } = await supabase
       .from('telegram_users')
       .select('*')
       .eq('telegram_id', referredId)
       .single();
-    
     if (existingUser) {
       console.log(`⚠️ User ${referredId} is already registered, ignoring referral`);
       return false; // Don't process referral for existing users
     }
-    
     // User is new (not registered), give XP reward
     console.log(`🎉 User ${referredId} is new, giving XP reward to referrer ${referrerId}`);
-    
     // Create referral tracking record
     const { data: tracking, error: insertError } = await supabase
       .from('telegram_referral_tracking')
       .insert([{
         telegram_id: referredId,
         referrer_id: referrerId,
-        referral_code: referralCode || `REF${referrerId}_${Date.now()}`,
+        referral_code: codeToUse || `REF${referrerId}_${Date.now()}`,
         xp_rewarded: REFERRAL_XP_REWARD
       }])
       .select()
       .single();
-    
     if (insertError) {
       console.error(`❌ Error creating referral tracking record:`, insertError);
       return false;
     }
-    
     console.log(`✅ Referral tracking record created: ${tracking.id}`);
-    
     // Award XP to referrer (only for new users)
     await awardReferralXP(referrerId, REFERRAL_XP_REWARD);
-    
     // Award BBLP to referrer (if connected to wallet)
     await awardReferralBBLP(referrerId, REFERRAL_BBLP_REWARD);
-    
     // Update referrer's referral count
     await updateReferralCount(referrerId);
-    
     return true;
   } catch (error) {
     console.error(`❌ Error processing referral:`, error);
@@ -526,44 +513,35 @@ async function handleNewMember(chatId, newMember) {
     
     if (error || !telegramUser) {
       // New user - send welcome message
-      const message = `🎉 **Welcome to BBLIP Community!** 🎉
+      const message = `🎉 Welcome to BBLIP!
 
-👋 **Hello @${username}!** We're excited to have you join our amazing crypto community!
+Hi @${username}, glad to have you in our global crypto community!
 
-🌟 **What's BBLIP?**
-BBLIP transforms your crypto into spendable currency with virtual and physical cards accepted at 40M+ merchants worldwide!
+What's next?
+- 🚀 Start earning rewards by chatting and engaging.
+- 💳 Connect your wallet to unlock daily BBLP token rewards.
+- 🏆 Climb the leaderboard and win exclusive prizes.
 
-🎯 **Quick Start Guide:**
-1️⃣ Visit: ${WEB_APP_URL}/telegram
-2️⃣ Connect your wallet
-3️⃣ Click "Connect Telegram" button
-4️⃣ Start earning XP instantly!
+Quick Start:
+1. Connect your wallet below
+2. Start chatting to earn XP & BBLP
+3. Use /help for all commands
 
-💎 **Reward System:**
-🥉 Bronze (0-100 XP): 1 BBLP/day
-🥈 Silver (101-250 XP): 3 BBLP/day
-🥇 Gold (251-500 XP): 5 BBLP/day
-💎 Platinum (501-1000 XP): 10 BBLP/day
-👑 Diamond (1001+ XP): 20 BBLP/day
-
-⚡ **Features:**
-• Real-time XP tracking
-• Instant level up notifications
-• Daily BBLP rewards
-• Community leaderboards
-• Anti-bot protection
-
-🎮 **Commands:**
-/start - Begin your journey
-/my_xp - Check your stats
-/leaderboard - See top players
-/help - Show all commands
-
-🚀 **Ready to earn while you chat?**
-Your messages will earn you XP automatically!${referralProcessed ? '\n\n🎉 **Referral Bonus Applied!** 🎉\nYou joined using a referral link and the referrer has been rewarded!' : ''}`;
+Your journey to smarter crypto rewards starts now!`;
+      
+      const keyboard = {
+        inline_keyboard: [[
+          {
+            text: '🔗 Connect Wallet',
+            url: `${WEB_APP_URL}/social-connections`
+          }
+        ]]
+      };
       
       console.log(`📤 Sending welcome message to new member...`);
-      const sentMessage = await sendMessageWithRateLimit(chatId, message);
+      const sentMessage = await sendMessageWithRateLimit(chatId, message, {
+        reply_markup: keyboard
+      });
       console.log(`✅ Welcome message sent to new member`);
       
       // Auto-delete welcome message after delay
@@ -665,7 +643,7 @@ Click the button below to connect your account!`;
 • Climb the leaderboard
 
 ⚡ **Quick Commands:**
-/my_xp - Check your progress
+/my\\_xp - Check your progress
 /leaderboard - See top players
 /help - Show all commands
 
@@ -701,6 +679,10 @@ Your messages will earn you XP automatically!`;
 // Bot commands
 bot.onText(/\/start/, async (msg) => {
   const chatId = msg.chat.id;
+  // Prevent /start in group chats
+  if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
+    return;
+  }
   const userId = msg.from.id;
   const username = msg.from.username || msg.from.first_name;
   const args = msg.text.split(' ');
@@ -896,7 +878,7 @@ BBLIP transforms your crypto into spendable currency with virtual and physical c
 /help - Show all commands
 
 🚀 **Ready to earn while you chat?**
-Your messages will earn you XP automatically!`;
+Your messages will earn you XP automatically!${referralProcessed ? '\n\n🎉 **Referral Bonus Applied!** 🎉\nYou joined using a referral link and the referrer has been rewarded!' : ''}`;
         
         console.log(`📤 Sending welcome message...`);
         const sentMessage = await sendMessageWithRateLimit(chatId, message);
@@ -1062,63 +1044,88 @@ Click the button below to connect your account!`;
     // Get or create referral link for connected user
     const referralLink = await generateReferralLink(userId);
     
-    const message = `🎉 *Welcome Back to BBLIP\\!* 🎉
+    // Güçlü MarkdownV2 kaçış fonksiyonu
+    function escapeMarkdownV2(text) {
+      return String(text)
+        .replace(/([_\*\[\]\(\)~`>#+\-=|{}.!\\])/g, '\\$1');
+    }
 
-👋 *Hello @${username}\\!* Great to see you again\\!
+    const safeUserDisplayName = escapeMarkdownV2(userDisplayName);
+    const safeReferralLink = escapeMarkdownV2(referralLink);
+    const safeXP = escapeMarkdownV2(REFERRAL_XP_REWARD);
+    const safeBBLP = escapeMarkdownV2(REFERRAL_BBLP_REWARD);
 
-✅ *Status: Connected*
-💼 Wallet: ${String(telegramUser.user_id).slice(0, 6)}...${String(telegramUser.user_id).slice(-4)}
+    // Escape all message lines for MarkdownV2
+    const messageLines = [
+      '🚀 *Invite & Earn Rewards!*',
+      '',
+      `Hi ${safeUserDisplayName}! Here\'s your unique invite link:`,
+      '',
+      '➡️',
+      `${safeReferralLink}`,
+      '',
+      '🎁 *What You Get:*',
+      `• +${safeXP} XP for every friend who joins`,
+      `• +${safeBBLP} BBLP tokens per referral`,
+      '• Track your progress and climb the leaderboard!',
+      '',
+      '💡 *How it works:*',
+      '1️⃣ Share your link with friends (use the Share or Copy button below)',
+      '2️⃣ They click the link, start the bot, and join our group',
+      '3️⃣ You both get rewarded instantly!',
+      '',
+      '📈 *Tip:* The more you share, the more you earn!',
+      '',
+      '*Note: Your friend must start the bot and join the group for your reward to be counted.*'
+    ];
+    // Escape each line for MarkdownV2
+    const safeMessage = messageLines.map(escapeMarkdownV2).join('\n');
 
-🎯 *Your Journey Continues:*
-• Send messages to earn XP
-• Level up for better rewards
-• Claim daily BBLP tokens
-• Climb the leaderboard
+    const shareMessage = `🚀 Join me on BBLIP and unlock exclusive crypto rewards!\n\n💰 $100,000 Prize Pool! 💰\n\nBBLIP is the next-gen platform to earn, spend, and grow your crypto with real utility.\n\n👉 Tap the link to get started:\n${referralLink}\n\nWhy join?\n• Earn daily BBLP token rewards\n• Level up for bigger bonuses\n• Compete on the leaderboard\n• Invite friends and multiply your earnings!\n• Win a share of the $100,000 prize pool!\n\nLet's grow together in the BBLIP community!`;
 
-⚡ *Quick Commands:*
-/my\\_xp - Check your progress
-/leaderboard - See top players
-/help - Show all commands
-
-🚀 *Keep chatting and earning\\!*
-Your messages will earn you XP automatically\\!
-
-🔗 *Connect wallet to get your referral link and earn BBLP rewards\\!*`;
-    
     const keyboard = {
       inline_keyboard: [
-        [{
-          text: '🔗 Share My Referral Link',
-          url: referralLink
-        }],
-        [{
-          text: '💼 Connect Wallet',
-          url: `${WEB_APP_URL}/telegram`
-        }],
-        [{
-          text: '📊 My XP Stats',
-          callback_data: 'my_xp'
-        }]
+        [
+          {
+            text: '📤 Share Referral Link',
+            url: `https://t.me/share/url?url=&text=${encodeURIComponent(shareMessage)}`
+          }
+        ]
       ]
     };
-    
-    console.log(`📤 Sending welcome back message...`);
-    const sentMessage = await sendMessageWithRateLimit(chatId, message, {
-      parse_mode: 'Markdown',
+
+    // Callback handler'ı globalde bir kez tanımla
+    if (!global.__copyReferralHandlerSet) {
+      bot.on('callback_query', async (callbackQuery) => {
+        if (callbackQuery.data && callbackQuery.data === 'copy_referral_link') {
+          const chatId = callbackQuery.message.chat.id;
+          // Look up the referral link for this user
+          const userId = callbackQuery.from.id;
+          // Get or create referral link for this user
+          const referralLink = await generateReferralLink(userId);
+          await bot.answerCallbackQuery(callbackQuery.id, { text: 'Referans linkin aşağıda!', show_alert: false });
+          await bot.sendMessage(
+            chatId,
+            `📋 Referans linkin:\n${referralLink}\n\nKopyalamak için linke uzun bas ve 'Kopyala'ya tıkla.`,
+          );
+        }
+      });
+      global.__copyReferralHandlerSet = true;
+    }
+
+    const sentMessage = await sendMessageWithRateLimit(chatId, safeMessage, {
+      parse_mode: 'MarkdownV2',
       reply_markup: keyboard
     });
-    console.log(`✅ Welcome back message sent`);
-    
-    // Auto-delete welcome back message after delay
-    if (WELCOME_MESSAGE_DELETE_ENABLED && sentMessage && sentMessage.message_id) {
+    if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
       setTimeout(async () => {
         try {
           await bot.deleteMessage(chatId, sentMessage.message_id);
-          console.log(`🗑️ Welcome back message auto-deleted for @${username} (after ${WELCOME_MESSAGE_DELETE_DELAY/1000}s)`);
-        } catch (error) {
-          console.log(`⚠️ Could not auto-delete welcome back message: ${error.message}`);
+          console.log(`🗑️ Deleted message ${sentMessage.message_id} after 15s`);
+        } catch (e) {
+          console.error(`❌ Failed to auto-delete message ${sentMessage.message_id}:`, e);
         }
-      }, WELCOME_MESSAGE_DELETE_DELAY);
+      }, 15000);
     }
     
   } catch (error) {
@@ -1132,17 +1139,37 @@ bot.onText(/\/my_xp/, async (msg) => {
   const chatId = msg.chat.id;
   const userId = msg.from.id;
   const userDisplayName = getUserDisplayName(msg);
-  
+
   try {
-    console.log(`📊 Fetching XP stats for user ${userDisplayName} (${userId})`);
-    
+    // First, check if user is registered in telegram_users
+    const { data: telegramUser, error: userError } = await supabase
+      .from('telegram_users')
+      .select('*')
+      .eq('telegram_id', userId)
+      .single();
+
+    if (userError || !telegramUser) {
+      // User is not registered, prompt to connect wallet
+      const notRegisteredMsg = `🔗 <b>Connect Your Wallet to Start Earning XP</b>\n\n${userDisplayName}, to start earning XP, please connect your wallet first.\nOnce connected, your chat activity will be rewarded automatically.`;
+      const keyboard = {
+        inline_keyboard: [[
+          {
+            text: '🔗 Connect Wallet',
+            url: `${WEB_APP_URL}/social-connections`
+          }
+        ]]
+      };
+      await sendMessageWithRateLimit(chatId, notRegisteredMsg, { parse_mode: 'HTML', reply_markup: keyboard });
+      return;
+    }
+
     // Get user's activity data from telegram_activities table
     const { data: activity, error } = await supabase
       .from('telegram_activities')
       .select('*, referral_count')
       .eq('telegram_id', userId)
       .single();
-    
+
     if (error || !activity) {
       // Send private connection message
       try {
@@ -1186,19 +1213,13 @@ bot.onText(/\/my_xp/, async (msg) => {
           parse_mode: 'Markdown',
           reply_markup: keyboard
         });
-        
-        console.log(`📱 /my_xp connection message sent to user ${userId}`);
-        
-        // Send public reminder
         await sendMessageWithRateLimit(chatId, '👋 Please check your private messages from me to connect your account and start earning XP!');
-        
       } catch (error) {
-        console.error(`❌ Error sending /my_xp connection message:`, error);
-      await sendMessageWithRateLimit(chatId, 'You are not connected to our system. Please visit our web app first.');
+        await sendMessageWithRateLimit(chatId, 'You are not connected to our system. Please visit our web app first.');
       }
       return;
     }
-    
+
     // Add cached data to get real-time stats
     let totalXP = activity.total_xp;
     let messageCount = activity.message_count;
@@ -1250,7 +1271,19 @@ bot.onText(/\/my_xp/, async (msg) => {
       message += `\n\n⏰ Pending: +${cached.xpEarned} XP (${cached.messageCount} messages) - Will be saved in next batch`;
     }
     
-    await sendMessageWithRateLimit(chatId, message);
+    await sendMessageWithRateLimit(chatId, message).then(sentMessage => {
+      // Auto-delete after 15 seconds if in a group
+      if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
+        setTimeout(async () => {
+          try {
+            await bot.deleteMessage(chatId, sentMessage.message_id);
+            console.log(`🗑️ Deleted message ${sentMessage.message_id} after 15s`);
+          } catch (e) {
+            console.error(`❌ Failed to auto-delete message ${sentMessage.message_id}:`, e);
+          }
+        }, 15000);
+      }
+    });
     console.log(`✅ XP stats sent to ${userDisplayName}`);
     
   } catch (error) {
@@ -1327,7 +1360,7 @@ bot.onText(/\/leaderboard/, async (msg) => {
         console.log(`📱 /leaderboard connection message sent to user ${userId}`);
         
         // Send public reminder
-        await sendMessageWithRateLimit(chatId, '👋 Please check your private messages from me to connect your account and view the leaderboard!');
+        await sendMessageWithRateLimit(chatId, `👋 ${userDisplayName} Please check your private messages from me to connect your wallet and view the leaderboard!`);
         
       } catch (error) {
         console.error(`❌ Error sending /leaderboard connection message:`, error);
@@ -1336,36 +1369,41 @@ bot.onText(/\/leaderboard/, async (msg) => {
       return;
     }
     
-    // Get usernames for each user
+    // Get usernames for each user, but only include those registered in telegram_users
     const userPromises = topUsers.map(async (user) => {
       const { data: userInfo, error: userError } = await supabase
         .from('telegram_users')
         .select('username, first_name')
         .eq('telegram_id', user.telegram_id)
         .single();
-      
+      if (userError || !userInfo) return null; // Exclude if not registered
       return {
         ...user,
-        username: userError ? 'Unknown User' : (userInfo?.username || userInfo?.first_name || 'Unknown User')
+        username: userInfo.username || userInfo.first_name || 'Unknown User'
       };
     });
-    
-    const usersWithNames = await Promise.all(userPromises);
-    
+    const usersWithNames = (await Promise.all(userPromises)).filter(Boolean);
+
     let message = `🏆 Top 10 XP Leaderboard\n\n`;
-    
     usersWithNames.forEach((user, index) => {
       const xpFormatted = (user.total_xp || 0).toLocaleString();
       const level = calculateLevel(user.total_xp);
-      
       const emoji = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : '🏅';
       message += `${emoji} ${index + 1}. @${user.username} - ${xpFormatted} XP (Level ${level})\n`;
     });
-    
     message += '\n💡 Keep chatting to earn more XP and climb the leaderboard!';
-    
-    await sendMessageWithRateLimit(chatId, message);
-    console.log('✅ Leaderboard sent successfully');
+    await sendMessageWithRateLimit(chatId, message).then(sentMessage => {
+      if (msg.chat.type === 'group' || msg.chat.type === 'supergroup') {
+        setTimeout(async () => {
+          try {
+            await bot.deleteMessage(chatId, sentMessage.message_id);
+            console.log(`🗑️ Deleted message ${sentMessage.message_id} after 15s`);
+          } catch (e) {
+            console.error(`❌ Failed to auto-delete message ${sentMessage.message_id}:`, e);
+          }
+        }, 15000);
+      }
+    });
     
   } catch (error) {
     console.error('❌ Error in /leaderboard command:', error);
@@ -1375,119 +1413,24 @@ bot.onText(/\/leaderboard/, async (msg) => {
 
 bot.onText(/\/help/, async (msg) => {
   const chatId = msg.chat.id;
-  
-  const message = `🤖 **BBLIP Telegram Bot Commands** 🤖
-
-🎮 **User Commands:**
-/start - Connect your account
-/my_xp - View your XP and level
-/my_referral - Get your referral link
-/connect_wallet - Connect wallet to get referral link
-/leaderboard - View top users
-/help - Show this help message
-
-💡 **How to Earn XP:**
-• Send messages: +1 XP
-• Helpful messages: +5 XP
-• Daily activity: +5 XP
-• Weekly streak: +10 XP
-• Referrals: +${REFERRAL_XP_REWARD} XP each (bot first, then group)
-
-🎁 **Daily Rewards:**
-🥉 Bronze (0-100 XP): 1 BBLP/day
-🥈 Silver (101-250 XP): 3 BBLP/day
-🥇 Gold (251-500 XP): 5 BBLP/day
-💎 Platinum (501-1000 XP): 10 BBLP/day
-👑 Diamond (1001+ XP): 20 BBLP/day
-
-🎉 **Level Up System:**
-• Real-time level up notifications
-• Automatic milestone celebrations
-• Instant XP tracking with cache
-
-🛡️ **Anti-Bot Protection:**
-• Min interval: 1 second between messages
-• Max: 10 messages/minute, 100 messages/hour
-• 2 warnings = 5 minute restriction
-• Spam patterns are automatically detected
-
-👑 **Admin Commands:**
-/ban <user> <reason> - Ban user
-/unban <user> - Unban user
-/restrict <user> <duration> - Restrict user
-/warn <user> <reason> - Warn user
-
-🚀 **Ready to start earning?**
-Just start chatting in the group!`;
-  
-  await sendMessageWithRateLimit(chatId, message);
-});
-
-// Connect wallet command
-bot.onText(/\/connect_wallet/, async (msg) => {
-  const chatId = msg.chat.id;
   const userId = msg.from.id;
-  const userDisplayName = getUserDisplayName(msg);
-  
+
+  // Check if user is admin in this chat
+  let isAdmin = false;
   try {
-    console.log(`💼 /connect_wallet command from ${userDisplayName} (${userId})`);
-    
-    // Check if user is already connected
-    const { data: telegramUser, error } = await supabase
-      .from('telegram_users')
-      .select('*')
-      .eq('telegram_id', userId)
-      .single();
-    
-    if (error || !telegramUser) {
-      // User not connected - send connection message
-      const message = `🔗 *Connect Wallet to Get Referral Link* 🔗
-
-👋 *Hello @${userDisplayName}\\!* 
-
-📊 *Current Status:* ❌ Not Connected
-🔗 *Referral Link:* ❌ Not Available
-💼 *BBLP Rewards:* ❌ Not Available
-
-⚠️ *To get your referral link and earn BBLP rewards:*
-1️⃣ Visit: ${WEB_APP_URL}/telegram
-2️⃣ Connect your wallet \\(MetaMask, etc\\)
-3️⃣ Click "Connect Telegram" button
-4️⃣ Use Telegram Login Widget
-
-💎 *After connection you'll get:*
-• Your personal referral link
-• XP rewards for each referral
-• BBLP rewards for each referral
-• Referral tracking
-• Daily BBLP token rewards
-
-🚀 *Connect now to start earning\\!*`;
-
-      const keyboard = {
-        inline_keyboard: [[
-          {
-            text: '🔗 Connect My Wallet',
-            url: `${WEB_APP_URL}/telegram`
-          }
-        ]]
-      };
-
-      await bot.sendMessage(chatId, message, {
-        parse_mode: 'Markdown',
-        reply_markup: keyboard
-      });
-      
-      console.log(`✅ Connect wallet message sent to user ${userId}`);
-    } else {
-      // User already connected - send account connected message
-      await sendAccountConnectedMessage(userId, userDisplayName);
+    const chatMember = await bot.getChatMember(chatId, userId);
+    if (chatMember && (chatMember.status === 'creator' || chatMember.status === 'administrator')) {
+      isAdmin = true;
     }
-    
-  } catch (error) {
-    console.error('❌ Error in /connect_wallet command:', error);
-    await sendMessageWithRateLimit(chatId, '❌ Error processing command. Please try again later.');
+  } catch (e) { /* ignore errors, treat as not admin */ }
+
+  let message = `🤖 <b>BBLIP Telegram Bot Help</b> 🤖\n\n<b>User Commands</b>\n/start — Connect your account\n/my_xp — View your XP & level\n/my_referral — Get your referral link\n/leaderboard — View top users\n/help — Show this help\n\n<b>How to Earn</b>\n• Chat to earn XP automatically\n• Invite friends for bonus rewards\n• Level up for bigger daily BBLP\n\n<i>Tip: Connect your wallet to unlock all features and maximize your rewards!</i>\n\nFor more info, visit <a href='https://bblip.io/social-connections'>bblip.io/social-connections</a>`;
+
+  if (isAdmin) {
+    message += `\n\n<b>Admin Commands</b>\n/ban, /unban, /restrict, /warn`;
   }
+
+  await sendMessageWithRateLimit(chatId, message, { parse_mode: 'HTML' });
 });
 
 // Admin commands (Rose bot style)
@@ -1869,47 +1812,24 @@ bot.onText(/\/my_referral/, async (msg) => {
     if (error || !telegramUser) {
       // Send private connection message
       try {
-        const privateMessage = `🔗 *Connect Wallet to Get Referral Link* 🔗
-
-👋 *Hello\\!* You need to connect your wallet to get your referral link\\.
-
-📊 *Current Status:* ❌ Not Connected
-🔗 *Referral Link:* ❌ Not Available
-💼 *BBLP Rewards:* ❌ Not Available
-
-⚠️ *To get your referral link and earn BBLP rewards:*
-1️⃣ Visit: ${WEB_APP_URL}/telegram
-2️⃣ Connect your wallet \\(MetaMask, etc\\)
-3️⃣ Click "Connect Telegram" button
-4️⃣ Use Telegram Login Widget
-
-💎 *After connection you'll get:*
-• Your personal referral link
-• XP rewards for each referral
-• BBLP rewards for each referral
-• Referral tracking
-• Daily BBLP token rewards
-
-🚀 *Connect now to start earning\\!*`;
-
+        const privateMessage = `🔗 <b>Connect Wallet to Get Your Referral Link</b>\n\n👋 <b>Hello!</b> To get your referral link and start earning BBLP rewards, please connect your wallet.\n\n<b>Status:</b> ❌ Not Connected\n<b>Referral Link:</b> ❌ Not Available\n<b>BBLP Rewards:</b> ❌ Not Available\n\n<b>How to Connect:</b>\n1️⃣ Visit: <a href='https://bblip.io/social-connections'>bblip.io/social-connections</a>\n2️⃣ Connect your wallet (MetaMask, etc.)\n3️⃣ Click "Connect Telegram"\n\n<b>After connecting, you'll get:</b>\n• Your personal referral link\n• XP & BBLP rewards for each referral\n• Daily BBLP token rewards\n\n🚀 <b>Connect now to unlock your rewards!</b>`;
         const keyboard = {
           inline_keyboard: [[
             {
-              text: '🔗 Connect My Wallet',
-              url: `${WEB_APP_URL}/telegram`
+              text: '🔗 Connect Wallet',
+              url: 'https://bblip.io/social-connections'
             }
           ]]
         };
-
         await bot.sendMessage(userId, privateMessage, {
-          parse_mode: 'Markdown',
+          parse_mode: 'HTML',
           reply_markup: keyboard
         });
         
         console.log(`📱 /my_referral connection message sent to user ${userId}`);
         
         // Send public reminder
-        await sendMessageWithRateLimit(chatId, '👋 Please check your private messages from me to connect your wallet and get your referral link!');
+        await sendMessageWithRateLimit(chatId, `👋 ${userDisplayName} Please check your private messages from me to connect your wallet and get your referral link!`);
         
       } catch (error) {
         console.error(`❌ Error sending /my_referral connection message:`, error);
@@ -1936,50 +1856,82 @@ bot.onText(/\/my_referral/, async (msg) => {
       return;
     }
     
-    const message = `🔗 *Your Referral Link* 🔗
+    // Güçlü MarkdownV2 kaçış fonksiyonu
+    function escapeMarkdownV2(text) {
+      return String(text)
+        .replace(/([_\*\[\]\(\)~`>#+\-=|{}.!\\])/g, '\\$1');
+    }
 
-👋 *Hello @${userDisplayName}\\!* Here's your personal referral link:
+    const safeUserDisplayName = escapeMarkdownV2(userDisplayName);
+    const safeReferralLink = escapeMarkdownV2(referralLink);
+    const safeXP = escapeMarkdownV2(REFERRAL_XP_REWARD);
+    const safeBBLP = escapeMarkdownV2(REFERRAL_BBLP_REWARD);
 
-📊 *Your Stats:*
-• Total XP: ${totalXP.toLocaleString()}
-• Referrals: ${referralCount}
-• Referral XP Earned: ${referralCount * REFERRAL_XP_REWARD}
+    // Escape all message lines for MarkdownV2
+    const messageLines = [
+      '🚀 *Invite & Earn Rewards!*',
+      '',
+      `Hi ${safeUserDisplayName}! Here\'s your unique invite link:`,
+      '',
+      '➡️',
+      `${safeReferralLink}`,
+      '',
+      '🎁 *What You Get:*',
+      `• +${safeXP} XP for every friend who joins`,
+      `• +${safeBBLP} BBLP tokens per referral`,
+      '• Track your progress and climb the leaderboard!',
+      '',
+      '💡 *How it works:*',
+      '1️⃣ Share your link with friends (use the Share or Copy button below)',
+      '2️⃣ They click the link, start the bot, and join our group',
+      '3️⃣ You both get rewarded instantly!',
+      '',
+      '📈 *Tip:* The more you share, the more you earn!',
+      '',
+      '*Note: Your friend must start the bot and join the group for your reward to be counted.*'
+    ];
+    // Escape each line for MarkdownV2
+    const safeMessage = messageLines.map(escapeMarkdownV2).join('\n');
 
-🎁 *Rewards Per Referral:*
-• XP: \\+${REFERRAL_XP_REWARD}
-• BBLP: \\+${REFERRAL_BBLP_REWARD}
-
-💎 *How it works:*
-1️⃣ Share your link with friends
-2️⃣ They click the link and go to our bot first
-3️⃣ Bot processes the referral automatically
-4️⃣ They get redirected to join the group
-5️⃣ You get rewards and notification instantly
-6️⃣ Track your referrals in /my\\_xp
-
-🚀 *Share your link and start earning\\!*
-
-💡 *Note:* This link takes users to our bot first, then to the group\\. 100% tracking guaranteed\\!`;
+    const shareMessage = `🚀 Join me on BBLIP and unlock exclusive crypto rewards!\n\n💰 $100,000 Prize Pool! 💰\n\nBBLIP is the next-gen platform to earn, spend, and grow your crypto with real utility.\n\n👉 Tap the link to get started:\n${referralLink}\n\nWhy join?\n• Earn daily BBLP token rewards\n• Level up for bigger bonuses\n• Compete on the leaderboard\n• Invite friends and multiply your earnings!\n• Win a share of the $100,000 prize pool!\n\nLet's grow together in the BBLIP community!`;
 
     const keyboard = {
       inline_keyboard: [
-        [{
-          text: '🔗 Share Referral Link',
-          url: referralLink
-        }],
-        [{
-          text: '📊 My Stats',
-          callback_data: 'my_stats'
-        }]
+        [
+          {
+            text: '📤 Share Referral Link',
+            url: `https://t.me/share/url?url=&text=${encodeURIComponent(shareMessage)}`
+          }
+        ]
       ]
     };
 
-    await bot.sendMessage(chatId, message, {
-      parse_mode: 'Markdown',
-      reply_markup: keyboard
-    });
-    
-    console.log(`✅ Referral link sent to ${userDisplayName} (${userId})`);
+    // Callback handler'ı globalde bir kez tanımla
+    if (!global.__copyReferralHandlerSet) {
+      bot.on('callback_query', async (callbackQuery) => {
+        if (callbackQuery.data && callbackQuery.data === 'copy_referral_link') {
+          const chatId = callbackQuery.message.chat.id;
+          // Look up the referral link for this user
+          const userId = callbackQuery.from.id;
+          // Get or create referral link for this user
+          const referralLink = await generateReferralLink(userId);
+          await bot.answerCallbackQuery(callbackQuery.id, { text: 'Referans linkin aşağıda!', show_alert: false });
+          await bot.sendMessage(
+            chatId,
+            `📋 Referans linkin:\n${referralLink}\n\nKopyalamak için linke uzun bas ve 'Kopyala'ya tıkla.`,
+          );
+        }
+      });
+      global.__copyReferralHandlerSet = true;
+    }
+
+    // Only send the referral message as a private message to the user
+    if (msg.chat.type === 'private') {
+      await sendMessageWithRateLimit(chatId, safeMessage, {
+        parse_mode: 'MarkdownV2',
+        reply_markup: keyboard
+      });
+    }
     
   } catch (error) {
     console.error('❌ Error in /my_referral command:', error);
@@ -2188,6 +2140,16 @@ ${topReferrers.map(([id, count], index) => `${index + 1}. User ${id}: ${count} r
 
 // Handle all messages (ULTRA-OPTIMIZED - Fast processing with Anti-Bot protection)
 bot.on('message', async (msg) => {
+  // Hide left_chat_member (user left) messages in the main group
+  if (msg.left_chat_member && msg.chat && msg.chat.id && msg.chat.id.toString() === GROUP_ID) {
+    try {
+      await bot.deleteMessage(msg.chat.id, msg.message_id);
+      console.log(`🗑️ Deleted left_chat_member message for user ${msg.left_chat_member.id}`);
+    } catch (error) {
+      console.error('❌ Error deleting left_chat_member message:', error);
+    }
+    return; // Do not process further
+  }
   // Check if this is a new chat members message (Rose bot style)
   if (msg.new_chat_members && msg.new_chat_members.length > 0) {
     const chatId = msg.chat.id;
@@ -2397,39 +2359,17 @@ async function processMessageAsync(msg, messageKey, userId, messageText, userDis
       const connectionReminderKey = `connection_reminder_${userId}`;
       if (!processedMessages.has(connectionReminderKey)) {
         try {
-          const reminderMessage = `⚠️ **Account Not Connected** ⚠️
-
-👋 **Hello!** I noticed you're chatting but your account isn't connected to our system.
-
-📊 **Current Status:** ❌ Not Connected
-💬 **Chat Activity:** ❌ No XP Rewards
-🎁 **Daily Rewards:** ❌ Not Available
-
-🔗 **To start earning XP from your messages:**
-1️⃣ Visit: ${WEB_APP_URL}/telegram
-2️⃣ Connect your wallet
-3️⃣ Click "Connect Telegram" button
-4️⃣ Use Telegram Login Widget
-
-💎 **After connection you'll get:**
-• XP for every message
-• Daily BBLP rewards
-• Level up notifications
-• Community leaderboards
-
-🚀 **Connect now to start earning!**`;
-
+          const reminderMessage = `⚠️ <b>Account Not Connected</b> ⚠️\n\n👋 <b>Hello!</b> I noticed you're chatting but your account isn't connected to our system.\n\n<b>Status:</b> ❌ Not Connected\n<b>Chat Activity:</b> ❌ No XP Rewards\n<b>Daily Rewards:</b> ❌ Not Available\n\n<b>How to Connect:</b>\n1️⃣ Visit: <a href='https://bblip.io/social-connections'>bblip.io/social-connections</a>\n2️⃣ Connect your wallet (MetaMask, etc.)\n3️⃣ Click "Connect Telegram"\n\n<b>After connecting, you'll get:</b>\n• XP for every message\n• Daily BBLP rewards\n• Level up notifications\n• Community leaderboards\n\n🚀 <b>Connect now to start earning!</b>`;
           const keyboard = {
             inline_keyboard: [[
               {
-                text: '🔗 Connect My Account',
-                url: `${WEB_APP_URL}/telegram`
+                text: '🔗 Connect Wallet',
+                url: 'https://bblip.io/social-connections'
               }
             ]]
           };
-
           await bot.sendMessage(userId, reminderMessage, {
-            parse_mode: 'Markdown',
+            parse_mode: 'HTML',
             reply_markup: keyboard
           });
           
@@ -3010,10 +2950,18 @@ async function updateUserActivity(telegramId, updates) {
             `⭐ Total XP: ${newTotalXP}\n` +
             `💬 Messages: ${newMessageCount}\n\n` +
             `🎁 Daily Reward: ${newReward} BBLP/day`;
-          
+          // Add inline button for claiming daily rewards
+          const levelUpKeyboard = {
+            inline_keyboard: [[
+              {
+                text: '🎁 Claim Daily Rewards',
+                url: 'https://bblip.io/social-connections'
+              }
+            ]]
+          };
           // Send notification to group
           try {
-            await sendMessageWithRateLimit(GROUP_ID, levelUpMessage);
+            await sendMessageWithRateLimit(GROUP_ID, levelUpMessage, { reply_markup: levelUpKeyboard });
             console.log(`✅ Level up notification sent to group for user ${telegramId}: ${oldLevelName} → ${levelName}`);
           } catch (error) {
             console.error('❌ Error sending level up notification:', error);
@@ -3401,6 +3349,43 @@ async function setBotCommands() {
       { command: 'test_welcome', description: '🧪 Welcome mesaj sistemini test et (Sadece Admin)' },
       { command: 'auto_delete', description: '🗑️ Auto-delete ayarlarını yapılandır (Sadece Admin)' }
     ];
+    
+    // User commands for private (default) scope
+    const privateUserCommands = [
+      { command: 'start', description: '🚀 Connect your account to start earning XP' },
+      { command: 'my_xp', description: '📊 View your XP stats and current level' },
+      { command: 'my_referral', description: '🔗 Get your referral link and earn rewards' },
+      { command: 'leaderboard', description: '🏆 View top 10 users by XP' },
+      { command: 'help', description: '❓ Show all available commands' }
+    ];
+    // User commands for group scopes (no /start)
+    const groupUserCommands = [
+      { command: 'my_xp', description: '📊 View your XP stats and current level' },
+      { command: 'my_referral', description: '🔗 Get your referral link and earn rewards' },
+      { command: 'leaderboard', description: '🏆 View top 10 users by XP' },
+      { command: 'help', description: '❓ Show all available commands' }
+    ];
+    // Turkish user commands for private (default) scope
+    const turkishPrivateUserCommands = [
+      { command: 'start', description: '🚀 Hesabınızı bağlayın ve XP kazanmaya başlayın' },
+      { command: 'my_xp', description: '📊 XP istatistiklerinizi ve seviyenizi görün' },
+      { command: 'leaderboard', description: '🏆 En iyi 10 kullanıcıyı XP\'ye göre görün' },
+      { command: 'help', description: '❓ Tüm komutları göster' }
+    ];
+    // Turkish user commands for group scopes (no /start)
+    const turkishGroupUserCommands = [
+      { command: 'my_xp', description: '📊 XP istatistiklerinizi ve seviyenizi görün' },
+      { command: 'leaderboard', description: '🏆 En iyi 10 kullanıcıyı XP\'ye göre görün' },
+      { command: 'help', description: '❓ Tüm komutları göster' }
+    ];
+    // Set private (default) commands
+    await bot.setMyCommands(privateUserCommands);
+    await bot.setMyCommands(turkishPrivateUserCommands, { scope: { type: 'all_private_chats' }, language_code: 'tr' });
+    // Set group commands (no /start)
+    await bot.setMyCommands(groupUserCommands, { scope: { type: 'chat', chat_id: GROUP_ID } });
+    await bot.setMyCommands([...groupUserCommands, ...adminCommands], { scope: { type: 'chat_administrators', chat_id: GROUP_ID } });
+    await bot.setMyCommands(turkishGroupUserCommands, { scope: { type: 'chat', chat_id: GROUP_ID }, language_code: 'tr' });
+    await bot.setMyCommands([...turkishGroupUserCommands, ...turkishAdminCommands], { scope: { type: 'chat_administrators', chat_id: GROUP_ID }, language_code: 'tr' });
     
     // Set default commands
     await bot.setMyCommands(defaultCommands);
