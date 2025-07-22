@@ -110,6 +110,19 @@ export default function SocialConnectionsPage() {
   const [totalSocialPoints, setTotalSocialPoints] = useState<number>(0);
   const [totalSocialPointsLoading, setTotalSocialPointsLoading] = useState(false);
 
+  // Sonsuz loading önleyici: kısa süre loading, sonra fallback
+  const [showLoading, setShowLoading] = useState(true);
+  useEffect(() => {
+    if (isConnected === false || !address) {
+      setShowLoading(false);
+      return;
+    }
+    const timeout = setTimeout(() => {
+      setShowLoading(false);
+    }, 1500);
+    return () => clearTimeout(timeout);
+  }, [isConnected, address]);
+
   // Toplam ödül bilgisini çek
   useEffect(() => {
     const fetchTotalSocialPoints = async () => {
@@ -896,7 +909,7 @@ export default function SocialConnectionsPage() {
   // Yeni: Sosyal bağlantıların yüklenip yüklenmediğini kontrol et
   const isConnectionsLoading = isLoading; // isLoading zaten bağlantı fetch edilirken true
 
-  if (isConnected === undefined || isConnected === null || address === undefined) {
+  if (showLoading && (isConnected === undefined || isConnected === null || address === undefined)) {
     return (
       <>
         <Header />
@@ -920,7 +933,7 @@ export default function SocialConnectionsPage() {
     );
   }
 
-  if ((isConnected === false || !address)) {
+  if (!showLoading && (isConnected === false || !address)) {
     return (
       <>
         <Header />
