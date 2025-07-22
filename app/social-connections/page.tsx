@@ -1093,7 +1093,7 @@ export default function SocialConnectionsPage() {
       <Header />
       <div className="min-h-screen px-2 sm:px-4 md:px-0" style={{ color: '#F3F3F3', position: 'relative' }}>
         {/* Overview Başlık ve Açıklama */}
-        <div className="w-full max-w-6xl mx-auto mt-20 mb-2">
+        <div className="w-full max-w-6xl mx-auto mt-40 mb-2">
           <h1 className="text-3xl font-bold text-white mb-2">Social Connections Overview</h1>
           <p className="text-base text-[#A1A1AA]">Being active in our community. The more you engage, the more you earn!</p>
         </div>

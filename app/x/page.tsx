@@ -141,27 +141,31 @@ export default function XPage() {
             if (useApp) {
               // X uygulamasında aç
               redirectToXApp(data.authUrl, true);
+              return;
             } else {
               // Web sayfasında aç
               window.location.href = data.authUrl;
+              return;
             }
           } else {
             // Diğer mobil cihazlarda normal yönlendirme
             redirectToXApp(data.authUrl, data.isMobile);
+            return;
           }
         } else {
           // Desktop'ta normal yönlendirme
           redirectToXApp(data.authUrl, data.isMobile);
+          return;
         }
       } else {
         setConnectionStatus('disconnected');
         toast.error(data.error || 'Failed to start X authentication');
+        setIsConnecting(false);
       }
     } catch (error) {
       console.error('Error initiating X auth:', error);
       setConnectionStatus('disconnected');
       toast.error('Failed to start X authentication');
-    } finally {
       setIsConnecting(false);
     }
   };

@@ -126,28 +126,26 @@ export default function DiscordPage() {
   }, [isConnected, discordStats.isConnected, router]);
 
   const checkDiscordStatus = async () => {
-    if (!address) return;
-    
-    console.log('Checking Discord status for wallet:', address.substring(0, 8) + '...');
-    
+    if (!address) {
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
     try {
       const response = await fetch(`/api/discord/stats?walletAddress=${address}`);
       const data = await response.json();
-      
-      console.log('Discord stats response:', {
-        status: response.status,
-        ok: response.ok,
-        data: data
-      });
-      
       if (response.ok) {
         setDiscordStats(data);
-        console.log('Discord stats updated:', data.isConnected ? 'Connected' : 'Not connected');
+        // Discord bağlıysa otomatik yönlendirme zaten yukarıda var
       } else {
-        console.error('Error fetching Discord stats:', data.error);
+        setDiscordStats(prev => ({ ...prev, isConnected: false }));
+        toast.error(data.error || 'Failed to fetch Discord status');
       }
     } catch (error) {
-      console.error('Error checking Discord status:', error);
+      setDiscordStats(prev => ({ ...prev, isConnected: false }));
+      toast.error('Network error while checking Discord status');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -171,15 +169,17 @@ export default function DiscordPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // Redirect to Discord OAuth
-        window.location.href = data.authUrl;
+        setTimeout(() => {
+          window.location.href = data.authUrl;
+        }, 0);
+        return; // Yönlendirme başlatıldı, state güncelleme yapma!
       } else {
         toast.error(data.error || 'Failed to initiate Discord connection');
+        setIsConnecting(false);
       }
     } catch (error) {
       console.error('Error connecting Discord:', error);
       toast.error('Failed to connect Discord account');
-    } finally {
       setIsConnecting(false);
     }
   };
@@ -321,7 +321,7 @@ export default function DiscordPage() {
         <h1 className="text-3xl font-bold text-white mb-4">Connect Discord</h1>
         <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your Discord account to start earning XP and BBLP rewards for your community activity.</p>
         <Button
-          onClick={connectDiscord}
+          onClick={() => { setIsConnecting(true); connectDiscord(); }}
           disabled={isConnecting}
           className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg rounded-lg"
         >
