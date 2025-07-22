@@ -74,7 +74,7 @@ export default function DiscordPage() {
     maxXPForCurrentLevel: 100,
     isInBBLIPGuild: false
   });
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isConnecting, setIsConnecting] = useState(false);
 
   // Check URL parameters for OAuth results
@@ -113,9 +113,12 @@ export default function DiscordPage() {
   useEffect(() => {
     if (isConnected && address) {
       checkDiscordStatus();
+    } else {
+      setIsLoading(false);
     }
   }, [isConnected, address]);
 
+  // Otomatik yönlendirme: Discord bağlıysa
   useEffect(() => {
     if (isConnected && discordStats.isConnected) {
       router.replace('/social-connections');
@@ -273,9 +276,31 @@ export default function DiscordPage() {
     return (discordStats.progressToNextLevel / discordStats.maxXPForCurrentLevel) * 100;
   };
 
-  if (!isConnected) {
+  // Gateway ve loading mantığı
+  if (isLoading || isConnecting || isConnected === undefined || isConnected === null || address === undefined) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2 bg-black">
+        <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
+          <div className="flex items-center justify-center py-20 mt-20">
+            <div className="relative">
+              <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
+              <Image 
+                src="/logo.svg" 
+                alt="BBLP" 
+                width={32} 
+                height={32} 
+                className="absolute inset-0 m-auto animate-pulse" 
+              />
+            </div>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  if (isConnected === false || !address) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
         <MessageSquare className="w-20 h-20 text-purple-400 mb-6" />
         <h1 className="text-3xl font-bold text-white mb-4">Connect Discord</h1>
         <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your Discord account to start earning XP and BBLP rewards for your community activity.</p>
@@ -289,10 +314,9 @@ export default function DiscordPage() {
     );
   }
 
-  // Minimal connect page if not connected
   if (!discordStats.isConnected) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
         <MessageSquare className="w-20 h-20 text-purple-400 mb-6" />
         <h1 className="text-3xl font-bold text-white mb-4">Connect Discord</h1>
         <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your Discord account to start earning XP and BBLP rewards for your community activity.</p>

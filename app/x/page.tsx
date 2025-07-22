@@ -133,9 +133,9 @@ export default function XPage() {
           if (isAndroid || isIOS) {
             // Kullanıcıya seçenek sun
             const useApp = confirm(
-              'X uygulamasını açmak istiyor musunuz?\n\n' +
-              '✅ "Tamam" - X uygulamasında açılır\n' +
-              '❌ "İptal" - Web sayfasında açılır'
+              'Do you want to open the X app?\n\n' +
+              '✅ "YES" \n' +
+              '❌ "NO" '
             );
             
             if (useApp) {

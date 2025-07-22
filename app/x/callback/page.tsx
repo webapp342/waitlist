@@ -69,8 +69,7 @@ function XCallbackContent() {
           
           // Redirect to dashboard after a short delay
           setTimeout(() => {
-            router.push('/dashboard');
-          }, 2000);
+            router.push('/social-connections');          }, 2000);
         } else {
           setStatus('error');
           setError(data.error || 'Failed to connect X account');
@@ -113,7 +112,7 @@ function XCallbackContent() {
   const getStatusDescription = () => {
     switch (status) {
       case 'success':
-        return 'Your X account has been successfully connected. Redirecting to dashboard...';
+        return 'Your X account has been successfully connected. ';
       case 'error':
         return error || 'Failed to connect your X account. Please try again.';
       default:
