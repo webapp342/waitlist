@@ -14,10 +14,12 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get('state');
     const error = searchParams.get('error');
 
+    console.log('=== DISCORD OAUTH CALLBACK START ===');
     console.log('Discord OAuth callback received:', {
       code: code ? 'present' : 'missing',
       state: state ? 'present' : 'missing',
-      error: error || 'none'
+      error: error || 'none',
+      url: request.url
     });
 
     // Handle OAuth errors
@@ -35,6 +37,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('Step 1: Validating OAuth session...');
+    
     // Validate OAuth session
     const { data: session, error: sessionError } = await supabaseAdmin
       .from('discord_oauth_sessions')
@@ -44,6 +48,16 @@ export async function GET(request: NextRequest) {
       .gt('expires_at', new Date().toISOString())
       .single();
 
+    console.log('Session validation result:', {
+      sessionFound: !!session,
+      sessionError: sessionError ? sessionError.message : 'none',
+      sessionData: session ? {
+        session_id: session.session_id,
+        wallet_address: session.wallet_address?.substring(0, 8) + '...',
+        expires_at: session.expires_at
+      } : null
+    });
+
     if (sessionError || !session) {
       console.error('Invalid or expired OAuth session:', sessionError);
       return NextResponse.redirect(
@@ -51,50 +65,55 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('Step 2: Marking session as used...');
+    
     // Mark session as used
-    await supabaseAdmin
+    const { error: updateError } = await supabaseAdmin
       .from('discord_oauth_sessions')
       .update({ used: true })
       .eq('session_id', session.session_id);
 
+    if (updateError) {
+      console.error('Error marking session as used:', updateError);
+    } else {
+      console.log('Session marked as used successfully');
+    }
+
+    console.log('Step 3: Exchanging code for token...');
+    
     // Exchange code for access token
     const tokenData = await exchangeCodeForToken(code);
-    console.log('Discord token exchange successful');
+    console.log('Discord token exchange successful:', {
+      hasAccessToken: !!tokenData.access_token,
+      hasRefreshToken: !!tokenData.refresh_token,
+      expiresIn: tokenData.expires_in
+    });
 
+    console.log('Step 4: Getting Discord user data...');
+    
     // Get Discord user information
     const discordUser = await getDiscordUser(tokenData.access_token);
     console.log('Discord user data retrieved:', {
       id: discordUser.id,
       username: discordUser.username,
-      discriminator: discordUser.discriminator
+      discriminator: discordUser.discriminator,
+      email: discordUser.email ? 'present' : 'missing'
     });
 
-    // Get user's Discord guilds (servers) - optional
-    let userGuilds = [];
-    let isInBBLIPGuild = false;
-    try {
-      userGuilds = await getDiscordUserGuilds(tokenData.access_token);
-      console.log('Discord guilds retrieved:', userGuilds.length);
-      
-      // Check if user is in BBLIP guild
-      const guildId = process.env.DISCORD_GUILD_ID || '1396412220480426114';
-      isInBBLIPGuild = userGuilds.some((guild: any) => guild.id === guildId);
-      console.log('Guild membership check during connection:', {
-        guildId,
-        userGuilds: userGuilds.map((g: any) => ({ id: g.id, name: g.name })),
-        isInBBLIPGuild
-      });
-    } catch (guildError) {
-      console.log('Could not retrieve Discord guilds (this is normal if guilds.join scope is not available):', guildError);
-      // Continue without guild information
-    }
-
+    console.log('Step 5: Checking existing Discord connections...');
+    
     // Check if Discord ID is already connected to another wallet
     const { data: existingDiscordUser, error: discordCheckError } = await supabaseAdmin
       .from('discord_users')
       .select('user_id, discord_id')
       .eq('discord_id', discordUser.id)
       .single();
+
+    console.log('Existing Discord user check:', {
+      found: !!existingDiscordUser,
+      error: discordCheckError ? discordCheckError.message : 'none',
+      existingUserId: existingDiscordUser?.user_id
+    });
 
     if (discordCheckError && discordCheckError.code !== 'PGRST116') {
       console.error('Error checking Discord user:', discordCheckError);
@@ -119,12 +138,19 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.log('Step 6: Checking wallet Discord connections...');
+    
     // Check if wallet already has another Discord account
     const { data: existingWalletDiscord, error: walletDiscordError } = await supabaseAdmin
       .from('discord_users')
       .select('discord_id')
       .eq('user_id', session.wallet_address)
       .single();
+
+    console.log('Wallet Discord check:', {
+      found: !!existingWalletDiscord,
+      error: walletDiscordError ? walletDiscordError.message : 'none'
+    });
 
     if (walletDiscordError && walletDiscordError.code !== 'PGRST116') {
       console.error('Error checking wallet Discord:', walletDiscordError);
@@ -140,10 +166,12 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    console.log('Step 7: Saving Discord user to database...');
+    
     // Save Discord user to database
     const avatarUrl = getDiscordAvatarUrl(discordUser.id, discordUser.avatar, discordUser.discriminator);
     
-    console.log('Attempting to save Discord user to database:', {
+    const insertData = {
       user_id: session.wallet_address,
       discord_id: discordUser.id,
       username: discordUser.username,
@@ -154,31 +182,24 @@ export async function GET(request: NextRequest) {
       locale: discordUser.locale,
       mfa_enabled: discordUser.mfa_enabled,
       premium_type: discordUser.premium_type,
-      access_token: tokenData.access_token ? 'present' : 'missing',
-      refresh_token: tokenData.refresh_token ? 'present' : 'missing',
+      access_token: tokenData.access_token,
+      refresh_token: tokenData.refresh_token,
       token_expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
-      is_active: true
+      is_active: true,
+      is_in_guild: false // We'll check this later
+    };
+    
+    console.log('Attempting to save Discord user with data:', {
+      user_id: insertData.user_id,
+      discord_id: insertData.discord_id,
+      username: insertData.username,
+      hasAccessToken: !!insertData.access_token,
+      hasRefreshToken: !!insertData.refresh_token
     });
     
     const { data: newDiscordUser, error: insertError } = await supabaseAdmin
       .from('discord_users')
-      .insert({
-        user_id: session.wallet_address,
-        discord_id: discordUser.id,
-        username: discordUser.username,
-        discriminator: discordUser.discriminator,
-        avatar_url: avatarUrl,
-        email: discordUser.email,
-        verified: discordUser.verified,
-        locale: discordUser.locale,
-        mfa_enabled: discordUser.mfa_enabled,
-        premium_type: discordUser.premium_type,
-        access_token: tokenData.access_token,
-        refresh_token: tokenData.refresh_token,
-        token_expires_at: new Date(Date.now() + tokenData.expires_in * 1000).toISOString(),
-        is_active: true,
-        is_in_guild: isInBBLIPGuild
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -201,6 +222,8 @@ export async function GET(request: NextRequest) {
       username: newDiscordUser?.username
     });
 
+    console.log('Step 8: Creating Discord activity record...');
+    
     // Create Discord activity record
     const { error: activityError } = await supabaseAdmin
       .from('discord_activities')
@@ -212,7 +235,7 @@ export async function GET(request: NextRequest) {
         total_reactions: 0,
         total_xp: 0,
         current_level: 1,
-        guild_count: userGuilds.length
+        guild_count: 0
       }, {
         onConflict: 'discord_id'
       });
@@ -220,8 +243,11 @@ export async function GET(request: NextRequest) {
     if (activityError) {
       console.error('Error creating Discord activity:', activityError);
       // Don't fail the whole process for activity creation error
+    } else {
+      console.log('Discord activity record created successfully');
     }
 
+    console.log('=== DISCORD OAUTH CALLBACK SUCCESS ===');
     console.log('Discord connection successful:', {
       discordId: discordUser.id,
       username: discordUser.username,
@@ -233,6 +259,7 @@ export async function GET(request: NextRequest) {
     );
 
   } catch (error) {
+    console.error('=== DISCORD OAUTH CALLBACK ERROR ===');
     console.error('Error in Discord OAuth callback:', error);
     console.error('Error details:', {
       name: error instanceof Error ? error.name : 'Unknown',
