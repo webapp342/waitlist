@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabase';
+import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { 
   generateCodeVerifier, 
   generateCodeChallenge, 
@@ -33,7 +33,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user exists
-    const { data: user, error: userError } = await supabase
+    const { data: user, error: userError } = await supabaseAdmin
       .from('users')
       .select('id')
       .eq('wallet_address', walletAddress)
@@ -71,8 +71,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store OAuth session in database
-    const { error: sessionError } = await supabase
+    // Store OAuth session in database using service role to bypass RLS
+    const { error: sessionError } = await supabaseAdmin
       .from('x_oauth_sessions')
       .insert({
         session_id: sessionId,
@@ -81,7 +81,8 @@ export async function POST(request: NextRequest) {
         wallet_address: walletAddress,
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
         used: false
-      });
+      })
+      .select(); // Add select() to ensure proper error handling
 
     if (sessionError) {
       console.error('Error storing OAuth session:', sessionError);

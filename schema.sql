@@ -85,32 +85,6 @@ CREATE TABLE public.discord_invited_users (
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT discord_invited_users_pkey PRIMARY KEY (id)
 );
-CREATE TABLE public.discord_leaderboard_cache (
-  id bigint NOT NULL DEFAULT nextval('discord_leaderboard_cache_id_seq'::regclass),
-  discord_id character varying NOT NULL,
-  username character varying NOT NULL,
-  discriminator character varying NOT NULL,
-  total_xp integer NOT NULL,
-  current_level integer NOT NULL,
-  invite_count integer DEFAULT 0,
-  rank_position integer NOT NULL CHECK (rank_position >= 1 AND rank_position <= 10),
-  last_updated timestamp with time zone DEFAULT now(),
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT discord_leaderboard_cache_pkey PRIMARY KEY (id),
-  CONSTRAINT discord_leaderboard_cache_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.discord_users(discord_id)
-);
-CREATE TABLE public.discord_message_logs (
-  id bigint NOT NULL DEFAULT nextval('discord_message_logs_id_seq'::regclass),
-  discord_id character varying NOT NULL,
-  guild_id character varying,
-  channel_id character varying,
-  message_id character varying NOT NULL UNIQUE,
-  message_content text,
-  xp_earned integer DEFAULT 0,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT discord_message_logs_pkey PRIMARY KEY (id),
-  CONSTRAINT discord_message_logs_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.discord_users(discord_id)
-);
 CREATE TABLE public.discord_oauth_sessions (
   id bigint NOT NULL DEFAULT nextval('discord_oauth_sessions_id_seq'::regclass),
   session_id character varying NOT NULL UNIQUE,
@@ -120,16 +94,6 @@ CREATE TABLE public.discord_oauth_sessions (
   used boolean DEFAULT false,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT discord_oauth_sessions_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.discord_reaction_logs (
-  id bigint NOT NULL DEFAULT nextval('discord_reaction_logs_id_seq'::regclass),
-  discord_id character varying NOT NULL,
-  message_id character varying NOT NULL,
-  reaction_type character varying,
-  xp_earned integer DEFAULT 0,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT discord_reaction_logs_pkey PRIMARY KEY (id),
-  CONSTRAINT discord_reaction_logs_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.discord_users(discord_id)
 );
 CREATE TABLE public.discord_users (
   id bigint NOT NULL DEFAULT nextval('discord_users_id_seq'::regclass),
@@ -210,8 +174,8 @@ CREATE TABLE public.referrals (
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   CONSTRAINT referrals_pkey PRIMARY KEY (id),
   CONSTRAINT referrals_referral_code_id_fkey FOREIGN KEY (referral_code_id) REFERENCES public.referral_codes(id),
-  CONSTRAINT referrals_referrer_id_fkey FOREIGN KEY (referrer_id) REFERENCES public.users(id),
-  CONSTRAINT referrals_referred_id_fkey FOREIGN KEY (referred_id) REFERENCES public.users(id)
+  CONSTRAINT referrals_referred_id_fkey FOREIGN KEY (referred_id) REFERENCES public.users(id),
+  CONSTRAINT referrals_referrer_id_fkey FOREIGN KEY (referrer_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.stake_logs (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -256,17 +220,6 @@ CREATE TABLE public.telegram_activities (
   referral_count integer DEFAULT 0,
   CONSTRAINT telegram_activities_pkey PRIMARY KEY (id)
 );
-CREATE TABLE public.telegram_daily_activities (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  telegram_id bigint NOT NULL,
-  activity_date date NOT NULL,
-  message_count integer DEFAULT 0,
-  reaction_count integer DEFAULT 0,
-  helpful_message_count integer DEFAULT 0,
-  xp_earned integer DEFAULT 0,
-  created_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT telegram_daily_activities_pkey PRIMARY KEY (id)
-);
 CREATE TABLE public.telegram_messages (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
   telegram_id bigint NOT NULL,
@@ -301,18 +254,6 @@ CREATE TABLE public.telegram_referral_tracking (
   xp_rewarded integer DEFAULT 0,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT telegram_referral_tracking_pkey PRIMARY KEY (id)
-);
-CREATE TABLE public.telegram_referrals (
-  id uuid NOT NULL DEFAULT uuid_generate_v4(),
-  referrer_id bigint NOT NULL,
-  referred_id bigint NOT NULL UNIQUE,
-  xp_rewarded integer DEFAULT 0,
-  bblp_rewarded integer DEFAULT 0,
-  status character varying DEFAULT 'completed'::character varying CHECK (status::text = ANY (ARRAY['pending'::character varying, 'completed'::character varying, 'cancelled'::character varying]::text[])),
-  referral_code character varying,
-  created_at timestamp with time zone DEFAULT now(),
-  updated_at timestamp with time zone DEFAULT now(),
-  CONSTRAINT telegram_referrals_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.telegram_rewards (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),

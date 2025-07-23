@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store OAuth session in database
+    // Store OAuth session in database using service role to bypass RLS
     const { error: sessionError } = await supabaseAdmin
       .from('discord_oauth_sessions')
       .insert({
@@ -73,10 +73,17 @@ export async function POST(request: NextRequest) {
         wallet_address: walletAddress,
         expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString(), // 10 minutes
         used: false
-      });
+      })
+      .select(); // Add select() to ensure proper error handling
 
     if (sessionError) {
       console.error('Error storing Discord OAuth session:', sessionError);
+      console.error('Session error details:', {
+        code: sessionError.code,
+        message: sessionError.message,
+        details: sessionError.details,
+        hint: sessionError.hint
+      });
       return NextResponse.json(
         { error: 'Failed to create OAuth session', details: sessionError.message },
         { status: 500 }
