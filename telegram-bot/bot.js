@@ -1,6 +1,21 @@
 require('dotenv').config();
 const TelegramBot = require('node-telegram-bot-api');
 const { createClient } = require('@supabase/supabase-js');
+const { LRUCache } = require('lru-cache');
+
+// Import optimizations
+const {
+  messageCache,
+  processedMessages,
+  metrics,
+  dbCircuitBreaker,
+  batchProcessor,
+  rateLimiter,
+  OPTIMIZED_POLLING_CONFIG,
+  processMessageOptimized,
+  cleanup,
+  initializeOptimizations
+} = require('./optimizations');
 
 // Environment variables - Production values
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7623563807:AAF-x22UGR5xeAVOqLsXbiMEnMtQYuviy-4';
@@ -10,7 +25,7 @@ const GROUP_ID = process.env.TELEGRAM_GROUP_ID || '-1002823529287';
 const ADMIN_GROUP_ID = process.env.TELEGRAM_ADMIN_GROUP_ID || '-1002879152667'; // Admin/Technical logs group
 const WEB_APP_URL = process.env.WEB_APP_URL || 'https://bblip.io';
 
-// Rate limiting configuration
+// Rate limiting configuration (optimized)
 const RATE_LIMIT_DELAY = 50; // 50ms between messages (faster)
 const RATE_LIMIT_RETRY_DELAY = 2000; // 2 seconds when rate limited
 
@@ -37,30 +52,43 @@ const ANTI_BOT_CONFIG = {
   AUTO_UNRESTRICT: true // Automatically unrestrict after duration
 };
 
-// Polling configuration for faster message reception
-const POLLING_INTERVAL = 100; // 100ms polling interval (faster)
-const POLLING_LIMIT = 100; // 100 updates per request
+// Optimized polling configuration
+const POLLING_INTERVAL = OPTIMIZED_POLLING_CONFIG.interval; // 500ms (was 100ms)
+const POLLING_LIMIT = OPTIMIZED_POLLING_CONFIG.limit; // 50 updates (was 100)
+const BATCH_INTERVAL = 30 * 1000; // 30 seconds (was 60 seconds)
 
-// In-memory cache for batch processing with duplicate protection
-const messageCache = new Map(); // telegramId -> { messageCount, xpEarned, lastUpdate, processedMessages }
-const processedMessages = new Set(); // messageId -> true (to prevent duplicates)
-const BATCH_INTERVAL = 60 * 1000; // 60 seconds in milliseconds (real-time level up detection)
-
-// Rate limiting queue
+// Rate limiting queue (optimized)
 const messageQueue = [];
 let isProcessingQueue = false;
 
-// Performance monitoring
+// Performance monitoring (optimized)
 let messageCount = 0;
 let lastMessageTime = Date.now();
 const PERFORMANCE_LOG_INTERVAL = 100; // Log every 100 messages
 
-// Anti-bot tracking
-const userMessageHistory = new Map(); // userId -> { messages: [], warnings: 0, bannedUntil: null }
-const spamDetections = new Map(); // userId -> { count: 0, lastDetection: null }
+// Anti-bot tracking (optimized with LRU cache)
+const userMessageHistory = new LRUCache({
+  max: 1000,
+  maxAge: 1000 * 60 * 30, // 30 minutes
+  updateAgeOnGet: true
+});
 
-// Yeni anti-spam ve XP kontrolü
-global.userSpamData = global.userSpamData || new Map(); // telegramId -> { lastMessage: '', warnings: 0, messageTimestamps: [] }
+const spamDetections = new LRUCache({
+  max: 500,
+  maxAge: 1000 * 60 * 60, // 1 hour
+  updateAgeOnGet: true
+});
+
+// Global anti-spam data (optimized)
+global.userSpamData = global.userSpamData || new LRUCache({
+  max: 1000,
+  maxAge: 1000 * 60 * 30, // 30 minutes
+  updateAgeOnGet: true
+});
+
+// Global variables for compatibility
+let batchProcessingInterval = null;
+let xpUpdateQueue = new Map();
 
 console.log('🌐 [BOT] Environment Configuration:');
 console.log('  - BOT_TOKEN:', BOT_TOKEN ? '✅ Set' : '❌ Missing');
@@ -82,11 +110,32 @@ const bot = new TelegramBot(BOT_TOKEN, {
   }
 });
 
-// Initialize Supabase
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+// Initialize Supabase with connection pooling
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+  db: {
+    schema: 'public',
+    pool: {
+      min: 2,
+      max: 10,
+      idleTimeoutMillis: 30000
+    }
+  },
+  auth: {
+    persistSession: false // Bot doesn't need session persistence
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'telegram-bot-optimized'
+    }
+  }
+});
+
+// Initialize optimizations
+initializeOptimizations();
 
 console.log('🤖 [BOT] Bot initialized successfully');
-console.log('📊 [BOT] Supabase client initialized');
+console.log('📊 [BOT] Supabase client initialized with connection pooling');
+console.log('🚀 [BOT] Optimizations initialized');
 console.log('🔍 [BOT] Ready to listen for messages...');
 
 // XP calculation constants
@@ -2272,7 +2321,7 @@ bot.on('message', async (msg) => {
   }
   
   // Mark as processed immediately to prevent race conditions
-  processedMessages.add(messageKey);
+  processedMessages.set(messageKey, true);
   
   // Performance monitoring
   messageCount++;
@@ -2307,12 +2356,17 @@ bot.on('message', async (msg) => {
 // Async message processing function
 async function processMessageAsync(msg, messageKey, userId, messageText, userDisplayName) {
   try {
-    // Check if user is connected (with timeout)
-    const userCheckPromise = supabase
-      .from('telegram_users')
-      .select('*')
-      .eq('telegram_id', userId)
-      .single();
+    // Use optimized message processing
+    await processMessageOptimized(msg, messageKey, userId, messageText, userDisplayName);
+    
+    // Check if user is connected (with timeout and circuit breaker)
+    const userCheckPromise = dbCircuitBreaker.execute(async () => {
+      return await supabase
+        .from('telegram_users')
+        .select('*')
+        .eq('telegram_id', userId)
+        .single();
+    });
     
     // Add timeout to prevent hanging
     const timeoutPromise = new Promise((_, reject) => 
@@ -2349,7 +2403,7 @@ async function processMessageAsync(msg, messageKey, userId, messageText, userDis
           console.log(`📱 Connection reminder sent to @${userDisplayName} (${userId})`);
           
           // Mark as sent to avoid spam
-          processedMessages.add(connectionReminderKey);
+          processedMessages.set(connectionReminderKey, true);
           
           // Remove reminder key after 1 hour to allow future reminders
           setTimeout(() => {
@@ -2367,12 +2421,14 @@ async function processMessageAsync(msg, messageKey, userId, messageText, userDis
     // Calculate XP for this message
     const xpEarned = XP_REWARDS.MESSAGE; // Faydalı mesaj XP'si kaldırıldı
     
-    // Get current user activity to check level up
-    const { data: currentActivity, error: activityError } = await supabase
-      .from('telegram_activities')
-      .select('total_xp, current_level')
-      .eq('telegram_id', userId)
-      .single();
+    // Get current user activity to check level up (with circuit breaker)
+    const { data: currentActivity, error: activityError } = await dbCircuitBreaker.execute(async () => {
+      return await supabase
+        .from('telegram_activities')
+        .select('total_xp, current_level')
+        .eq('telegram_id', userId)
+        .single();
+    });
     
     let oldLevel = 1;
     let currentTotalXP = 0;
@@ -2382,24 +2438,24 @@ async function processMessageAsync(msg, messageKey, userId, messageText, userDis
       currentTotalXP = currentActivity.total_xp;
     }
     
-    // Update cache atomically
-    if (messageCache.has(userId)) {
-      const cached = messageCache.get(userId);
+    // Update cache atomically (optimized)
+    let cached = messageCache.get(userId);
+    if (cached) {
       cached.messageCount += 1;
       cached.xpEarned += xpEarned;
       cached.lastUpdate = Date.now();
-      cached.processedMessages.add(messageKey);
+      cached.processedMessages.set(messageKey, true);
     } else {
-      messageCache.set(userId, {
+      cached = {
         messageCount: 1,
         xpEarned: xpEarned,
         lastUpdate: Date.now(),
         processedMessages: new Set([messageKey])
-      });
+      };
+      messageCache.set(userId, cached);
     }
     
     // Check for real-time level up (including cache)
-    const cached = messageCache.get(userId);
     const newTotalXP = currentTotalXP + cached.xpEarned;
     const newLevel = calculateLevel(newTotalXP);
     
@@ -3087,96 +3143,11 @@ async function calculateDailyXP() {
   }
 }
 
-// Schedule batch processing (every 1 minute)
-setInterval(processBatchUpdates, BATCH_INTERVAL);
-
 // Schedule daily XP calculation (every 24 hours)
 setInterval(calculateDailyXP, 24 * 60 * 60 * 1000);
 
-// Process batch updates (runs every 60 seconds)
-async function processBatchUpdates() {
-  try {
-    console.log('🔄 Starting batch processing (60 second interval)...');
-    console.log(`📊 Cache size: ${messageCache.size} users`);
-    console.log(`🔒 Global processed messages: ${processedMessages.size}`);
-    
-    if (messageCache.size === 0) {
-      console.log('✅ No cached data to process');
-      return;
-    }
-    
-    const startTime = Date.now();
-    let processedCount = 0;
-    let errorCount = 0;
-    let totalMessages = 0;
-    let totalXP = 0;
-    
-    // Process each user's cached data
-    for (const [telegramId, cachedData] of messageCache.entries()) {
-      try {
-        console.log(`🔄 Processing user ${telegramId}:`, {
-          messageCount: cachedData.messageCount,
-          xpEarned: cachedData.xpEarned,
-          processedMessages: cachedData.processedMessages.size
-        });
-        
-        // Double-check: Verify no duplicate processing
-        if (cachedData.messageCount <= 0 || cachedData.xpEarned <= 0) {
-          console.log(`⚠️ Skipping user ${telegramId} - invalid data`);
-          continue;
-        }
-        
-        // Update user's activity in database
-        await updateUserActivity(telegramId, {
-          messageCount: cachedData.messageCount,
-          xpEarned: cachedData.xpEarned
-        });
-        
-        processedCount++;
-        totalMessages += cachedData.messageCount;
-        totalXP += cachedData.xpEarned;
-        
-        console.log(`✅ User ${telegramId} processed successfully`);
-        
-      } catch (error) {
-        console.error(`❌ Error processing user ${telegramId}:`, error);
-        errorCount++;
-      }
-    }
-    
-    // Clear cache and processed messages after successful processing
-    messageCache.clear();
-    processedMessages.clear();
-    
-    const endTime = Date.now();
-    const duration = endTime - startTime;
-    
-    console.log(`🎉 Batch processing completed:`);
-    console.log(`  - Processed: ${processedCount} users`);
-    console.log(`  - Total messages: ${totalMessages}`);
-    console.log(`  - Total XP: ${totalXP}`);
-    console.log(`  - Errors: ${errorCount} users`);
-    console.log(`  - Duration: ${duration}ms`);
-    console.log(`  - Cache cleared: ${messageCache.size} users remaining`);
-    console.log(`  - Processed messages cleared: ${processedMessages.size} remaining`);
-    
-    // Send batch processing summary to admin group
-    if (processedCount > 0) {
-      await sendAdminLog(
-        `🔄 **Batch Processing Complete**\n\n` +
-        `✅ Processed: ${processedCount} users\n` +
-        `💬 Messages: ${totalMessages}\n` +
-        `⭐ XP Awarded: ${totalXP}\n` +
-        `❌ Errors: ${errorCount}\n` +
-        `⏱️ Duration: ${duration}ms`,
-        'BATCH'
-      );
-    }
-    
-  } catch (error) {
-    console.error('❌ Critical error in batch processing:', error);
-  }
-}
+// Batch processing is now handled by the optimized batchProcessor
+// No need for manual setInterval - it's managed by the optimization module
 
 // Error handling
 bot.on('error', (error) => {
@@ -3350,6 +3321,30 @@ async function setBotCommands() {
       { command: 'my_xp', description: '📊 XP istatistiklerinizi ve seviyenizi görün' },
       { command: 'leaderboard', description: '🏆 En iyi 10 kullanıcıyı XP\'ye göre görün' },
       { command: 'help', description: '❓ Tüm komutları göster' }
+    ];
+    
+    // Admin commands (English)
+    const adminCommands = [
+      { command: 'ban', description: '🚫 Ban a user (Admin only)' },
+      { command: 'unban', description: '🔓 Unban a user (Admin only)' },
+      { command: 'debug_level', description: '🔍 Debug level up system (Admin only)' },
+      { command: 'admin_stats', description: '📊 View bot statistics (Admin only)' },
+      { command: 'admin_test', description: '🧪 Test admin group connection (Admin only)' },
+      { command: 'group_info', description: '📊 Get group information (Admin only)' },
+      { command: 'test_welcome', description: '🧪 Test welcome message system (Admin only)' },
+      { command: 'auto_delete', description: '🗑️ Configure auto-delete settings (Admin only)' }
+    ];
+    
+    // Turkish admin commands
+    const turkishAdminCommands = [
+      { command: 'ban', description: '🚫 Kullanıcıyı yasakla (Sadece Admin)' },
+      { command: 'unban', description: '🔓 Kullanıcının yasağını kaldır (Sadece Admin)' },
+      { command: 'debug_level', description: '🔍 Seviye yükselme sistemini debug et (Sadece Admin)' },
+      { command: 'admin_stats', description: '📊 Bot istatistiklerini görün (Sadece Admin)' },
+      { command: 'admin_test', description: '🧪 Admin grup bağlantısını test et (Sadece Admin)' },
+      { command: 'group_info', description: '📊 Grup bilgilerini al (Sadece Admin)' },
+      { command: 'test_welcome', description: '🧪 Welcome mesaj sistemini test et (Sadece Admin)' },
+      { command: 'auto_delete', description: '🗑️ Auto-delete ayarlarını yapılandır (Sadece Admin)' }
     ];
     // Set private (default) commands
     await bot.setMyCommands(privateUserCommands);

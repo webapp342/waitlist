@@ -69,8 +69,8 @@ CREATE TABLE public.discord_daily_claims (
   claimed_at timestamp with time zone DEFAULT now(),
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT discord_daily_claims_pkey PRIMARY KEY (id),
-  CONSTRAINT discord_daily_claims_wallet_address_fkey FOREIGN KEY (wallet_address) REFERENCES public.users(wallet_address),
-  CONSTRAINT discord_daily_claims_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.discord_users(discord_id)
+  CONSTRAINT discord_daily_claims_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.discord_users(discord_id),
+  CONSTRAINT discord_daily_claims_wallet_address_fkey FOREIGN KEY (wallet_address) REFERENCES public.users(wallet_address)
 );
 CREATE TABLE public.discord_invited_users (
   id bigint NOT NULL DEFAULT nextval('discord_invited_users_id_seq'::regclass),

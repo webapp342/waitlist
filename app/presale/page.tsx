@@ -123,7 +123,7 @@ function PresalePageInner() {
 
   // Timer (her saniye güncellenir)
   useEffect(() => {
-    const endDate = new Date('2025-07-26T23:00:00Z'); // 5 gün uzatıldı
+    const endDate = new Date('2025-07-28T23:00:00Z'); // 2 gün uzatıldı
     const updateTimer = () => {
       const now = new Date();
       const timeLeft = endDate.getTime() - now.getTime();
@@ -140,7 +140,7 @@ function PresalePageInner() {
 
   // Progress ve raised/target (her 30 dakikada bir güncellenir)
   useEffect(() => {
-    const endDate = new Date('2025-07-26T23:00:00Z'); // 5 gün uzatıldı
+    const endDate = new Date('2025-07-28T23:00:00Z'); // 2 gün uzatıldı
     const updateProgress = () => {
       const now = new Date();
       

@@ -2,6 +2,26 @@ require('dotenv').config();
 
 const { Client, GatewayIntentBits, Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { createClient } = require('@supabase/supabase-js');
+const { LRUCache } = require('lru-cache');
+
+// Import optimizations
+const {
+  userCache,
+  processedMessages,
+  processedReactions,
+  metrics,
+  dbCircuitBreaker,
+  xpBatchProcessor,
+  rateLimiter,
+  executeQueryOptimized,
+  getCachedUserOptimized,
+  setCachedUserOptimized,
+  addXPOptimized,
+  processMessageOptimized,
+  cleanup: cleanupOptimizations,
+  initializeOptimizations,
+  setSupabaseClient
+} = require('./optimizations');
 
 // Environment variables
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || '';
@@ -21,65 +41,58 @@ const client = new Client({
   ]
 });
 
-// Supabase client with connection pooling
+// Supabase client with enhanced connection pooling
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
   db: {
-    schema: 'public'
+    schema: 'public',
+    pool: {
+      min: 2,
+      max: 10,
+      idleTimeoutMillis: 30000
+    }
   },
   auth: {
     persistSession: false // Discord bot doesn't need session persistence
   },
   global: {
     headers: {
-      'X-Client-Info': 'discord-bot'
+      'X-Client-Info': 'discord-bot-optimized'
     }
   }
 });
 
-// Performance monitoring
+// Pass supabase client to optimizations
+setSupabaseClient(supabase);
+
+// Legacy performance monitoring (kept for compatibility)
 let dbQueryCount = 0;
 let dbQueryTime = 0;
 let cacheHitCount = 0;
 let cacheMissCount = 0;
 
-// Database performance wrapper
+// Legacy database performance wrapper (kept for compatibility)
 async function executeQuery(queryFn, operation = 'unknown') {
-  const startTime = Date.now();
-  dbQueryCount++;
-  
-  try {
-    const result = await queryFn();
-    const duration = Date.now() - startTime;
-    dbQueryTime += duration;
-    
-    // Log slow queries (>100ms)
-    if (duration > 100) {
-      console.log(`🐌 Slow query (${duration}ms): ${operation}`);
-    }
-    
-    return result;
-  } catch (error) {
-    const duration = Date.now() - startTime;
-    console.error(`❌ Query failed (${duration}ms): ${operation}`, error);
-    throw error;
-  }
+  return await executeQueryOptimized(queryFn, operation);
 }
 
-// Cache system for performance optimization
-const userCache = new Map(); // discordId -> { userData, lastUpdate, xpData }
-const processedMessages = new Set(); // messageId -> true (prevent duplicates)
-const processedReactions = new Set(); // reactionId -> true (prevent duplicates)
-const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache TTL (increased for better performance)
-const BATCH_INTERVAL = 30 * 1000; // 30 seconds batch processing (reduced for faster updates)
+// Cache system for performance optimization (now using LRU cache from optimizations)
+const CACHE_TTL = 10 * 60 * 1000; // 10 minutes cache TTL
+const BATCH_INTERVAL = 30 * 1000; // 30 seconds batch processing
 
-// Rate limiting configuration
+// Rate limiting configuration (optimized)
 const RATE_LIMIT_DELAY = 50;
 const RATE_LIMIT_RETRY_DELAY = 2000;
 const MAX_MESSAGES_PER_MINUTE = 10;
 const MAX_MESSAGES_PER_HOUR = 100;
 
-// User rate limiting
-const userRateLimits = new Map();
+// User rate limiting (now using optimized rate limiter)
+const userRateLimits = new LRUCache({
+  max: 1000,
+  maxAge: 1000 * 60 * 5, // 5 minutes
+  updateAgeOnGet: true
+});
+
+// Global variables for compatibility (already defined elsewhere)
 
 // XP configuration
 const MESSAGE_XP = 1;
@@ -143,68 +156,31 @@ client.once(Events.ClientReady, () => {
   }
 });
 
-// Cache management functions
+// Cache management functions (optimized)
 function getCachedUser(discordId) {
-  const cached = userCache.get(discordId);
-  if (cached && Date.now() - cached.lastUpdate < CACHE_TTL) {
-    cacheHitCount++;
-    return cached;
-  }
-  cacheMissCount++;
-  return null;
+  return getCachedUserOptimized(discordId);
 }
 
 function setCachedUser(discordId, userData, xpData = null) {
-  userCache.set(discordId, {
-    userData,
-    xpData,
-    lastUpdate: Date.now()
-  });
+  setCachedUserOptimized(discordId, userData, xpData);
 }
 
 function clearExpiredCache() {
-  const now = Date.now();
-  for (const [discordId, cached] of userCache.entries()) {
-    if (now - cached.lastUpdate > CACHE_TTL) {
-      userCache.delete(discordId);
-    }
-  }
+  // Cache cleanup is now handled automatically by LRU cache
+  // No manual cleanup needed
 }
 
-// Start batch processing for XP updates
+// Start batch processing for XP updates (optimized)
 function startBatchProcessing() {
-  if (batchProcessingInterval) {
-    clearInterval(batchProcessingInterval);
-  }
-  
-  batchProcessingInterval = setInterval(async () => {
-    await processBatchXPUpdates();
-  }, BATCH_INTERVAL);
-  
-  console.log('🔄 Batch processing started');
+  // Batch processing is now handled by the optimized xpBatchProcessor
+  // No need for manual setInterval - it's managed by the optimization module
+  console.log('🔄 Optimized batch processing started');
 }
 
-// Process batch XP updates
+// Process batch XP updates (optimized)
 async function processBatchXPUpdates() {
-  if (xpUpdateQueue.size === 0) return;
-  
-  console.log(`🔄 Processing ${xpUpdateQueue.size} XP updates in batch`);
-  
-  const updates = Array.from(xpUpdateQueue.entries());
-  xpUpdateQueue.clear();
-  
-  for (const [discordId, updateData] of updates) {
-    try {
-      await processSingleXPUpdate(discordId, updateData.xpAmount, updateData.reason);
-    } catch (error) {
-      // Don't log foreign key constraint errors as they're expected for unconnected users
-      if (error.code === '23503' && error.message.includes('discord_users')) {
-        console.log(`⚠️ User ${discordId} not connected, skipping XP update`);
-      } else {
-        console.error(`❌ Error processing XP update for ${discordId}:`, error);
-      }
-    }
-  }
+  // This function is now handled by the optimized xpBatchProcessor
+  // No manual processing needed
 }
 
 // Process single XP update
@@ -316,20 +292,8 @@ async function processSingleXPUpdate(discordId, xpAmount, reason = 'activity') {
 
 // Add XP to user (now uses batch processing)
 async function addXP(discordId, xpAmount, reason = 'activity') {
-  // Add to batch queue instead of immediate processing
-  const existing = xpUpdateQueue.get(discordId);
-  if (existing) {
-    existing.xpAmount += xpAmount;
-    existing.timestamp = Date.now();
-  } else {
-    xpUpdateQueue.set(discordId, {
-      xpAmount,
-      reason,
-      timestamp: Date.now()
-    });
-  }
-  
-  return { levelUp: false, newXP: 0 }; // Will be processed in batch
+  // Use optimized XP adding
+  return await addXPOptimized(discordId, xpAmount, reason);
 }
 
 // Rate limiting helper
@@ -399,14 +363,18 @@ async function sendLevelUpNotification(channel, userId, oldLevel, newLevel, newX
   }
 }
 
-// Handle new messages
+// Handle new messages (optimized)
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
+  
+  // Use optimized message processing
+  await processMessageOptimized(message);
+  
   const userId = message.author.id;
   const channel = message.channel;
   const now = Date.now();
 
-  // Kullanıcı spam verisi
+  // Kullanıcı spam verisi (optimized with LRU cache)
   let spamData = userSpamData.get(userId) || { lastMessage: '', warnings: 0, messageTimestamps: [] };
   // 1 dakikalık mesaj zaman damgalarını güncelle
   spamData.messageTimestamps = spamData.messageTimestamps.filter(ts => now - ts < 60000);
@@ -442,8 +410,8 @@ client.on(Events.MessageCreate, async (message) => {
     return;
   }
 
-  // XP ver ve son mesajı güncelle
-  addXP(userId, MESSAGE_XP, 'message');
+  // XP ver ve son mesajı güncelle (optimized)
+  await addXP(userId, MESSAGE_XP, 'message');
   spamData.lastMessage = message.content;
   userSpamData.set(userId, spamData);
 
@@ -452,7 +420,7 @@ client.on(Events.MessageCreate, async (message) => {
 
   // Prevent duplicate processing
   if (processedMessages.has(message.id)) return;
-  processedMessages.add(message.id);
+      processedMessages.set(message.id, true);
 
   // Performance monitoring
   messageCount++;
@@ -517,12 +485,14 @@ client.on(Events.MessageCreate, async (message) => {
     if (error || !data) {
       // User not connected - send connection message
       const embed = new EmbedBuilder()
-        .setColor(0xff6b6b)
-        .setTitle('🔗 Connect Your Account')
-        .setDescription(`Hey <@${userId}>! To earn XP and rewards, connect your Discord account to your wallet.`)
+        .setColor(0x4fd1c5)
+        .setTitle('🔗 Connect Your Account to Unlock Rewards!')
+        .setDescription(`Hi <@${userId}>! Connect your Discord account to your wallet and start earning exclusive rewards.`)
         .addFields(
-          { name: 'What you\'ll get:', value: '• XP for messages and reactions\n• Daily BBLP rewards\n• Level progression\n• Community leaderboards' }
+          { name: 'Why Connect?', value: '• Earn XP for every message you send\n• Daily and weekly BBLP token bonuses\n• Level up and climb the leaderboard\n• Unlock special community perks and events', inline: false },
+          { name: 'How to Connect', value: 'Go to [bblip.io/social-connections](https://bblip.io/social-connections) and link your wallet in seconds.', inline: false }
         )
+        .setFooter({ text: 'BBLIP — Secure, rewarding, and community-driven.' })
         .setTimestamp();
 
       const row = new ActionRowBuilder()
@@ -530,7 +500,7 @@ client.on(Events.MessageCreate, async (message) => {
           new ButtonBuilder()
             .setLabel('Connect Account')
             .setStyle(ButtonStyle.Link)
-            .setURL(`${WEB_APP_URL}/discord`)
+            .setURL(`${WEB_APP_URL}/social-connections`)
         );
 
       await channel.send({ embeds: [embed], components: [row] });
@@ -807,7 +777,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
       new ButtonBuilder()
         .setLabel('Connect Account')
         .setStyle(ButtonStyle.Link)
-        .setURL(`${WEB_APP_URL}/discord`)
+        .setURL(`${WEB_APP_URL}/social-connections`)
     );
 
   await channel.send({ embeds: [embed], components: [row] });
@@ -847,20 +817,11 @@ client.on(Events.InteractionCreate, async (interaction) => {
     case 'leaderboard':
       await handleLeaderboardCommand(interaction);
       break;
-    case 'connect':
-      await handleConnectCommand(interaction);
-      break;
     case 'invite':
       await handleInviteCommand(interaction);
       break;
     case 'help':
       await handleHelpCommand(interaction);
-      break;
-    case 'cache':
-      await handleCacheCommand(interaction);
-      break;
-    case 'admin':
-      await handleAdminCommand(interaction);
       break;
   }
 });
@@ -894,7 +855,7 @@ async function handleXPCommand(interaction) {
           new ButtonBuilder()
             .setLabel('Connect Account')
             .setStyle(ButtonStyle.Link)
-            .setURL(`${WEB_APP_URL}/discord`)
+            .setURL(`${WEB_APP_URL}/social-connections`)
         );
 
       await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
@@ -980,46 +941,22 @@ async function handleXPCommand(interaction) {
   await interaction.reply({ embeds: [embed], ephemeral: true });
 }
 
-// Leaderboard command (optimized with cache)
+// Leaderboard command (direct query without RPC)
 async function handleLeaderboardCommand(interaction) {
   try {
-    // Use the optimized function to get leaderboard
+    // Direct query to avoid RPC function issues
     const { data: leaderboard, error } = await supabase
-      .rpc('get_discord_leaderboard');
+      .from('discord_activities')
+      .select(`
+        total_xp,
+        discord_users!inner(username)
+      `)
+      .order('total_xp', { ascending: false })
+      .limit(10);
 
     if (error) {
       console.error('Error fetching leaderboard:', error);
-      // Fallback to direct query if function fails
-      const { data: fallbackLeaderboard, error: fallbackError } = await supabase
-        .from('discord_activities')
-        .select(`
-          total_xp,
-          discord_users!inner(username, discriminator)
-        `)
-        .order('total_xp', { ascending: false })
-        .limit(10);
-
-      if (fallbackError) {
-        await interaction.reply({ content: '❌ Error fetching leaderboard.', ephemeral: true });
-        return;
-      }
-
-      const embed = new EmbedBuilder()
-        .setColor(0xffd700)
-        .setTitle('🏆 Discord Leaderboard')
-        .setDescription('Top 10 users by XP')
-        .setTimestamp();
-
-      fallbackLeaderboard.forEach((entry, index) => {
-        const level = getCurrentLevel(entry.total_xp);
-        embed.addFields({
-          name: `#${index + 1} ${entry.discord_users.username}#${entry.discord_users.discriminator}`,
-          value: `Level: ${level.name} | XP: ${entry.total_xp}`,
-          inline: false
-        });
-      });
-
-      await interaction.reply({ embeds: [embed] });
+      await interaction.reply({ content: '❌ Error fetching leaderboard.', ephemeral: true });
       return;
     }
 
@@ -1029,11 +966,11 @@ async function handleLeaderboardCommand(interaction) {
       .setDescription('Top 10 users by XP')
       .setTimestamp();
 
-    leaderboard.forEach((entry) => {
+    leaderboard.forEach((entry, index) => {
       const level = getCurrentLevel(entry.total_xp);
       embed.addFields({
-        name: `#${entry.rank_position} ${entry.username}#${entry.discriminator}`,
-        value: `Level: ${level.name} | XP: ${entry.total_xp} | Invites: ${entry.invite_count}`,
+        name: `#${index + 1} ${entry.discord_users.username}`,
+        value: `Level: ${level.name} | XP: ${entry.total_xp}`,
         inline: false
       });
     });
@@ -1062,7 +999,7 @@ async function handleConnectCommand(interaction) {
       new ButtonBuilder()
         .setLabel('Connect Account')
         .setStyle(ButtonStyle.Link)
-        .setURL(`${WEB_APP_URL}/discord`)
+        .setURL(`${WEB_APP_URL}/social-connections`)
     );
 
   await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
@@ -1097,7 +1034,7 @@ async function handleInviteCommand(interaction) {
           new ButtonBuilder()
             .setLabel('Connect Account')
             .setStyle(ButtonStyle.Link)
-            .setURL(`${WEB_APP_URL}/discord`)
+            .setURL(`${WEB_APP_URL}/social-connections`)
         );
 
       await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
@@ -1234,7 +1171,7 @@ async function handleInviteCommand(interaction) {
           
           // Update cache
           const cached = getCachedUser(userId);
-          if (cached) {
+          if (cached && cached.userData) {
             cached.userData.invite_link = inviteLink;
             setCachedUser(userId, cached.userData, cached.xpData);
           }
@@ -1287,19 +1224,19 @@ async function handleInviteCommand(interaction) {
 async function handleHelpCommand(interaction) {
   const embed = new EmbedBuilder()
     .setColor(0x7289da)
-    .setTitle('🤖 BBLIP Discord Bot Commands')
-    .setDescription('Available commands and features')
+    .setTitle('🤖 BBLIP Discord Bot — Help & Features')
+    .setDescription('Welcome! Here are the main commands and features you can use:')
     .addFields(
-      { name: '/xp', value: 'View your XP stats and level', inline: true },
-      { name: '/leaderboard', value: 'View top users by XP', inline: true },
-      { name: '/connect', value: 'Get connection instructions', inline: true },
-      { name: '/invite', value: 'Get your saved invite link or create new one', inline: true },
-      { name: '/help', value: 'Show this help message', inline: true },
-      { name: '/cache', value: 'Manage bot cache (Admin only)', inline: true },
-      { name: 'XP System', value: '• Messages: +1 XP\n• Daily activity: +5 XP\n• Weekly streak: +10 XP\n• Discord invites: +25 XP', inline: false },
-      { name: 'Levels', value: 'Bronze (0-250 XP): 1 BBLP/day\nSilver (251-500 XP): 2 BBLP/day\nGold (501-1000 XP): 3 BBLP/day\nPlatinum (1001-2000 XP): 4 BBLP/day\nDiamond (2001+ XP): 5 BBLP/day', inline: false },
-      { name: 'Invite System', value: '• Your invite link is saved and reused\n• Faster response times\n• Automatic verification\n• Persistent across bot restarts', inline: false }
+      { name: '/xp', value: 'Check your current XP, level, and progress.', inline: true },
+      { name: '/leaderboard', value: 'See the top users by XP in the server.', inline: true },
+      { name: '/invite', value: 'Get your personal invite link and earn rewards for inviting friends.', inline: true },
+      { name: '/help', value: 'Show this help message.', inline: true },
+      { name: '\u200B', value: '\u200B', inline: false },
+      { name: 'XP & Level System', value: '• Send messages to earn XP\n• Daily activity and weekly streak bonuses\n• Level up to earn more BBLP token rewards', inline: false },
+      { name: 'Invite Rewards', value: '• Share your invite link\n• Earn XP and BBLP when friends join\n• Track your invites easily', inline: false },
+      { name: 'How to Connect', value: 'Go to [bblip.io/social-connections](https://bblip.io/social-connections) to link your Discord and wallet for full rewards.', inline: false }
     )
+    .setFooter({ text: 'BBLIP — Secure, rewarding, and community-driven.' })
     .setTimestamp();
 
   await interaction.reply({ embeds: [embed], ephemeral: true });
@@ -2281,25 +2218,20 @@ async function showBatchStatus(interaction) {
   }
 }
 
-// Cleanup functions
+// Cleanup functions (optimized)
 function cleanup() {
   console.log('🧹 Cleaning up...');
+  
+  // Use optimized cleanup
+  cleanupOptimizations();
   
   if (batchProcessingInterval) {
     clearInterval(batchProcessingInterval);
   }
   
-  // Process remaining XP updates
-  if (xpUpdateQueue.size > 0) {
-    console.log(`🔄 Processing ${xpUpdateQueue.size} remaining XP updates...`);
-    processBatchXPUpdates().then(() => {
-      console.log('✅ Cleanup completed');
-      process.exit(0);
-    });
-  } else {
-    console.log('✅ Cleanup completed');
-    process.exit(0);
-  }
+  // Cleanup is now handled by optimizations
+  console.log('✅ Cleanup completed');
+  process.exit(0);
 }
 
 // Error handling
@@ -2519,35 +2451,19 @@ async function processDiscordInvite(newMemberId) {
   }
 }
 
-// Periodic cache cleanup
-setInterval(clearExpiredCache, CACHE_TTL);
+// Initialize optimizations
+initializeOptimizations();
 
-// Memory management - clear processed messages/reactions periodically
-setInterval(() => {
-  const now = Date.now();
-  const oneHourAgo = now - (60 * 60 * 1000);
-  
-  // Clear old processed messages (older than 1 hour)
-  for (const messageId of processedMessages) {
-    // This is a simple cleanup - in production you might want more sophisticated tracking
-    if (Math.random() < 0.1) { // 10% chance to clear each time
-      processedMessages.delete(messageId);
-    }
-  }
-  
-  // Clear old processed reactions (older than 1 hour)
-  for (const reactionId of processedReactions) {
-    if (Math.random() < 0.1) { // 10% chance to clear each time
-      processedReactions.delete(reactionId);
-    }
-  }
-  
-  console.log(`🧹 Memory cleanup: ${processedMessages.size} messages, ${processedReactions.size} reactions tracked`);
-}, 30 * 60 * 1000); // Every 30 minutes
+// Start batch processing (optimized)
+startBatchProcessing();
+
+// Memory management is now handled automatically by LRU cache
+// No manual cleanup needed
 
 // Start the bot
 if (BOT_TOKEN) {
   client.login(BOT_TOKEN);
+  console.log('🚀 Discord bot started with optimizations');
 } else {
   console.error('❌ DISCORD_BOT_TOKEN environment variable is required');
   process.exit(1);

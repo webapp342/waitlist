@@ -1,0 +1,65 @@
+{
+  "name": "bblip-discord-bot-optimized",
+  "version": "3.0.0",
+  "description": "BBLIP Discord Bot with advanced performance optimizations and multi-level caching",
+  "main": "bot.js",
+  "scripts": {
+    "start": "node --max-old-space-size=1024 bot.js",
+    "dev": "nodemon --max-old-space-size=1024 bot.js",
+    "start:optimized": "node --max-old-space-size=1024 --expose-gc bot.js",
+    "deploy-commands": "node deploy-commands.js",
+    "test": "echo \"No tests specified\" && exit 0",
+    "health": "curl http://localhost:3002/health",
+    "monitor": "node monitor.js",
+    "cleanup": "node cleanup.js",
+    "cache-clear": "echo \"Cache is automatically cleared every 5 minutes\"",
+    "performance-test": "echo \"Performance monitoring is active in the bot\""
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "@supabase/supabase-js": "^2.50.2",
+    "dotenv": "^17.2.0",
+    "lru-cache": "^10.2.0",
+    "prom-client": "^15.1.0",
+    "ioredis": "^5.3.2",
+    "express": "^5.1.0",
+    "cluster": "^0.7.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.3",
+    "pm2": "^5.3.0"
+  },
+  "keywords": [
+    "discord",
+    "bot",
+    "bblip",
+    "crypto",
+    "xp",
+    "rewards",
+    "cache",
+    "optimization",
+    "batch-processing",
+    "invite-tracking",
+    "referral-system",
+    "performance",
+    "monitoring"
+  ],
+  "author": "BBLIP Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "performance": {
+    "memory": "512MB",
+    "cpu": "2 cores",
+    "cache": "LRU with 500 entries",
+    "batch": "30 second intervals",
+    "circuit-breaker": "5 failures threshold"
+  },
+  "monitoring": {
+    "health": "http://localhost:3002/health",
+    "metrics": "Prometheus compatible",
+    "memory": "Auto cleanup at 400MB",
+    "cache": "Multi-level (Memory + Redis)"
+  }
+} 
