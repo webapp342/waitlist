@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if user exists
-    const { data: user, error: userError } = await supabaseAdmin
+    const { data: user, error: userError } = await supabase
       .from('users')
       .select('id')
       .eq('wallet_address', walletAddress)
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store OAuth session in database using service role to bypass RLS
-    const { error: sessionError } = await supabaseAdmin
+    // Store OAuth session in database
+    const { error: sessionError } = await supabase
       .from('discord_oauth_sessions')
       .insert({
         session_id: sessionId,

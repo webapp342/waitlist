@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase, supabaseAdmin } from '@/lib/supabase';
+import { supabase } from '@/lib/supabase';
 import { 
   exchangeCodeForToken, 
   getDiscordUser, 
@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     console.log('Step 1: Validating OAuth session...');
     
     // Validate OAuth session
-    const { data: session, error: sessionError } = await supabaseAdmin
+    const { data: session, error: sessionError } = await supabase
       .from('discord_oauth_sessions')
       .select('*')
       .eq('state', state)
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     console.log('Step 2: Marking session as used...');
     
     // Mark session as used
-    const { error: updateError } = await supabaseAdmin
+    const { error: updateError } = await supabase
       .from('discord_oauth_sessions')
       .update({ used: true })
       .eq('session_id', session.session_id);
@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     console.log('Step 5: Checking existing Discord connections...');
     
     // Check if Discord ID is already connected to another wallet
-    const { data: existingDiscordUser, error: discordCheckError } = await supabaseAdmin
+    const { data: existingDiscordUser, error: discordCheckError } = await supabase
       .from('discord_users')
       .select('user_id, discord_id')
       .eq('discord_id', discordUser.id)
@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
     console.log('Step 6: Checking wallet Discord connections...');
     
     // Check if wallet already has another Discord account
-    const { data: existingWalletDiscord, error: walletDiscordError } = await supabaseAdmin
+    const { data: existingWalletDiscord, error: walletDiscordError } = await supabase
       .from('discord_users')
       .select('discord_id')
       .eq('user_id', session.wallet_address)
@@ -197,7 +197,7 @@ export async function GET(request: NextRequest) {
       hasRefreshToken: !!insertData.refresh_token
     });
     
-    const { data: newDiscordUser, error: insertError } = await supabaseAdmin
+    const { data: newDiscordUser, error: insertError } = await supabase
       .from('discord_users')
       .insert(insertData)
       .select()
@@ -225,7 +225,7 @@ export async function GET(request: NextRequest) {
     console.log('Step 8: Creating Discord activity record...');
     
     // Create Discord activity record
-    const { error: activityError } = await supabaseAdmin
+    const { error: activityError } = await supabase
       .from('discord_activities')
       .upsert({
         discord_id: discordUser.id,
