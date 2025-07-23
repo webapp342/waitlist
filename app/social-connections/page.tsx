@@ -652,7 +652,7 @@ export default function SocialConnectionsPage() {
 
       // Sonuçları göster
       if (claimedRewards.length > 0) {
-        toast.success(`Başarıyla alındı: ${claimedRewards.join(', ')}`);
+        toast.success(`Successfully claimed: ${claimedRewards.join(', ')}`);
       }
       if (errors.length > 0) {
         toast.error(errors.join(' | '));
@@ -931,12 +931,12 @@ export default function SocialConnectionsPage() {
         const user = await userService.addUser(address);
         if (user) {
           setUserRegistered(true);
-          toast.success('Kullanıcı kaydı başarılı!');
+          toast.success('User registration successful!');
           // Kartları yükle
           const cards = await cardService.getUserCards(address);
           setUserCards(cards);
           if (cards && cards.length > 0) {
-            toast.success('Kartlarınız oluşturuldu!');
+            toast.success('Your cards have been created!');
           }
         } else {
           toast.error('Kullanıcı kaydı başarısız.');
