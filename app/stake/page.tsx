@@ -756,8 +756,9 @@ function StakeContent() {
   if (loading) {
     return (
       <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2">
+            <Header />
         <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
-          <Header />
+      
           <div className="flex items-center justify-center py-20 mt-20">
             <div className="relative">
               <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
@@ -789,7 +790,7 @@ function StakeContent() {
         ${metallicKeyframes}
       `}</style>
       <Header />
-      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-32 md:pt-32">
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-20 md:pt-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
           
           <div className="text-center mb-8">

@@ -505,7 +505,7 @@ export default function DashboardCTA({ userData, totalUsd }: DashboardCTAProps) 
 
   return (
     <motion.div
-      className="flex w-full max-w-2xl flex-col -mt-10 gap-2"
+      className="flex w-full flex-col -mt-20 gap-2"
       variants={containerVariants}
       initial="hidden"
       animate="visible">

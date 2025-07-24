@@ -98,6 +98,10 @@ body {
 }
 
 @layer utilities {
+  .font-space-grotesk {
+    font-family: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  }
+  
   /* Modern Animations */
   @keyframes fade-in {
     from {
@@ -347,4 +351,20 @@ body {
   border: none !important;
   ring: 0 !important;
   box-shadow: none !important;
+}
+
+/* Add slideInUp animation for bottom sheets */
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideInUp {
+  animation: slideInUp 0.3s ease-out forwards;
 }

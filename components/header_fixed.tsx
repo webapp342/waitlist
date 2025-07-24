@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "./ui/button";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import Image from "next/image";
 import { Menu, LogOut, ChevronDown } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
@@ -19,7 +19,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 const BSC_MAINNET_CHAIN_ID = 56;
 const ETH_MAINNET_CHAIN_ID = 1;
 
-interface MenuItem {
+type MenuItem = {
   label: string;
   href?: string;
   children?: MenuItem[];
@@ -35,51 +35,14 @@ export default function Header() {
   const [isAddressSheetOpen, setIsAddressSheetOpen] = useState(false);
   const [showNetworkMenu, setShowNetworkMenu] = useState(false);
   const [activeSubmenu, setActiveSubmenu] = useState<string | null>(null);
-  const [submenuTimerRef, setSubmenuTimerRef] = useState<NodeJS.Timeout | null>(null);
-  const [openMobileSubmenus, setOpenMobileSubmenus] = useState<Set<string>>(new Set());
   const chainId = useChainId();
   const { switchChain } = useSwitchChain();
+  const submenuTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const handleMouseEnter = (menuLabel: string) => {
-    if (submenuTimerRef) {
-      clearTimeout(submenuTimerRef);
-      setSubmenuTimerRef(null);
-    }
-    setActiveSubmenu(menuLabel);
-  };
-
-  const handleMouseLeave = () => {
-    const timer = setTimeout(() => {
-      setActiveSubmenu(null);
-    }, 150);
-    setSubmenuTimerRef(timer);
-  };
-
-  const toggleMobileSubmenu = (menuLabel: string) => {
-    const newOpenSubmenus = new Set(openMobileSubmenus);
-    if (newOpenSubmenus.has(menuLabel)) {
-      newOpenSubmenus.delete(menuLabel);
-    } else {
-      newOpenSubmenus.add(menuLabel);
-    }
-    setOpenMobileSubmenus(newOpenSubmenus);
-  };
-
-  const closeMobileMenu = () => {
-    setIsMenuOpen(false);
-    setOpenMobileSubmenus(new Set());
-  };
-
-  const isActivePage = (href: string): boolean => {
-    if (!href) return false;
-    if (href === '/') return pathname === '/';
-    return pathname.startsWith(href);
-  };
-
-  const isActiveCategory = (children: MenuItem[]): boolean => {
-    return children.some(item => item.href && isActivePage(item.href));
-  };
-
+  const isActivePage = (path: string) => pathname === path;
+  const isActiveCategory = (items: MenuItem[]): boolean => items.some(item => 
+    item.href === pathname || (item.children && isActiveCategory(item.children))
+  );
   const isOnBSC = chainId === BSC_MAINNET_CHAIN_ID;
   const isOnETH = chainId === ETH_MAINNET_CHAIN_ID;
 
@@ -154,15 +117,25 @@ export default function Header() {
     }
   };
   
-  // Organized menu structure with dropdowns - Presale now independent
+  const handleMouseEnter = (label: string) => {
+    if (submenuTimerRef.current) {
+      clearTimeout(submenuTimerRef.current);
+      submenuTimerRef.current = null;
+    }
+    setActiveSubmenu(label);
+  };
+
+  const handleMouseLeave = () => {
+    submenuTimerRef.current = setTimeout(() => {
+      setActiveSubmenu(null);
+    }, 300);
+  };
+
+  // Organized menu structure with dropdowns
   const menuItems: MenuItem[] = [
     { 
       label: "Dashboard", 
       href: "/dashboard"
-    },
-    { 
-      label: "Presale", 
-      href: "/presale"
     },
     { 
       label: "Earn",
@@ -176,6 +149,7 @@ export default function Header() {
       children: [
         { href: "/swap", label: "Swap" },
         { href: "/bridge", label: "Bridge" },
+        { href: "/presale", label: "Presale" },
       ]
     },
     { 
@@ -245,8 +219,8 @@ export default function Header() {
                 <div 
                   key={item.label} 
                   className="relative"
-                  onMouseEnter={() => item.children && handleMouseEnter(item.label)}
-                  onMouseLeave={item.children ? handleMouseLeave : undefined}
+                  onMouseEnter={() => handleMouseEnter(item.label)}
+                  onMouseLeave={handleMouseLeave}
                 >
                   {item.href ? (
                     <Link
@@ -299,7 +273,7 @@ export default function Header() {
             </motion.nav>
           </div>
 
-          {/* Search and Wallet Section */}
+          {/* Wallet Section */}
           <motion.div variants={itemVariants} className="hidden md:flex items-center gap-3">
             {/* Network Switcher */}
             {isConnected && address && (
@@ -403,9 +377,9 @@ export default function Header() {
                 size="sm"
                 variant="default"
                 onClick={() => setIsModalOpen(true)}
-                className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-full px-4 font-medium"
+                className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-lg px-4 font-medium"
               >
-                Connect
+                Connect Wallet
               </Button>
             )}
           </motion.div>
@@ -457,109 +431,85 @@ export default function Header() {
                 size="sm"
                 variant="default"
                 onClick={() => setIsModalOpen(true)}
-                className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-full px-4 font-medium"
+                className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-lg px-4 font-medium"
               >
-                Connect
+                Connect Wallet
               </Button>
             )}
           </motion.div>
 
-          {/* Mobile Menu Overlay - Enhanced user-friendly design */}
+          {/* Mobile Menu Overlay - Categorized by sections */}
           {isMenuOpen && (
-            <motion.div 
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
-              className="absolute top-full left-0 right-0 mt-2 bg-zinc-900/95 backdrop-blur-xl rounded-xl border border-zinc-800/50 shadow-2xl md:hidden z-[60] mx-4"
-            >
-              <div className="py-3">
-                {menuItems.map((item) => (
-                  <div key={item.label} className="border-b border-zinc-800/30 last:border-b-0">
-                    {item.href ? (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-zinc-900 rounded-xl border border-zinc-800/50 shadow-xl md:hidden z-[60]">
+              <div className="py-2">
+                {menuItems.map((category) => (
+                  <div key={category.label} className="mb-2">
+                    {category.href ? (
                       <Link
-                        href={item.href}
-                        className={cn(
-                          "flex items-center justify-between px-4 py-3 text-base font-medium transition-colors",
-                          isActivePage(item.href)
-                            ? 'text-yellow-200 bg-zinc-800/20'
-                            : 'text-zinc-200 hover:text-yellow-200 hover:bg-zinc-800/20'
-                        )}
-                        onClick={closeMobileMenu}
+                        href={category.href}
+                        className={`flex items-center gap-2 px-4 py-3 text-base font-medium transition-colors ${
+                          isActivePage(category.href)
+                          ? 'text-yellow-200 bg-white/5'
+                          : 'text-zinc-300 hover:text-yellow-200 hover:bg-white/5'
+                        }`}
+                        onClick={() => setIsMenuOpen(false)}
                       >
-                        <span>{item.label}</span>
-                        {isActivePage(item.href) && (
-                          <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-                        )}
+                        {category.label}
                       </Link>
                     ) : (
                       <>
-                        <button
-                          onClick={() => toggleMobileSubmenu(item.label)}
-                          className={cn(
-                            "w-full flex items-center justify-between px-4 py-3 text-base font-medium transition-colors",
-                            (item.children && isActiveCategory(item.children)) || openMobileSubmenus.has(item.label)
-                              ? 'text-yellow-200 bg-zinc-800/20'
-                              : 'text-zinc-200 hover:text-yellow-200 hover:bg-zinc-800/20'
-                          )}
-                        >
-                          <span>{item.label}</span>
-                          <ChevronDown 
-                            size={16} 
-                            className={cn(
-                              "transition-transform duration-200",
-                              openMobileSubmenus.has(item.label) ? "rotate-180" : ""
-                            )}
-                          />
-                        </button>
-                        
-                        {/* Mobile Submenu with smooth animation */}
-                        <AnimatePresence>
-                          {openMobileSubmenus.has(item.label) && item.children && (
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.2, ease: "easeInOut" }}
-                              className="overflow-hidden bg-zinc-800/20"
+                        <div className="px-4 py-2 text-sm font-medium text-zinc-400 border-b border-zinc-800/50 flex justify-between items-center">
+                          {category.label}
+                          <ChevronDown size={14} className="text-zinc-500" />
+                        </div>
+                        <div className="pt-1">
+                          {category.children?.map((item) => (
+                            <Link 
+                              key={item.href}
+                              href={item.href || '#'}
+                              className={`flex items-center gap-2 px-6 py-2.5 text-sm font-medium transition-colors ${
+                                isActivePage(item.href || '')
+                                ? 'text-yellow-200 bg-white/5'
+                                : 'text-zinc-300 hover:text-yellow-200 hover:bg-white/5'
+                              }`}
+                              onClick={() => setIsMenuOpen(false)}
                             >
-                              {item.children.map((subItem) => (
-                                <Link 
-                                  key={subItem.href}
-                                  href={subItem.href || '#'}
-                                  className={cn(
-                                    "flex items-center justify-between px-8 py-2.5 text-sm font-medium transition-colors",
-                                    isActivePage(subItem.href || '')
-                                      ? 'text-yellow-200 bg-zinc-700/30'
-                                      : 'text-zinc-300 hover:text-yellow-200 hover:bg-zinc-700/20'
-                                  )}
-                                  onClick={closeMobileMenu}
-                                >
-                                  <span>{subItem.label}</span>
-                                  {isActivePage(subItem.href || '') && (
-                                    <div className="w-1.5 h-1.5 rounded-full bg-yellow-400"></div>
-                                  )}
-                                </Link>
-                              ))}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
+                              {item.label}
+                            </Link>
+                          ))}
+                        </div>
                       </>
                     )}
                   </div>
                 ))}
-                
-                {/* Mobile Menu Footer */}
-                <div className="px-4 py-3 border-t border-zinc-800/30 mt-2">
-                  <button
-                    onClick={closeMobileMenu}
-                    className="w-full py-2 px-4 text-sm text-zinc-400 hover:text-zinc-200 transition-colors text-center"
-                  >
-                    Close Menu
-                  </button>
+              </div>
+
+              {/* Wallet Section */}
+              <div className="border-t border-zinc-800/70 p-4">
+                <div className="space-y-2">
+                  {isConnected && address ? (
+                    <Button
+                      onClick={handleDisconnect}
+                      size="default"
+                      variant="outline"
+                      className="w-full bg-zinc-900/80 border-red-800/50 text-red-400 hover:bg-red-900/30 hover:text-red-300 transition-all duration-200 rounded-lg px-4 py-2 font-medium text-sm flex items-center justify-center gap-2"
+                    >
+                      <LogOut size={16} />
+                      Disconnect
+                    </Button>
+                  ) : (
+                    <Button
+                      size="default"
+                      variant="default"
+                      onClick={() => { setIsMenuOpen(false); setIsModalOpen(true); }}
+                      className="w-full bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-lg px-4 py-2 font-medium"
+                    >
+                      Connect Wallet
+                    </Button>
+                  )}
                 </div>
               </div>
-            </motion.div>
+            </div>
           )}
           
           {/* Mobile Network Menu Dropdown */}

@@ -4,7 +4,7 @@ import CTA from "@/components/cta";
 import Testimonials from "@/components/testimonials";
 import Logos from "@/components/logos";
 import Particles from "@/components/ui/particles";
-import Header from "@/components/header";
+import Header from "@/components/header_fixed";
 import Footer from "@/components/footer";
 import HeroSection from "@/components/hero-section";
 import FeaturesGrid from "@/components/features-grid";

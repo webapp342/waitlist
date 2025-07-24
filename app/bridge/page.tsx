@@ -188,14 +188,16 @@ function BridgeContent() {
 
   return (
     <>
+  
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip ">
       <Header />
-      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-32 md:pt-32">
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
+
+        <div className="container mx-auto px-4 pt-20 sm:px-6 lg:px-8 max-w-2xl">
           
           {/* Title Section */}
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-2">
-              Token Bridge
+              BBLP Bridge
             </h1>
             <p className="text-gray-400 text-sm md:text-base">
               Bridge tokens between <span className="text-yellow-200 font-semibold">BSC Mainnet</span> and <span className="text-yellow-200 font-semibold">Ethereum Mainnet</span>

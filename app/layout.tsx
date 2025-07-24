@@ -1,13 +1,18 @@
 import "@/lib/indexedDbPolyfill";
 import "./globals.css";
 import type { Metadata } from "next";
-import { Figtree } from "next/font/google";
+import { Figtree, Space_Grotesk } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Analytics } from "@vercel/analytics/react";
 import { Providers } from "@/components/providers";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const FigtreeFont = Figtree({ subsets: ["latin"] });
+const SpaceGroteskFont = Space_Grotesk({ 
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: '--font-space-grotesk'
+});
 
 export const metadata: Metadata = {
   title: "Bblip - Spend Any Crypto, Anywhere | Virtual & Physical Crypto Cards",
@@ -157,7 +162,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={FigtreeFont.className}>
+      <body className={`${FigtreeFont.className} ${SpaceGroteskFont.variable}`}>
         <Providers>
           {children}
           <Toaster 

@@ -54,7 +54,7 @@ const ETH_PRESALE_CONFIG = {
 // ETH Presale Contract ABI (essential functions)
 const ETH_PRESALE_ABI = [
   "function tokenPriceUSD() view returns (uint256)",
-  "function calculateTokenAmount(uint256 ethAmount) view returns (uint256)",
+  "function calculateTokenAmount(uint256 ethAmount) view returns (uint250)",
   "function calculateETHAmount(uint256 tokenAmount) view returns (uint256)",
   "function getLatestETHPrice() view returns (uint256)",
   "function buyTokens() payable",
@@ -668,6 +668,152 @@ function PresalePageInner() {
     }
   }, [ethAmount, selectedToken, inputMode, ethPriceUSD]);
 
+  // State for gas prices
+  const [gasPrices, setGasPrices] = useState({
+    eth: { gasPrice: 30, gasLimit: 150000 }, // Default values
+    bnb: { gasPrice: 5, gasLimit: 200000 }   // Default values
+  });
+
+  // Fetch current gas prices and estimate gas limits
+  useEffect(() => {
+    const fetchGasPrices = async () => {
+      try {
+        // For Ethereum
+        if (selectedToken === TOKEN_IDS.eth) {
+          // Try to get current gas price from the network
+          try {
+            const provider = new ethers.JsonRpcProvider('https://eth.llamarpc.com');
+            const feeData = await provider.getFeeData();
+            
+            // Convert BigInt to number and from wei to gwei
+            const currentGasPrice = Number(feeData.gasPrice) / 1e9;
+            
+            // Add 20% buffer for safety
+            const safeGasPrice = Math.ceil(currentGasPrice * 1.2);
+            
+            console.log('Current ETH Gas Price:', currentGasPrice, 'Gwei');
+            console.log('Safe ETH Gas Price:', safeGasPrice, 'Gwei');
+            
+            // Update gas prices state
+            setGasPrices(prev => ({
+              ...prev,
+              eth: { 
+                ...prev.eth, 
+                gasPrice: safeGasPrice 
+              }
+            }));
+            
+            // Estimate gas limit if wallet is connected
+            if (walletClient && address && isOnETHMainnet) {
+              try {
+                await estimateGasLimit('eth');
+              } catch (gasError) {
+                console.error('Error estimating ETH gas limit:', gasError);
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching ETH gas price:', error);
+            // Keep using default values
+          }
+        }
+        
+        // For BNB
+        if (selectedToken === TOKEN_IDS.bnb) {
+          try {
+            const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org');
+            const feeData = await provider.getFeeData();
+            
+            // Convert BigInt to number and from wei to gwei
+            const currentGasPrice = Number(feeData.gasPrice) / 1e9;
+            
+            // Add 20% buffer for safety
+            const safeGasPrice = Math.ceil(currentGasPrice * 1.2);
+            
+            console.log('Current BNB Gas Price:', currentGasPrice, 'Gwei');
+            console.log('Safe BNB Gas Price:', safeGasPrice, 'Gwei');
+            
+            // Update gas prices state
+            setGasPrices(prev => ({
+              ...prev,
+              bnb: { 
+                ...prev.bnb, 
+                gasPrice: safeGasPrice 
+              }
+            }));
+          } catch (error) {
+            console.error('Error fetching BNB gas price:', error);
+            // Keep using default values
+          }
+        }
+      } catch (error) {
+        console.error('Error in fetchGasPrices:', error);
+      }
+    };
+
+    fetchGasPrices();
+    // Refresh gas prices every 30 seconds
+    const interval = setInterval(fetchGasPrices, 30000);
+    
+    return () => clearInterval(interval);
+  }, [selectedToken, walletClient, address, isOnETHMainnet]);
+
+  // Estimate gas limit for transactions
+  const estimateGasLimit = async (tokenType: 'eth' | 'bnb'): Promise<number> => {
+    try {
+      if (tokenType === 'eth') {
+        // ETH için gas limit hesaplama
+        if (!walletClient || !address) {
+          console.log('Wallet not connected, using default gas limit for ETH');
+          return gasPrices.eth.gasLimit; // Default değeri döndür
+        }
+
+        try {
+          // Create provider from wallet client
+          const provider = new ethers.BrowserProvider(walletClient as any);
+          const signer = await provider.getSigner();
+          
+          // Create a contract instance
+          const presaleContract = new ethers.Contract(
+            ETH_PRESALE_CONFIG.PRESALE_CONTRACT,
+            ETH_PRESALE_ABI,
+            signer
+          );
+          
+          // Estimate gas for buyTokens function
+          // Minimum ETH değeri (0.01 ETH) ile gas tahmini yapıyoruz
+          const minEthValue = ethers.parseEther('0.01');
+          const estimatedGas = await presaleContract.buyTokens.estimateGas({
+            value: minEthValue
+          });
+          
+          // Convert BigInt to number and add 20% buffer
+          const gasLimit = Math.ceil(Number(estimatedGas) * 1.2);
+          console.log('Estimated ETH gas limit:', gasLimit);
+          
+          // Update gas prices state
+          setGasPrices(prev => ({
+            ...prev,
+            eth: { 
+              ...prev.eth, 
+              gasLimit: gasLimit 
+            }
+          }));
+          
+          return gasLimit;
+        } catch (error) {
+          console.error('Error estimating ETH gas limit:', error);
+          return gasPrices.eth.gasLimit; // Error durumunda default değeri döndür
+        }
+      } else {
+        // BNB için gas limit hesaplama - daha basit bir yaklaşım
+        // BNB ağında presale işlemleri için standart değer kullanıyoruz
+        return gasPrices.bnb.gasLimit;
+      }
+    } catch (error) {
+      console.error('Error in estimateGasLimit:', error);
+      return tokenType === 'eth' ? gasPrices.eth.gasLimit : gasPrices.bnb.gasLimit;
+    }
+  };
 
 
   // Max button for selected token
@@ -675,6 +821,63 @@ function PresalePageInner() {
     if (!selectedTokenDetails || !address) return;
 
     try {
+      // Önce güncel gas değerlerini almaya çalış
+      if (selectedTokenDetails.name === 'ETH') {
+        // ETH için güncel gas değerlerini al
+        try {
+          const provider = new ethers.JsonRpcProvider('https://eth.llamarpc.com');
+          const feeData = await provider.getFeeData();
+          
+          // Convert BigInt to number and from wei to gwei
+          const currentGasPrice = Number(feeData.gasPrice) / 1e9;
+          
+          // Add 30% buffer for safety (max buton için daha güvenli olalım)
+          const safeGasPrice = Math.ceil(currentGasPrice * 1.3);
+          
+          // Update gas prices state
+          setGasPrices(prev => ({
+            ...prev,
+            eth: { 
+              ...prev.eth, 
+              gasPrice: safeGasPrice 
+            }
+          }));
+          
+          // Gas limit hesapla
+          if (walletClient && isOnETHMainnet) {
+            await estimateGasLimit('eth');
+          }
+        } catch (error) {
+          console.error('Error updating ETH gas values:', error);
+          // Continue with existing values
+        }
+      } else if (selectedTokenDetails.name === 'BNB') {
+        // BNB için güncel gas değerlerini al
+        try {
+          const provider = new ethers.JsonRpcProvider('https://bsc-dataseed.binance.org');
+          const feeData = await provider.getFeeData();
+          
+          // Convert BigInt to number and from wei to gwei
+          const currentGasPrice = Number(feeData.gasPrice) / 1e9;
+          
+          // Add 30% buffer for safety
+          const safeGasPrice = Math.ceil(currentGasPrice * 1.3);
+          
+          // Update gas prices state
+          setGasPrices(prev => ({
+            ...prev,
+            bnb: { 
+              ...prev.bnb, 
+              gasPrice: safeGasPrice 
+            }
+          }));
+        } catch (error) {
+          console.error('Error updating BNB gas values:', error);
+          // Continue with existing values
+        }
+      }
+
+      // Şimdi max değerleri hesapla
       if (selectedTokenDetails.name === 'ETH') {
         // ETH fiyatının yüklendiğinden emin ol
         if (!ethPriceUSD || ethPriceUSD <= 0) {
@@ -697,23 +900,37 @@ function PresalePageInner() {
           return;
         }
         
-        // Kullanıcının tüm bakiyesini kullan (gas rezerv yok)
-        const maxEthAmount = ethBalanceValue;
+        // Gas fee için rezerv hesaplama - dinamik gas fiyatlarını kullan
+        const { gasPrice, gasLimit } = gasPrices.eth;
+        const gasFeeETH = (gasLimit * gasPrice) / 1000000000; // Convert from Gwei to ETH
         
-        console.log('Max ETH Amount:', maxEthAmount, 'ETH');
+        console.log('Current Gas Price:', gasPrice, 'Gwei');
+        console.log('Gas Limit:', gasLimit);
+        console.log('Estimated Gas Fee:', gasFeeETH, 'ETH');
+        
+        // Kullanılabilir maksimum ETH miktarı (gas fee rezervi bırakarak)
+        const maxEthAmount = Math.max(0, ethBalanceValue - gasFeeETH);
+        
+        // Güvenlik için %2 daha düşük kullanıyoruz (ek koruma)
+        const safeMaxEthAmount = maxEthAmount * 0.98;
+        
+        console.log('Max ETH Amount (after gas reserve):', safeMaxEthAmount, 'ETH');
         
         setInputMode('ETH');
-        setEthAmount(maxEthAmount.toFixed(6));
+        setEthAmount(safeMaxEthAmount.toFixed(6));
         
         // Calculate BBLP amount
         try {
-          if (maxEthAmount > 0) {
-            const ethAmountWei = ethers.parseEther(maxEthAmount.toString());
+          if (safeMaxEthAmount > 0) {
+            const ethAmountWei = ethers.parseEther(safeMaxEthAmount.toString());
             const tokenAmount = await calculateETHTokenAmount(ethAmountWei.toString());
             setBblpAmount(tokenAmount);
             console.log('Calculated BBLP Amount:', tokenAmount);
           } else {
             setBblpAmount('0');
+            if (maxEthAmount <= 0) {
+              setError('Insufficient ETH balance for gas fees');
+            }
           }
         } catch (calcError) {
           console.error('Error calculating BBLP amount:', calcError);
@@ -724,10 +941,29 @@ function PresalePageInner() {
         // Use balance from useBalance hook
         const bnbBalanceValue = bnbBalance ? parseFloat(bnbBalance.formatted) : 0;
         
-        // Kullanıcının tüm bakiyesini kullan (gas rezerv yok)
-        const maxBnbAmount = bnbBalanceValue;
+        // Gas fee için rezerv hesaplama - dinamik gas fiyatlarını kullan
+        const { gasPrice, gasLimit } = gasPrices.bnb;
+        const gasFeeInBNB = (gasLimit * gasPrice) / 1000000000; // Convert from Gwei to BNB
+        
+        console.log('Current Gas Price:', gasPrice, 'Gwei');
+        console.log('Gas Limit:', gasLimit);
+        console.log('Estimated Gas Fee for BNB:', gasFeeInBNB, 'BNB');
+        
+        // Kullanılabilir maksimum BNB miktarı (gas fee rezervi bırakarak)
+        const maxBnbAmount = Math.max(0, bnbBalanceValue - gasFeeInBNB);
+        
+        // Güvenlik için %2 daha düşük kullanıyoruz
+        const safeMaxBnbAmount = maxBnbAmount * 0.98;
+        
+        console.log('Max BNB Amount (after gas reserve):', safeMaxBnbAmount, 'BNB');
+        
         setInputMode('BNB');
-        setBnbAmount(maxBnbAmount.toFixed(6));
+        setBnbAmount(safeMaxBnbAmount.toFixed(6));
+        
+        // Yetersiz bakiye kontrolü
+        if (maxBnbAmount <= 0) {
+          setError('Insufficient BNB balance for gas fees');
+        }
       }
     } catch (error) {
       console.error('Error getting max balance:', error);
@@ -853,7 +1089,7 @@ function PresalePageInner() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2">
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-10 md:pt-10">
         <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
           <Header />
           <div className="flex items-center justify-center py-20 mt-20">
@@ -883,18 +1119,32 @@ function PresalePageInner() {
   return (
     <>
       <Header />
-      <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-32 md:pt-32">
+      <main className="flex min-h-screen flex-col items-center overflow-x-clip ">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
           
-          <div className="text-center mb-6">
-          <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-2">
-              BBLP Token Presale
-            </h1>
-            <p className="text-gray-400 text-sm md:text-base">
+          <div className="text-center mb-6 mt-10">
+            {/* Enhanced Hero Section with Stronger Value Proposition */}
+
+
+             
+            <div className="mb-4">
+            
+              
+              <h1 className="text-3xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-3">
+                Secure Your BBLP Tokens 
+              </h1>
+              <p className="text-gray-400 text-sm md:text-base">
             Purchase BBLP tokens from BSC Mainnet and Ethereum Mainnet
 
 
             </p>
+              
+             
+              
+             
+              
+           
+            </div>
           </div>
 
           {/* Minimal Professional Presale Progress */}
@@ -974,6 +1224,9 @@ function PresalePageInner() {
               </div>
             </div>
           </div>
+
+
+      
 
           {/* Main Presale Card - Minimal Professional Design */}
           <div className="bg-zinc-900/80 backdrop-blur-sm rounded-2xl border border-zinc-800 overflow-hidden mb-8">
@@ -1131,13 +1384,13 @@ function PresalePageInner() {
             ) : (
               <Button
                 className={cn(
-                  "w-full h-10 font-medium transition-colors",
+                  "w-full h-12 font-semibold transition-all duration-200 relative overflow-hidden",
                   (selectedToken === TOKEN_IDS.eth && (!ethAmount || parseFloat(ethAmount) <= 0)) || 
                   (selectedToken === TOKEN_IDS.bnb && (!bnbAmount || parseFloat(bnbAmount) <= 0))
                     ? "bg-zinc-700 text-zinc-400 cursor-not-allowed"
                     : isInsufficientBalance()
                     ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                    : "bg-green-500 hover:bg-green-600 text-white"
+                    : "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-green-500/20"
                 )}
                 disabled={
                   isInsufficientBalance() ||
@@ -1217,8 +1470,7 @@ function PresalePageInner() {
         {/* FAQ Section - Professional */}
         <div className="mb-20">
           <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-white mb-2">Frequently Asked Questions</h2>
-            <p className="text-sm text-gray-400">Everything you need to know about BBLP presale</p>
+            
           </div>
           
           <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-xl border border-zinc-800 overflow-hidden">
@@ -1293,154 +1545,287 @@ function PresalePageInner() {
 
       {/* ETH Purchase Confirmation Modal */}
       {showETHConfirmModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-700 p-6 max-w-md w-full shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="bg-zinc-900/95 backdrop-blur-xl rounded-2xl border border-zinc-800/50 p-6 max-w-md w-full shadow-2xl"
+          >
+            {/* Header */}
             <div className="text-center mb-6">
-              <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-                <Image src="/eth.png" alt="ETH" width={48} height={48}  />
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-full flex items-center justify-center border border-blue-500/30">
+                <Image src="/eth.png" alt="ETH" width={32} height={32} className="rounded-full" />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Confirm ETH Purchase</h3>
-              <p className="text-gray-400 text-sm">Please review your transaction details</p>
+              <h3 className="text-xl font-semibold text-white mb-1">Confirm Purchase</h3>
+              <p className="text-sm text-zinc-400">Review transaction details before proceeding</p>
             </div>
 
+            {/* Transaction Details */}
             <div className="space-y-4 mb-6">
-              <div className="bg-black/40 rounded-xl p-4 border border-zinc-800">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-gray-400 text-sm">You Pay</span>
-                  <div className="flex items-center gap-2">
-                    <Image src="/eth.png" alt="ETH" width={16} height={16}  />
-                    <span className="text-gray-400 text-sm">ETH</span>
+              {/* From Section */}
+              <div className="bg-zinc-800/40 rounded-xl p-4 border border-zinc-700/50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">You Pay</span>
+                  <div className="flex items-center gap-1.5">
+                    <Image src="/eth.png" alt="ETH" width={14} height={14} className="rounded-full" />
+                    <span className="text-xs font-medium text-zinc-400">ETH</span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-white">{parseFloat(ethAmount || '0').toFixed(6)} ETH</div>
-                <div className="text-sm text-gray-500">
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-white">{parseFloat(ethAmount || '0').toFixed(6)}</span>
+                  <span className="text-sm text-zinc-500">ETH</span>
+                </div>
+                <div className="text-sm text-zinc-500 mt-1">
                   {ethPriceUSD > 0 ? 
-                    `$${(parseFloat(ethAmount || '0') * ethPriceUSD).toFixed(2)} USD` : 
+                    `≈ $${(parseFloat(ethAmount || '0') * ethPriceUSD).toFixed(2)}` : 
                     'Calculating...'
                   }
                 </div>
               </div>
 
-              <div className="flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center">
+              {/* Arrow */}
+              <div className="flex justify-center">
+                <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center">
                   <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                   </svg>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 rounded-xl p-4 border border-green-500/20">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-gray-400 text-sm">You Receive</span>
-                  <div className="flex items-center gap-2">
-                    <Image src="/logo.svg" alt="BBLP" width={16} height={16} />
-                    <span className="text-gray-400 text-sm">BBLP</span>
+              {/* To Section */}
+              <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl p-4 border border-green-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-green-400 uppercase tracking-wider">You Receive</span>
+                  <div className="flex items-center gap-1.5">
+                    <Image src="/logo.svg" alt="BBLP" width={14} height={14} />
+                    <span className="text-xs font-medium text-green-400">BBLP</span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-green-400">{parseFloat(bblpAmount || '0').toFixed(4)} BBLP</div>
-                <div className="text-sm text-gray-500">${(parseFloat(bblpAmount || '0') * 0.10).toFixed(2)} USD</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-green-400">{parseFloat(bblpAmount || '0').toFixed(2)}</span>
+                  <span className="text-sm text-green-500">BBLP</span>
+                </div>
+                <div className="text-sm text-green-500/80 mt-1">
+                  ≈ ${(parseFloat(bblpAmount || '0') * 0.10).toFixed(2)}
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Button
+            {/* Summary */}
+            <div className="bg-zinc-800/30 rounded-lg p-3 mb-6 border border-zinc-700/30">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-zinc-400">Exchange Rate</span>
+                <span className="text-white font-medium">
+                  1 ETH = {ethPriceUSD > 0 ? (ethPriceUSD / 0.10).toFixed(0) : '---'} BBLP
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
                 onClick={() => setShowETHConfirmModal(false)}
-                variant="outline"
-                className="border-zinc-700 hover:bg-zinc-800"
+                className="flex-1 py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-medium rounded-xl transition-all duration-200 border border-zinc-700"
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={confirmETHPurchase}
-                className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
                 disabled={isEthBuying}
+                className="flex-1 py-3 px-4 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isEthBuying ? (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-center gap-2">
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Confirming...
+                    <span>Processing...</span>
                   </div>
                 ) : (
                   'Confirm Purchase'
                 )}
-              </Button>
+              </button>
             </div>
-          </div>
+          </motion.div>
         </div>
       )}
 
       {/* BNB Purchase Confirmation Modal */}
       {showBNBConfirmModal && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-gradient-to-br from-zinc-900 to-zinc-950 rounded-2xl border border-zinc-700 p-6 max-w-md w-full shadow-2xl">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className="bg-zinc-900/95 backdrop-blur-xl rounded-2xl border border-zinc-800/50 p-6 max-w-md w-full shadow-2xl"
+          >
+            {/* Header */}
             <div className="text-center mb-6">
-            <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center">
-            <Image src="/bnb.svg" alt="BNB" width={48} height={48} />
+              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 rounded-full flex items-center justify-center border border-yellow-500/30">
+                <Image src="/bnb.svg" alt="BNB" width={32} height={32} />
               </div>
-              <h3 className="text-xl font-bold text-white mb-2">Confirm BNB Purchase</h3>
-              <p className="text-gray-400 text-sm">Please review your transaction details</p>
+              <h3 className="text-xl font-semibold text-white mb-1">Confirm Purchase</h3>
+              <p className="text-sm text-zinc-400">Review transaction details before proceeding</p>
             </div>
 
+            {/* Transaction Details */}
             <div className="space-y-4 mb-6">
-              <div className="bg-black/40 rounded-xl p-4 border border-zinc-800">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-gray-400 text-sm">You Pay</span>
-                  <div className="flex items-center gap-2">
-                    <Image src="/bnb.svg" alt="BNB" width={16} height={16} />
-                    <span className="text-gray-400 text-sm">BNB</span>
+              {/* From Section */}
+              <div className="bg-zinc-800/40 rounded-xl p-4 border border-zinc-700/50">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-zinc-400 uppercase tracking-wider">You Pay</span>
+                  <div className="flex items-center gap-1.5">
+                    <Image src="/bnb.svg" alt="BNB" width={14} height={14} />
+                    <span className="text-xs font-medium text-zinc-400">BNB</span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-white">{parseFloat(bnbAmount || '0').toFixed(6)} BNB</div>
-                <div className="text-sm text-gray-500">${bnbPriceUSD > 0 ? (parseFloat(bnbAmount || '0') * bnbPriceUSD).toFixed(2) : 'Calculating...'} USD</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-white">{parseFloat(bnbAmount || '0').toFixed(6)}</span>
+                  <span className="text-sm text-zinc-500">BNB</span>
+                </div>
+                <div className="text-sm text-zinc-500 mt-1">
+                  ≈ ${bnbPriceUSD > 0 ? (parseFloat(bnbAmount || '0') * bnbPriceUSD).toFixed(2) : 'Calculating...'}
+                </div>
               </div>
 
-              <div className="flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-zinc-700 flex items-center justify-center">
+              {/* Arrow */}
+              <div className="flex justify-center">
+                <div className="w-8 h-8 rounded-full bg-zinc-800 border border-zinc-700 flex items-center justify-center">
                   <svg className="w-4 h-4 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                   </svg>
                 </div>
               </div>
 
-              <div className="bg-gradient-to-br from-green-500/10 to-green-600/5 rounded-xl p-4 border border-green-500/20">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-gray-400 text-sm">You Receive</span>
-                  <div className="flex items-center gap-2">
-                    <Image src="/logo.svg" alt="BBLP" width={16} height={16} />
-                    <span className="text-gray-400 text-sm">BBLP</span>
+              {/* To Section */}
+              <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-xl p-4 border border-green-500/20">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-green-400 uppercase tracking-wider">You Receive</span>
+                  <div className="flex items-center gap-1.5">
+                    <Image src="/logo.svg" alt="BBLP" width={14} height={14} />
+                    <span className="text-xs font-medium text-green-400">BBLP</span>
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-green-400">{parseFloat(bblpAmount || '0').toFixed(4)} BBLP</div>
-                <div className="text-sm text-gray-500">${(parseFloat(bblpAmount || '0') * 0.10).toFixed(2)} USD</div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-2xl font-bold text-green-400">{parseFloat(bblpAmount || '0').toFixed(2)}</span>
+                  <span className="text-sm text-green-500">BBLP</span>
+                </div>
+                <div className="text-sm text-green-500/80 mt-1">
+                  ≈ ${(parseFloat(bblpAmount || '0') * 0.10).toFixed(2)}
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Button
+            {/* Summary */}
+            <div className="bg-zinc-800/30 rounded-lg p-3 mb-6 border border-zinc-700/30">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-zinc-400">Exchange Rate</span>
+                <span className="text-white font-medium">
+                  1 BNB = {bnbPriceUSD > 0 ? (bnbPriceUSD / 0.10).toFixed(0) : '---'} BBLP
+                </span>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3">
+              <button
                 onClick={() => setShowBNBConfirmModal(false)}
-                variant="outline"
-                className="border-zinc-700 hover:bg-zinc-800"
+                className="flex-1 py-3 px-4 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white font-medium rounded-xl transition-all duration-200 border border-zinc-700"
               >
                 Cancel
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={confirmBNBPurchase}
-                className="bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700"
                 disabled={isBuying}
+                className="flex-1 py-3 px-4 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-600 hover:to-yellow-700 text-black font-medium rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isBuying ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Confirming...
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin"></div>
+                    <span>Processing...</span>
                   </div>
                 ) : (
                   'Confirm Purchase'
                 )}
-              </Button>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Estimated Gas Fee Section - User Friendly */}
+      <div className="mb-5 p-4 bg-zinc-800/30 rounded-lg border border-zinc-700/50">
+        <div className="flex items-center gap-2 mb-3">
+          <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
+            <Zap className="w-4 h-4 text-blue-400" />
+          </div>
+          <h3 className="text-sm font-medium text-white">Estimated Network Fee</h3>
+        </div>
+        
+        <div className="space-y-2">
+          {selectedToken === TOKEN_IDS.eth ? (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">Gas Price</span>
+                <span className="text-xs text-gray-300">{gasPrices.eth.gasPrice} Gwei</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">Gas Limit</span>
+                <span className="text-xs text-gray-300">{gasPrices.eth.gasLimit.toLocaleString()}</span>
+              </div>
+              <div className="border-t border-zinc-700/50 pt-2 mt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-white">Network Fee</span>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-white">
+                      {((gasPrices.eth.gasLimit * gasPrices.eth.gasPrice) / 1000000000).toFixed(6)} ETH
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      ≈ ${(((gasPrices.eth.gasLimit * gasPrices.eth.gasPrice) / 1000000000) * ethPriceUSD).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">Gas Price</span>
+                <span className="text-xs text-gray-300">{gasPrices.bnb.gasPrice} Gwei</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-gray-400">Gas Limit</span>
+                <span className="text-xs text-gray-300">{gasPrices.bnb.gasLimit.toLocaleString()}</span>
+              </div>
+              <div className="border-t border-zinc-700/50 pt-2 mt-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-white">Network Fee</span>
+                  <div className="text-right">
+                    <div className="text-sm font-medium text-white">
+                      {((gasPrices.bnb.gasLimit * gasPrices.bnb.gasPrice) / 1000000000).toFixed(6)} BNB
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      ≈ ${(((gasPrices.bnb.gasLimit * gasPrices.bnb.gasPrice) / 1000000000) * bnbPriceUSD).toFixed(2)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+          
+          {/* Gas Fee Info */}
+          <div className="mt-3 p-2 bg-blue-500/5 rounded border border-blue-500/10">
+            <div className="flex items-start gap-2">
+              <Info className="w-3 h-3 text-blue-400 mt-0.5 flex-shrink-0" />
+              <p className="text-xs text-blue-300">
+                Network fees are required to process your transaction on the blockchain. 
+                The "Max" button automatically deducts this fee from your balance.
+              </p>
             </div>
           </div>
         </div>
-      )}
+      </div>
     </>
   );
 }

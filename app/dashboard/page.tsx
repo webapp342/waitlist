@@ -346,8 +346,9 @@ function DashboardContent() {
   if (loading) {
     return (
       <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2">
+                  <Header />
+
         <section className="flex flex-col items-center px-4 sm:px-6 lg:px-8 w-full">
-          <Header />
           <div className="flex items-center justify-center py-20 mt-20">
             <div className="relative">
               <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400"></div>
@@ -373,13 +374,14 @@ function DashboardContent() {
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-2 md:pt-2">
+    <main className="flex min-h-screen flex-col items-center overflow-x-clip ">
+              <Header />
+
       <section className="flex flex-col items-center mt-10 px-4 sm:px-6 lg:px-8 w-full max-w-7xl mx-auto">
-        <Header />
 
         {/* Network Warning - Show when connected but not on supported network */}
         {isConnected && !isOnSupportedNetwork && (
-          <div className="w-full max-w-5xl mt-20 mb-10 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
+          <div className="w-full mt-20 mb-10 p-4 bg-gradient-to-r from-orange-500/10 to-red-500/10 border border-orange-500/20 rounded-xl">
             <div className="flex items-center gap-3 mb-3">
               <div className="p-2 rounded-lg bg-orange-500/20 border border-orange-500/30">
                 <Network className="w-5 h-5 text-orange-400" />
@@ -432,7 +434,7 @@ function DashboardContent() {
 
         {/* Switch Chain Error Message */}
         {switchChainError && (
-          <div className="w-full max-w-5xl mt-8 mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+          <div className="w-full mt-8 mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-xl">
             <div className="flex items-center gap-2">
               <AlertCircle className="w-4 h-4 text-red-400" />
               <p className="text-sm text-red-300">{switchChainError}</p>
@@ -444,30 +446,30 @@ function DashboardContent() {
 
         {/* Main Dashboard Content */}
         <div className={cn(
-          "w-full max-w-5xl mt-8 space-y-4 transition-all duration-300",
+          "w-full mt-8 space-y-4 transition-all duration-300",
           !isOnSupportedNetwork && isConnected && "opacity-50 pointer-events-none"
         )}>
           {/* Dashboard Header - Simplified */}
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-4">
             <div className="animate-fade-in">
-<div className="flex items-center gap-2 mb-2">
-<h1 className="text-3xl lg:text-4xl font-bold text-white mb-2 tracking-tight">Portfolio Overview</h1>
-              <button 
-                onClick={handleRefresh}
-                className={cn(
-                  "text-zinc-400 hover:text-yellow-400 transition-colors",
-                  (!isConnected || isRefreshing) && "opacity-50 cursor-not-allowed"
-                )}
-                disabled={isRefreshing || !isConnected}
-              >
-                <RefreshCw className={cn("w-5 h-5", isRefreshing && "animate-spin")} />
-              </button>
-</div>             
-              <p className="text-gray-400 text-sm lg:text-base">Track and manage your digital assets</p>
+              <div className="flex items-center gap-2 mb-1">
+                <h1 className="text-2xl lg:text-3xl font-bold text-white tracking-tight">Portfolio Overview</h1>
+                <button 
+                  onClick={handleRefresh}
+                  className={cn(
+                    "text-zinc-400 hover:text-yellow-400 transition-colors",
+                    (!isConnected || isRefreshing) && "opacity-50 cursor-not-allowed"
+                  )}
+                  disabled={isRefreshing || !isConnected}
+                >
+                  <RefreshCw className={cn("w-4 h-4", isRefreshing && "animate-spin")} />
+                </button>
+              </div>             
+              <p className="text-gray-400 text-xs lg:text-sm">Track and manage your digital assets</p>
             </div>
             
             {/* Action Buttons - Enhanced with Psychological Triggers */}
-            <div className="flex items-center gap-3 mt-4 -mb-5 lg:mt-0 animate-slide-in">
+            <div className="flex items-center gap-2 mt-4 lg:mt-0 animate-slide-in">
               {/* Remove Switch Network button, only show other action buttons */}
               {isOnSupportedNetwork && (
                 <>
@@ -475,9 +477,9 @@ function DashboardContent() {
                     <Button
                         size="sm"
                         variant="outline"
-                        className="bg-zinc-900/80 backdrop-blur-sm border-zinc-800 text-zinc-400 rounded-l  border   transition-all duration-200 group cursor-pointer"
+                        className="bg-zinc-900/80 backdrop-blur-sm border-zinc-800 text-zinc-400 rounded-l  border   transition-all duration-200 group cursor-pointer text-xs px-3 py-1 h-auto"
                       >
-                        <Repeat className="w-4 h-4 mr-2 group-hover:rotate-12 text-zinc-200 transition-transform duration-200" />
+                        <Repeat className="w-3 h-3 mr-1 group-hover:rotate-12 text-zinc-200 transition-transform duration-200" />
                         Swap
                       </Button>
                     </Link>
@@ -486,9 +488,9 @@ function DashboardContent() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="bg-gradient-to-br text-yellow-400 from-yellow-500/10 to-yellow-600/5 backdrop-blur-sm rounded-l  border border-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200 group cursor-pointer"
+                        className="bg-gradient-to-br text-yellow-400 from-yellow-500/10 to-yellow-600/5 backdrop-blur-sm rounded-l border border-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200 group cursor-pointer text-xs px-3 py-1 h-auto"
                       >
-                        <Coins className="w-4 h-4 mr-2 group-hover:rotate-12 text-yellow-400 transition-transform duration-200" />
+                        <Coins className="w-3 h-3 mr-1 group-hover:rotate-12 text-yellow-400 transition-transform duration-200" />
                         Stake
                       </Button>
                     </Link>
@@ -497,10 +499,10 @@ function DashboardContent() {
                     <Link href="/presale">
                       <Button
                         size="sm"
-                        className="group bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-black font-semibold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 relative overflow-hidden"
+                        className="group bg-gradient-to-r from-yellow-400 via-yellow-500 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-black font-semibold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 relative overflow-hidden text-xs px-3 py-1 h-auto"
                       >
                         <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></span>
-                        <Plus className="w-4 h-4 mr-2 group-hover:rotate-90 transition-transform duration-200" />
+                        <Plus className="w-3 h-3 mr-1 group-hover:rotate-90 transition-transform duration-200" />
                         Buy BBLP
                       </Button>
                     </Link>
@@ -510,32 +512,32 @@ function DashboardContent() {
           </div>
 
           {/* Quick Stats Bar - Improved for Desktop */}
-          <div className="grid grid-cols-2 lg:grid-cols-2 gap-4 lg:gap-6 animate-fade-in-up">
-            <div className="bg-zinc-900/80 backdrop-blur-sm border-zinc-800 text-zinc-400 rounded-xl p-4 lg:p-6 border border-blue-500/20 hover:border-blue-500/30 transition-all duration-200 group cursor-pointer">
+          <div className="grid grid-cols-2 lg:grid-cols-2 gap-3 lg:gap-4 animate-fade-in-up mb-4">
+            <div className="bg-zinc-900/80 backdrop-blur-sm border-zinc-800/50 text-zinc-400 rounded-xl p-3 lg:p-4 border hover:border-zinc-700/50 transition-all duration-200 group cursor-pointer">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs lg:text-sm  mb-1">Total Staked</p>
-                  <p className="text-lg lg:text-xl font-bold text-zinc-200">{combinedUserData?.stakedAmount || '0'} BBLP</p>
+                  <p className="text-xs lg:text-sm text-zinc-500 mb-1">Total Staked</p>
+                  <p className="text-base lg:text-lg font-bold text-zinc-200">{combinedUserData?.stakedAmount || '0'} BBLP</p>
                 </div>
-                <Coins className="w-5 h-5 lg:w-6 lg:h-6 text-zinc-200 group-hover:rotate-12 transition-transform" />
+                <Coins className="w-4 h-4 lg:w-5 lg:h-5 text-zinc-400 group-hover:text-zinc-200 transition-colors" />
               </div>
             </div>
             
-            <div className="bg-gradient-to-br from-yellow-500/10 to-yellow-600/5 backdrop-blur-sm rounded-xl p-4 lg:p-6 border border-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200 group cursor-pointer">
+            <div className="bg-zinc-900/80 backdrop-blur-sm border-yellow-500/10 rounded-xl p-3 lg:p-4 border hover:border-yellow-500/20 transition-all duration-200 group cursor-pointer">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-xs lg:text-sm text-yellow-400/80 mb-1">Referral Earnings</p>
-                  <p className="text-lg lg:text-xl font-bold text-yellow-400">{(parseFloat(referralStats.totalRewards) / 10).toFixed(2)} USDT</p>
+                  <p className="text-xs lg:text-sm text-zinc-500 mb-1">Referral Earnings</p>
+                  <p className="text-base lg:text-lg font-bold text-yellow-400">{(parseFloat(referralStats.totalRewards) / 10).toFixed(2)} USDT</p>
                 </div>
-                <Trophy className="w-5 h-5 lg:w-6 lg:h-6 text-yellow-400 group-hover:scale-110 transition-transform" />
+                <Trophy className="w-4 h-4 lg:w-5 lg:h-5 text-yellow-400/70 group-hover:text-yellow-400 transition-colors" />
               </div>
             </div>
           </div>
 
           {/* Assets Table - Enhanced for Desktop */}
-          <div className="bg-gradient-to-br from-zinc-900/90  to-zinc-950/90 backdrop-blur-xl rounded-xl border border-zinc-800 shadow-2xl overflow-hidden ">
+          <div className="bg-zinc-900/80 backdrop-blur-xl rounded-lg border border-zinc-800/50 shadow-xl overflow-hidden mb-4">
             {/* Assets List - Enhanced */}
-            <div className="divide-y divide-zinc-800/50">
+            <div className="divide-y divide-zinc-800/30">
               {ASSETS.map((asset, index) => {
                 const data = getAssetData(asset.symbol);
                 const isPositive = data.changeValue > 0;
@@ -548,61 +550,59 @@ function DashboardContent() {
                 return (
                   <div
                     key={asset.symbol}
-                    className="px-2 py-2 "
+                    className="px-2 py-2"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
                     <div className="flex items-center justify-between">
                       {/* Asset Info */}
                       <div className="flex items-center gap-2">
-                        <div className="w-12 h-12 lg:w-14 lg:h-14 rounded-lg flex items-center justify-center shadow-lg relative">
+                        <div className="w-9 h-9 lg:w-10 lg:h-10 rounded-lg flex items-center justify-center shadow-sm relative">
                           <div className={cn(
-                            "w-7 h-7 lg:w-8 lg:h-8 rounded-full flex items-center justify-center",
-                            (asset.symbol === 'ETH') && "bg-white",
-                            (asset.symbol === 'BNB') && "bg-black",
-                            (asset.symbol === 'BUSD') && "bg-[#f0b90b]",
-                            (asset.symbol === 'USDT' || asset.symbol === 'USDT_ETH') && "bg-[#50af95]"
+                            "w-6 h-6 lg:w-7 lg:h-7 rounded-full flex items-center justify-center",
+                            (asset.symbol === 'ETH') && "bg-white/5",
+                            (asset.symbol === 'BNB') && "bg-black/5",
+                            (asset.symbol === 'BUSD') && "bg-[#f0b90b]/5",
+                            (asset.symbol === 'USDT' || asset.symbol === 'USDT_ETH') && "bg-[#50af95]/5"
                           )}>
                             <Image 
                               src={asset.icon} 
                               alt={asset.symbol} 
-                              width={(asset.symbol === 'BNB' || asset.symbol === 'USDC' || asset.symbol === 'USDC_ETH') ? 32 : 24} 
-                              height={(asset.symbol === 'BNB' || asset.symbol === 'USDC' || asset.symbol === 'USDC_ETH') ? 32 : 24} 
-                              className={cn("group-hover:rotate-12 transition-transform", (asset.symbol === 'BNB' || asset.symbol === 'USDC' || asset.symbol === 'USDC_ETH') ? 'lg:w-8 lg:h-8' : 'lg:w-6 lg:h-6')} 
+                              width={(asset.symbol === 'BNB' || asset.symbol === 'USDC' || asset.symbol === 'USDC_ETH') ? 24 : 20} 
+                              height={(asset.symbol === 'BNB' || asset.symbol === 'USDC' || asset.symbol === 'USDC_ETH') ? 24 : 20} 
+                              className={cn("drop-shadow-sm")} 
                             />
                           </div>
                           {/* Network Badge - Only show for non-native tokens */}
                           {!asset.isNative && (
                             <div className={cn(
-                              "absolute bottom-0 right-1 flex items-center justify-center p-0",
-                              asset.network === 'bsc' ? 'w-6 h-6 rounded-full bg-black/80 shadow-sm' : 'w-5 h-5 rounded-full bg-white shadow-sm'
+                              "absolute bottom-0 right-0 flex items-center justify-center p-0",
+                              asset.network === 'bsc' ? 'w-4 h-4 rounded-full bg-black/80 shadow-sm' : 'w-4 h-4 rounded-full bg-white shadow-sm'
                             )}>
                               <Image 
                                 src={asset.network === 'bsc' ? '/bnb.svg' : '/eth.png'} 
                                 alt={asset.network} 
-                                width={asset.network === 'bsc' ? 18 : 12} 
-                                height={asset.network === 'bsc' ? 18 : 12} 
-                                className={asset.network === 'bsc' ? 'lg:w-5 lg:h-5' : 'lg:w-4 lg:h-4'} 
+                                width={asset.network === 'bsc' ? 12 : 10} 
+                                height={asset.network === 'bsc' ? 12 : 10}
                               />
                             </div>
                           )}
                         </div>
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-white group-hover:text-yellow-400 transition-colors text-base lg:text-lg">{asset.symbol.replace('_ETH', '')}</h3>
-                            <div className="px-1.5 py-0.5 bg-zinc-800/50 rounded-xl">
-                              <p className="text-xs text-gray-400">{asset.networkName}</p>
+                          <div className="flex items-center gap-1">
+                            <h3 className="font-medium text-sm lg:text-base text-white">{asset.symbol.replace('_ETH', '')}</h3>
+                            <div className="px-1.5 py-0.5 bg-zinc-800/30 rounded-xl ml-1">
+                              <p className="text-xs text-zinc-500">{asset.networkName}</p>
                             </div>
                           </div>
-                          <p className="text-sm text-gray-500">{data.balance.toFixed(4)} {asset.symbol.replace('_ETH', '')}</p>
+                          <p className="text-xs text-zinc-500">{data.balance.toFixed(4)} {asset.symbol.replace('_ETH', '')}</p>
                         </div>
                       </div>
 
                       {/* Balance & Change */}
                       <div className="text-right">
-                        <p className="font-bold text-l lg:text-xl text-white mr-2">
+                        <p className="font-medium text-sm lg:text-base text-white mr-2">
                           ${data.usdValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                         </p>
-                    
                       </div>
                     </div>
                   </div>
@@ -614,39 +614,39 @@ function DashboardContent() {
           {/* Staking Activity - Better Desktop Layout */}
           {isConnected && stakeLogs.length > 0 && (
             <div className="animate-fade-in-up">
-              <div className="mb-6">
+              <div className="mb-4">
                 {/* Header - Enhanced */}
-                <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h3 className="text-lg lg:text-xl font-semibold text-white">Recent Activity</h3>
-                    <p className="text-sm text-gray-400">Your staking transactions</p>
+                    <h3 className="text-base lg:text-lg font-medium text-white">Recent Activity</h3>
+                    <p className="text-xs text-zinc-500">Your staking transactions</p>
                   </div>
-                  <span className="text-xs text-gray-500 bg-zinc-800/50 px-3 py-1 rounded-full">
+                  <span className="text-xs text-zinc-500 bg-zinc-800/30 px-2 py-0.5 rounded-full">
                     {stakeLogs.length} total
                   </span>
                 </div>
 
                 {/* Transactions List - Show 3 by default */}
-                <div className="space-y-3 lg:space-y-4">
+                <div className="space-y-2">
                   {stakeLogs.slice(0, showAllStakeLogs ? stakeLogs.length : 3).map((log, index) => {
                     const logDate = new Date(log.created_at || '');
                     const getActionIcon = (actionType: string) => {
                       switch (actionType) {
-                        case 'stake': return <TrendingUp className="w-4 h-4 text-green-400" />;
-                        case 'unstake': return <ArrowDownLeft className="w-4 h-4 text-yellow-400" />;
-                        case 'claim_rewards': return <Coins className="w-4 h-4 text-blue-400" />;
-                        case 'emergency_withdraw': return <Info className="w-4 h-4 text-red-400" />;
-                        default: return <History className="w-4 h-4 text-gray-400" />;
+                        case 'stake': return <TrendingUp className="w-3.5 h-3.5 text-green-400" />;
+                        case 'unstake': return <ArrowDownLeft className="w-3.5 h-3.5 text-yellow-400" />;
+                        case 'claim_rewards': return <Coins className="w-3.5 h-3.5 text-blue-400" />;
+                        case 'emergency_withdraw': return <Info className="w-3.5 h-3.5 text-red-400" />;
+                        default: return <History className="w-3.5 h-3.5 text-zinc-400" />;
                       }
                     };
 
                     const getActionColor = (actionType: string) => {
                       switch (actionType) {
-                        case 'stake': return 'from-green-500/10 to-green-600/5 border-green-500/20 text-green-400';
-                        case 'unstake': return 'from-yellow-500/10 to-yellow-600/5 border-yellow-500/20 text-yellow-400';
-                        case 'claim_rewards': return 'from-blue-500/10 to-blue-600/5 border-blue-500/20 text-blue-400';
-                        case 'emergency_withdraw': return 'from-red-500/10 to-red-600/5 border-red-500/20 text-red-400';
-                        default: return 'from-gray-500/10 to-gray-600/5 border-gray-500/20 text-gray-400';
+                        case 'stake': return 'from-green-500/10 to-green-600/5 border-green-500/10 text-green-400';
+                        case 'unstake': return 'from-yellow-500/10 to-yellow-600/5 border-yellow-500/10 text-yellow-400';
+                        case 'claim_rewards': return 'from-blue-500/10 to-blue-600/5 border-blue-500/10 text-blue-400';
+                        case 'emergency_withdraw': return 'from-red-500/10 to-red-600/5 border-red-500/10 text-red-400';
+                        default: return 'from-gray-500/10 to-gray-600/5 border-gray-500/10 text-gray-400';
                       }
                     };
 
@@ -654,21 +654,21 @@ function DashboardContent() {
                       <div
                         key={index}
                         className={cn(
-                          "bg-gradient-to-br rounded-xl p-4 lg:p-6 border backdrop-blur-sm group hover:scale-[1.02] transition-all duration-200 animate-slide-in-right",
+                          "bg-gradient-to-br rounded-xl py-2.5 px-3 lg:px-4 border backdrop-blur-sm group hover:scale-[1.01] transition-all duration-200 animate-slide-in-right border-zinc-800/30",
                           getActionColor(log.action_type)
                         )}
                         style={{ animationDelay: `${index * 100}ms` }}
                       >
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-3 lg:gap-4">
-                            <div className="p-2 rounded-lg bg-zinc-800/50 backdrop-blur-sm">
+                          <div className="flex items-center gap-2 lg:gap-3">
+                            <div className="p-1.5 rounded-lg bg-zinc-900/60 backdrop-blur-sm">
                               {getActionIcon(log.action_type)}
                             </div>
                             <div>
-                              <p className={cn("font-semibold capitalize text-sm lg:text-base", getActionColor(log.action_type).split(' ').pop())}>
+                              <p className={cn("font-medium capitalize text-xs lg:text-sm", getActionColor(log.action_type).split(' ').pop())}>
                                 {log.action_type.replace('_', ' ')}
                               </p>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-[10px] lg:text-xs text-zinc-500">
                                 {logDate.toLocaleDateString('en-US', { 
                                   month: 'short', 
                                   day: 'numeric',
@@ -679,11 +679,11 @@ function DashboardContent() {
                             </div>
                           </div>
                           
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
                             {log.amount !== '0' && (
                               <div className="text-right">
-                                <p className="font-bold text-white text-sm lg:text-base">{parseFloat(log.amount).toFixed(2)}</p>
-                                <p className="text-xs text-gray-400">BBLP</p>
+                                <p className="font-medium text-zinc-200 text-xs lg:text-sm">{parseFloat(log.amount).toFixed(2)}</p>
+                                <p className="text-[10px] text-zinc-500">BBLP</p>
                               </div>
                             )}
                             
@@ -691,9 +691,9 @@ function DashboardContent() {
                               href={`https://testnet.bscscan.com/tx/${log.transaction_hash}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-2 rounded-lg bg-zinc-800/50 hover:bg-zinc-700/50 transition-colors"
+                              className="p-1.5 rounded-lg bg-zinc-900/60 hover:bg-zinc-800/60 transition-colors"
                             >
-                              <ExternalLink className="w-4 h-4 text-gray-400" />
+                              <ExternalLink className="w-3 h-3 text-zinc-400" />
                             </a>
                           </div>
                         </div>
@@ -704,14 +704,14 @@ function DashboardContent() {
 
                 {/* View All Link */}
                 {stakeLogs.length > 3 && (
-                  <div className="mt-6">
+                  <div className="mt-3">
                     <Link href="/stake">
                       <Button
                         variant="ghost"
-                        className="w-full text-yellow-400 transition-all duration-200 group"
+                        className="w-full text-zinc-400 hover:text-yellow-400 transition-all duration-200 group text-xs h-8"
                       >
                         <span>View All Transactions</span>
-                        <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                        <ArrowRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
                       </Button>
                     </Link>
                   </div>
@@ -722,19 +722,19 @@ function DashboardContent() {
 
           {/* No Transactions State - Enhanced */}
           {isConnected && stakeLogs.length === 0 && (
-            <div >
-              <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 p-12 shadow-2xl text-center">
-                <div className="w-20 h-20  flex items-center justify-center mx-auto mb-6 ">
-                  <History className="w-10 h-10 text-zinc-600" />
+            <div>
+              <div className="bg-zinc-900/80 backdrop-blur-xl rounded-xl border border-zinc-800/50 p-8 text-center">
+                <div className="w-16 h-16 mx-auto mb-4 flex items-center justify-center opacity-60">
+                  <History className="w-8 h-8 text-zinc-600" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-3">No Staking Activity Yet</h3>
-                <p className="text-gray-400 mb-8 max-w-md mx-auto">
-                  Start your staking journey today and earn rewards while supporting the network
+                <h3 className="text-lg font-medium text-white mb-2">No Activity Yet</h3>
+                <p className="text-sm text-zinc-400 mb-6 max-w-md mx-auto">
+                  Start your staking journey to earn rewards while supporting the network
                 </p>
                 <Link href="/stake">
-                  <Button className="bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 group">
-                    <Sparkles className="w-4 h-4 mr-2 group-hover:animate-spin" />
-                    Start Staking Now
+                  <Button className="bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-yellow-300 font-medium text-sm transition-all duration-200 px-5 py-2 h-auto">
+                    <Sparkles className="w-3 h-3 mr-2 opacity-70" />
+                    Start Staking
                   </Button>
                 </Link>
               </div>
@@ -744,49 +744,49 @@ function DashboardContent() {
           {/* Referral Section - Compact Professional Design */}
           {isConnected && referralCode && (
             <div>
-              <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-2xl border border-zinc-800 mb-8 shadow-lg overflow-hidden">
-                <div className="p-6 lg:p-8">
-                  <div className="flex items-center gap-3 mb-6">
-                    <div className="w-12 h-12 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
-                      <Gift className="w-6 h-6 text-yellow-400" />
+              <div className="bg-zinc-900/80 backdrop-blur-xl rounded-xl border border-zinc-800/50 mb-4 overflow-hidden">
+                <div className="p-4 lg:p-6">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="w-10 h-10 rounded-lg bg-yellow-500/5 border border-yellow-500/10 flex items-center justify-center">
+                      <Gift className="w-5 h-5 text-yellow-400/80" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-bold text-white">Earn with Referrals</h3>
-                      <p className="text-sm text-gray-400">Invite friends, earn rewards together</p>
+                      <h3 className="text-base font-medium text-white">Referral Program</h3>
+                      <p className="text-xs text-zinc-500">Invite friends, earn rewards together</p>
                     </div>
                   </div>
                   
                   {/* Quick Stats */}
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
-                      <p className="text-2xl font-bold text-white mb-1">{referralStats.totalReferrals}</p>
-                      <p className="text-xs text-gray-400">Friends Referred</p>
+                  <div className="grid grid-cols-2 gap-3 mb-4">
+                    <div className="bg-zinc-900/50 rounded-lg p-3 text-center border border-zinc-800/50">
+                      <p className="text-lg font-medium text-white mb-0">{referralStats.totalReferrals}</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">Friends Referred</p>
                     </div>
-                    <div className="bg-black/20 rounded-xl p-4 text-center border border-zinc-800">
-                      <p className="text-2xl font-bold text-yellow-400 mb-1">{(parseFloat(referralStats.totalRewards) / 10).toFixed(2)}</p>
-                      <p className="text-xs text-gray-400">USDT Earned</p>
+                    <div className="bg-zinc-900/50 rounded-lg p-3 text-center border border-zinc-800/50">
+                      <p className="text-lg font-medium text-yellow-400 mb-0">{(parseFloat(referralStats.totalRewards) / 10).toFixed(2)}</p>
+                      <p className="text-xs text-zinc-500 mt-0.5">USDT Earned</p>
                     </div>
                   </div>
                   
                   {/* Referral Link */}
-                  <div className="bg-black/20 rounded-xl p-4 border border-zinc-800 mb-4">
-                    <div className="flex items-center justify-between gap-4">
+                  <div className="bg-zinc-900/50 rounded-lg p-3 border border-zinc-800/50 mb-4">
+                    <div className="flex items-center justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs text-gray-400 mb-1">Your referral link</p>
-                        <p className="text-sm font-mono text-white truncate">
+                        <p className="text-xs text-zinc-500 mb-1">Your referral link</p>
+                        <p className="text-xs font-mono text-zinc-300 truncate">
                           https://bblip.io?ref={referralCode.code}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex gap-1">
                         <button
                           onClick={() => {
                             navigator.clipboard.writeText(`https://bblip.io?ref=${referralCode.code}`);
                             toast.success('Referral link copied!');
                           }}
-                          className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200"
+                          className="p-1.5 rounded-lg bg-zinc-800 border border-zinc-700/50 hover:bg-zinc-700/80 transition-all duration-200"
                           aria-label="Copy referral link"
                         >
-                          <Copy className="w-4 h-4 text-yellow-400" />
+                          <Copy className="w-3.5 h-3.5 text-zinc-300" />
                         </button>
                         <button
                           onClick={() => {
@@ -801,10 +801,10 @@ function DashboardContent() {
                               toast.success('Referral link copied!');
                             }
                           }}
-                          className="p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20 hover:bg-yellow-500/20 hover:border-yellow-500/30 transition-all duration-200"
+                          className="p-1.5 rounded-lg bg-zinc-800 border border-zinc-700/50 hover:bg-zinc-700/80 transition-all duration-200"
                           aria-label="Share referral link"
                         >
-                          <Share2 className="w-4 h-4 text-yellow-400" />
+                          <Share2 className="w-3.5 h-3.5 text-zinc-300" />
                         </button>
                       </div>
                     </div>
@@ -812,7 +812,7 @@ function DashboardContent() {
                   
                   {/* Claim Button - Full Width */}
                   <Link href="/referral" className="block">
-                    <Button className="w-full bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-black font-bold shadow-lg hover:shadow-yellow-500/20 transition-all duration-200 group py-3">
+                    <Button className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-yellow-300 text-sm py-2 h-auto font-medium border border-zinc-700/30 transition-all duration-200">
                       Claim $1,000 USDT Bonus
                     </Button>
                   </Link>
