@@ -165,6 +165,10 @@ export default function Header() {
       href: "/presale"
     },
     { 
+      label: "Bblip Quests", 
+      href: "/social-connections"
+    },
+    { 
       label: "Earn",
       children: [
         { href: "/stake", label: "Stake" },
@@ -209,7 +213,7 @@ export default function Header() {
         />
       )}
       {/* Non-fixed header - removed "fixed" class so it scrolls with content */}
-      <div className="w-full z-[55] px-4 pt-4 md:px-4">
+      <div className="w-full z-[55] px-4 pt-4 md:px-4 bg-[#18181B]">
         <motion.div
           variants={containerVariants}
           initial="hidden"

@@ -1039,16 +1039,18 @@ export default function SocialConnectionsPage() {
   if (!allConnected) {
     // Redesigned connect cards overlay
     return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center relative" style={{ background: '#18181B' }}>
+      <>
+        <Header />
+        <div className="min-h-screen w-full flex flex-col items-center justify-center relative" style={{ background: '#18181B' }}>
         {/* Overlay */}
-        <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
+        <div className="fixed top-16 left-0 right-0 bottom-0 z-30 backdrop-blur-md" />
         {/* Motivational Explanation */}
-        <div className="relative z-50 flex flex-col items-center justify-center w-full mb-8">
-          <div className="text-2xl font-bold text-white text-center mb-2 px-4 mobile-hero-compact">Connect your accounts !</div>
-          <div className="text-base text-[#A1A1AA] text-center px-4 mb-2 mobile-hero-desc">Connect X, Telegram, and Discord to unlock all features and maximize rewards.</div>
+        <div className="relative z-40 flex flex-col items-center justify-center w-full mb-8">
+          <div className="text-2xl font-bold text-white text-center mb-2 px-4 mobile-hero-compact">Start Your Quest!</div>
+          <div className="text-base text-[#A1A1AA] text-center px-4 mb-2 mobile-hero-desc">Connect all three platforms to unlock your full earning potential and access exclusive quest rewards.</div>
         </div>
         {/* Connect Cards */}
-        <div className="relative z-50 flex flex-col items-center justify-center w-full">
+        <div className="relative z-40 flex flex-col items-center justify-center w-full">
           <div className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-4 only-mobile-flex">
             {[
               {
@@ -1131,7 +1133,8 @@ export default function SocialConnectionsPage() {
             </div>
           </div>
         </div>
-      </div>
+        </div>
+      </>
     );
   }
 
@@ -1141,8 +1144,8 @@ export default function SocialConnectionsPage() {
       <div className="min-h-screen px-2 sm:px-4 md:px-0" style={{ color: '#F3F3F3', position: 'relative' }}>
         {/* Overview Başlık ve Açıklama */}
         <div className="w-full max-w-6xl mx-auto mt-40 mb-2">
-          <h1 className="text-3xl font-bold text-white mb-2">Social Connections Overview</h1>
-          <p className="text-base text-[#A1A1AA]">Being active in our community. The more you engage, the more you earn!</p>
+          <h1 className="text-3xl font-bold text-white mb-2">BBLP Social Quest</h1>
+          <p className="text-base text-[#A1A1AA]">Connect, engage, and earn! Complete quests across X, Telegram, and Discord to unlock exclusive rewards and level up your journey.</p>
         </div>
         {blurOverlay}
         <div className={allDisconnected ? 'pointer-events-none select-none filter blur-sm opacity-60' : ''}>
