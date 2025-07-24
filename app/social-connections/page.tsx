@@ -928,14 +928,20 @@ export default function SocialConnectionsPage() {
       setUserRegistering(true);
       try {
         // Kullanıcıyı ekle
-        const user = await userService.addUser(address);
+        const existingUser = await userService.checkUserExists(address);
+        let user = existingUser;
+        let isNew = false;
+        if (!existingUser) {
+          user = await userService.addUser(address);
+          isNew = true;
+        }
         if (user) {
           setUserRegistered(true);
-          toast.success('User registration successful!');
+          if (isNew) toast.success('User registration successful!');
           // Kartları yükle
           const cards = await cardService.getUserCards(address);
           setUserCards(cards);
-          if (cards && cards.length > 0) {
+          if (isNew && cards && cards.length > 0) {
             toast.success('Your cards have been created!');
           }
         } else {
@@ -1147,19 +1153,14 @@ export default function SocialConnectionsPage() {
           {/* Connection Overview - Responsive Grid: Estimated üstte tam genişlikte, altta iki kart yan yana */}
           <div className="w-full max-w-6xl mx-auto mb-10 grid mt-2 grid-cols-2 gap-2 md:px-0">
             {/* Estimated BBLP Reward Kartı */}
-            <div className="col-span-2 text-center p-8 bg-[#23232A] rounded-2xl border border-[#2A2A2E] flex flex-col items-center justify-center shadow-lg">
-              <div className="text-4xl font-bold text-yellow-400 mb-2">
-                {totalSocialPointsLoading ? '...' : ((getTotalXP() + totalSocialPoints) * 0.02).toLocaleString(undefined, { maximumFractionDigits: 2 })} BBLP
-              </div>
-              <p className="text-[#A1A1AA] text-base">Estimated BBLP Reward </p>
-            </div>
+           
             <div className="text-center p-8 bg-[#23232A] rounded-2xl border border-[#2A2A2E] flex flex-col items-center justify-center shadow-lg">
-              <div className="text-4xl font-bold text-[#F3F3F3] mb-2">{getTotalXP()} XP</div>
-              <p className="text-[#A1A1AA] text-base">Total XP</p>
+              <div className="text-4xl font-bold text-[#F3F3F3] mb-2">{getTotalXP()} </div>
+              <p className="text-[#A1A1AA] text-base">Your XP</p>
             </div>
             <div className="text-center p-8 bg-[#23232A] rounded-2xl border border-[#2A2A2E] flex flex-col items-center justify-center shadow-lg">
               <div className="text-4xl font-bold text-[#F3F3F3] mb-2">{totalSocialPointsLoading ? '...' : totalSocialPoints}</div>
-              <p className="text-[#A1A1AA] text-base">Total Social Points</p>
+              <p className="text-[#A1A1AA] text-base">Your Social Points</p>
             </div>
           </div>
 
@@ -1237,7 +1238,7 @@ export default function SocialConnectionsPage() {
                     </span>
                     <span className="text-xs mt-1">
                       <span className="px-2 py-0.5 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent">
-                        {getUserTotalDailyReward()} BBLP
+                        {getUserTotalDailyReward()} Points
                       </span>
                     </span>
                   </div>
@@ -1284,9 +1285,9 @@ export default function SocialConnectionsPage() {
                 {/* Section Header */}
                 <div className="flex items-center gap-2 mb-1">
                   <div className="w-1.5 h-6 rounded bg-[#1DA1F2] mr-2" />
-                  <h3 className="text-2xl font-extrabold tracking-tight text-[#F3F3F3]">X Tasks</h3>
+                  <h3 className="text-2xl font-extrabold tracking-tight text-[#F3F3F3]">Daily Tasks</h3>
                 </div>
-                <div className="text-xs text-[#1DA1F2] font-semibold mb-4 pl-6">Complete X tasks and claim your rewards!</div>
+                <div className="text-xs text-[#1DA1F2] font-semibold mb-4 pl-6">Complete daily tasks and claim your rewards!</div>
                 <div className="space-y-2">
                   {/* Daily Tasks List */}
                   {dailyTasks.length > 0 && dailyTasks.map(task => (
@@ -1299,7 +1300,7 @@ export default function SocialConnectionsPage() {
                       <div className="flex flex-col min-w-[120px]">
                         <span className="text-xs text-[#1DA1F2] mb-1 font-semibold">{task.title}</span>
                         <span className="px-2 py-0.5 -mb-1 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent text-xs w-fit">
-                          {task.reward} BBLP
+                          {task.reward} Points
                         </span>
                       </div>
                       {/* Right: Claimed Status or Timer/Claim */}
@@ -1367,7 +1368,8 @@ export default function SocialConnectionsPage() {
                       return (
                         <div
                           key={index}
-                          className="flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A]"
+                          className="flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A] cursor-pointer"
+                          onClick={() => window.location.href = '/stake'}
                         >
                           {/* Left: Task label and points */}
                           <div className="flex flex-col min-w-[120px]">
@@ -1378,7 +1380,6 @@ export default function SocialConnectionsPage() {
                               </span>
                             </span>
                           </div>
-                          
                           {/* Center: Progress */}
                           <div className="flex-1 flex flex-col items-center justify-center px-2">
                             {isCompleted && (
@@ -1393,7 +1394,6 @@ export default function SocialConnectionsPage() {
                               <span className="text-xs text-[#A1A1AA] mt-1">{task.amount}/{task.amount} BBLP</span>
                             )}
                           </div>
-                          
                           {/* Right: Status and claim button */}
                           <div className="flex flex-col items-end gap-1 min-w-[120px]">
                             {isClaimed ? (
@@ -1403,7 +1403,7 @@ export default function SocialConnectionsPage() {
                               </span>
                             ) : isCompleted ? (
                               <Button
-                                onClick={() => handleClaimStakeTask(task.amount, task.points)}
+                                onClick={e => { e.stopPropagation(); handleClaimStakeTask(task.amount, task.points); }}
                                 size="sm"
                                 className="bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
                               >
@@ -1440,7 +1440,8 @@ export default function SocialConnectionsPage() {
                     return allTasks.map((task, index) => (
                       <div
                         key={index}
-                        className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A]`}
+                        className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A] cursor-pointer`}
+                        onClick={() => window.open('https://t.me/BblipProtocol_Annoucements', '_blank', 'noopener,noreferrer')}
                       >
                         {/* Sol: Seviye numarası ve adı */}
                         <div className="flex items-center gap-3 min-w-[120px]">
@@ -1479,7 +1480,7 @@ export default function SocialConnectionsPage() {
                             <>
                               {task.canClaim && (
                                 <Button
-                                  onClick={() => claimExtraReward('telegram', task.levelName)}
+                                  onClick={e => { e.stopPropagation(); claimExtraReward('telegram', task.levelName); }}
                                   size="sm"
                                   className="bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
                                 >
@@ -1498,7 +1499,7 @@ export default function SocialConnectionsPage() {
                                 </Button>
                               )}
                             </>
-                          ) : (
+                          ) :
                             <>
                               <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
                                 task.inProgress
@@ -1509,7 +1510,7 @@ export default function SocialConnectionsPage() {
                               </span>
                               {task.inProgress && task.canClaim && (
                                 <Button
-                                  onClick={() => claimExtraReward('telegram', task.levelName)}
+                                  onClick={e => { e.stopPropagation(); claimExtraReward('telegram', task.levelName); }}
                                   size="sm"
                                   className="mt-1 bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
                                 >
@@ -1518,7 +1519,7 @@ export default function SocialConnectionsPage() {
                                 </Button>
                               )}
                             </>
-                          )}
+                          }
                         </div>
                       </div>
                     ));
@@ -1542,7 +1543,8 @@ export default function SocialConnectionsPage() {
                     return allTasks.map((task, index) => (
                       <div
                         key={index}
-                        className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A]`}
+                        className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A] cursor-pointer`}
+                        onClick={() => window.open('https://discord.gg/w982fWnhe9', '_blank', 'noopener,noreferrer')}
                       >
                         {/* Sol: Seviye numarası ve adı */}
                         <div className="flex items-center gap-3 min-w-[120px]">
@@ -1581,7 +1583,7 @@ export default function SocialConnectionsPage() {
                             <>
                               {task.canClaim && (
                                 <Button
-                                  onClick={() => claimExtraReward('discord', task.levelName)}
+                                  onClick={e => { e.stopPropagation(); claimExtraReward('discord', task.levelName); }}
                                   size="sm"
                                   className="bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
                                 >
@@ -1611,7 +1613,7 @@ export default function SocialConnectionsPage() {
                               </span>
                               {task.inProgress && task.canClaim && (
                                 <Button
-                                  onClick={() => claimExtraReward('discord', task.levelName)}
+                                  onClick={e => { e.stopPropagation(); claimExtraReward('discord', task.levelName); }}
                                   size="sm"
                                   className="mt-1 bg-[#28282D] hover:bg-[#35353B] text-[#F3F3F3] px-3 py-1 rounded-full text-xs font-semibold shadow-none border border-[#35353B]"
                                 >
@@ -1636,13 +1638,18 @@ export default function SocialConnectionsPage() {
                   <div className="space-y-2">
                     {(() => {
                       const milestones = [
-                        { count: 1, points: 50, label: 'Invite your first friend' },
-                        { count: 3, points: 75, label: 'Invite 3 friends' },
-                        { count: 5, points: 150, label: 'Invite 5 friends' },
-                        { count: 10, points: 350, label: 'Invite 10 friends' },
-                        { count: 50, points: 600, label: 'Invite 50 friends' },
-                        { count: 100, points: 1200, label: 'Invite 100 friends' },
-                        { count: 1000, points: 1500, label: 'Invite 1000 friends' },
+                        { count: 1, points: 5, label: 'Invite your first friend' },
+                        { count: 3, points: 15, label: 'Invite 3 friends' },
+                        { count: 5, points: 30, label: 'Invite 5 friends' },
+                        { count: 10, points: 60, label: 'Invite 10 friends' },
+                        { count: 50, points: 150, label: 'Invite 50 friends' },
+                        { count: 100, points: 300, label: 'Invite 100 friends' },
+                        { count: 250, points: 750, label: 'Invite 250 friends' },
+                        { count: 500, points: 1500, label: 'Invite 500 friends' },
+                        { count: 1000, points: 3000, label: 'Invite 1000 friends' },
+                        { count: 2000, points: 6000, label: 'Invite 2000 friends' },
+                        { count: 5000, points: 15000, label: 'Invite 5000 friends' },
+                     
                       ];
                       const current = referralStats.totalReferrals || 0;
                       const claimed = (milestone: any) => claimedMilestones.includes(milestone.count);

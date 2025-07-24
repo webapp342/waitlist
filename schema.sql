@@ -162,8 +162,8 @@ CREATE TABLE public.referral_rewards (
   referred_reward_amount character varying DEFAULT '5'::character varying,
   reward_tier character varying DEFAULT 'tier1'::character varying CHECK (reward_tier::text = ANY (ARRAY['tier1'::character varying, 'tier2'::character varying, 'tier3'::character varying, 'tier4'::character varying, 'tier5'::character varying]::text[])),
   CONSTRAINT referral_rewards_pkey PRIMARY KEY (id),
-  CONSTRAINT referral_rewards_referrer_id_fkey FOREIGN KEY (referrer_id) REFERENCES public.users(id),
-  CONSTRAINT referral_rewards_referred_id_fkey FOREIGN KEY (referred_id) REFERENCES public.users(id)
+  CONSTRAINT referral_rewards_referred_id_fkey FOREIGN KEY (referred_id) REFERENCES public.users(id),
+  CONSTRAINT referral_rewards_referrer_id_fkey FOREIGN KEY (referrer_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.referrals (
   id uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -173,8 +173,8 @@ CREATE TABLE public.referrals (
   created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
   CONSTRAINT referrals_pkey PRIMARY KEY (id),
-  CONSTRAINT referrals_referral_code_id_fkey FOREIGN KEY (referral_code_id) REFERENCES public.referral_codes(id),
   CONSTRAINT referrals_referred_id_fkey FOREIGN KEY (referred_id) REFERENCES public.users(id),
+  CONSTRAINT referrals_referral_code_id_fkey FOREIGN KEY (referral_code_id) REFERENCES public.referral_codes(id),
   CONSTRAINT referrals_referrer_id_fkey FOREIGN KEY (referrer_id) REFERENCES public.users(id)
 );
 CREATE TABLE public.stake_logs (

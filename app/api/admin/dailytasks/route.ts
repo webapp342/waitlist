@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
     const { data: allTasks, error: allTasksError } = await supabase
       .from('dailytasks')
       .select('*')
+      .eq('claimed', false)
       .order('created_at', { ascending: false });
     if (allTasksError) {
       return NextResponse.json({ error: allTasksError.message }, { status: 500 });
