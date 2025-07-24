@@ -509,7 +509,7 @@ export default function Header() {
                   )}
                 </div>
               </div>
-            </div>
+            </div> 
           )}
           
           {/* Mobile Network Menu Dropdown */}
