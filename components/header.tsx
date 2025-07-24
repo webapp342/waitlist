@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 import { Menu, LogOut, ChevronDown } from "lucide-react";
@@ -262,7 +263,14 @@ export default function Header() {
                           : "text-zinc-400 hover:text-yellow-200"
                       )}
                     >
-                      {item.label}
+                      <span className="flex items-center gap-2">
+                        {item.label}
+                        {item.label === "Bblip Quests" && (
+                          <Badge variant="outline" className="border-yellow-200 text-yellow-200 text-xs px-1.5 py-0 h-4 rounded-lg bg-transparent">
+                            NEW
+                          </Badge>
+                        )}
+                      </span>
                     </Link>
                   ) : (
                     <button
@@ -491,7 +499,14 @@ export default function Header() {
                         )}
                         onClick={closeMobileMenu}
                       >
-                        <span>{item.label}</span>
+                        <span className="flex items-center gap-2">
+                          {item.label}
+                          {item.label === "Bblip Quests" && (
+                            <Badge variant="outline" className="border-yellow-200 text-yellow-200 text-xs px-1.5 py-0 h-4 rounded-lg bg-transparent">
+                              NEW
+                            </Badge>
+                          )}
+                        </span>
                         {isActivePage(item.href) && (
                           <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
                         )}
