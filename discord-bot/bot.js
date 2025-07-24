@@ -27,7 +27,7 @@ const {
 const BOT_TOKEN = process.env.DISCORD_BOT_TOKEN || '';
 const SUPABASE_URL = process.env.SUPABASE_URL || 'https://vdsoduzvmnuyhwbbnkwi.supabase.co';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkc29kdXp2bW51eWh3YmJua3dpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA2MTczNDUsImV4cCI6MjA2NjE5MzM0NX0.stWTGS03eY8IdftKpeylOHURDAkmf6LiKas4_Jdd5cw';
-const GUILD_ID = process.env.DISCORD_GUILD_ID || '';
+const GUILD_ID = process.env.DISCORD_GUILD_ID || '1392958299695222844';
 const WEB_APP_URL = process.env.WEB_APP_URL || 'https://bblip.io';
 
 // Discord client setup

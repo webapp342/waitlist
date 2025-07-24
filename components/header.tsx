@@ -214,7 +214,7 @@ export default function Header() {
         />
       )}
       {/* Non-fixed header - removed "fixed" class so it scrolls with content */}
-      <div className="w-full z-[55] px-4 pt-4 md:px-4 bg-[#18181B]">
+      <div className="w-full z-[55] px-4 pt-4 md:px-4 bg-transparent">
         <motion.div
           variants={containerVariants}
           initial="hidden"
