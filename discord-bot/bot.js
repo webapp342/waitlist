@@ -353,7 +353,7 @@ async function sendLevelUpNotification(channel, userId, oldLevel, newLevel, newX
         { name: 'Previous Level', value: oldLevel, inline: true },
         { name: 'New Level', value: newLevel, inline: true },
         { name: 'Total XP', value: newXP.toString(), inline: true },
-        { name: 'Daily Reward', value: `${getCurrentLevel(newXP).reward} BBLP`, inline: true }
+        { name: 'Daily Reward', value: `${getCurrentLevel(newXP).reward} Points`, inline: true }
       )
       .setTimestamp();
 
@@ -489,7 +489,7 @@ client.on(Events.MessageCreate, async (message) => {
         .setTitle('🔗 Connect Your Account to Unlock Rewards!')
         .setDescription(`Hi <@${userId}>! Connect your Discord account to your wallet and start earning exclusive rewards.`)
         .addFields(
-          { name: 'Why Connect?', value: '• Earn XP for every message you send\n• Daily and weekly BBLP token bonuses\n• Level up and climb the leaderboard\n• Unlock special community perks and events', inline: false },
+          { name: 'Why Connect?', value: '• Earn XP for every message you send\n• Daily and weekly Points token bonuses\n• Level up and climb the leaderboard\n• Unlock special community perks and events', inline: false },
           { name: 'How to Connect', value: 'Go to [bblip.io/social-connections](https://bblip.io/social-connections) and link your wallet in seconds.', inline: false }
         )
         .setFooter({ text: 'BBLIP — Secure, rewarding, and community-driven.' })
@@ -646,7 +646,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
         // Award XP to inviter
         addXP(inviteData.inviterId, DISCORD_INVITE_XP_REWARD, 'discord_invite');
         
-        // Award BBLP to inviter via referral_rewards table
+        // Award Points to inviter via referral_rewards table
         try {
           // Get inviter's user ID from wallet address
           const { data: inviterUser, error: userError } = await supabase
@@ -669,7 +669,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
             if (walletError || !userData?.id) {
               console.error('Error fetching user ID from wallet address:', walletError);
             } else {
-              // Add BBLP reward to referral_rewards table
+              // Add Points reward to referral_rewards table
               const { error: rewardError } = await supabase
                 .from('referral_rewards')
                 .insert({
@@ -682,14 +682,14 @@ client.on(Events.GuildMemberAdd, async (member) => {
                 });
               
               if (rewardError) {
-                console.error('Error adding BBLP reward:', rewardError);
+                console.error('Error adding Points reward:', rewardError);
               } else {
-                console.log(`✅ Added ${DISCORD_INVITE_BBLP_REWARD} BBLP reward for ${inviteData.inviterId}`);
+                console.log(`✅ Added ${DISCORD_INVITE_BBLP_REWARD} Points reward for ${inviteData.inviterId}`);
               }
             }
           }
         } catch (error) {
-          console.error('Error processing BBLP reward:', error);
+          console.error('Error processing Points reward:', error);
         }
         
         // Update invite count in database
@@ -751,7 +751,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
           .setDescription(`Congratulations <@${inviteData.inviterId}>! You successfully invited <@${member.id}> to our server!`)
           .addFields(
             { name: 'Reward Earned', value: `+${DISCORD_INVITE_XP_REWARD} XP`, inline: true },
-            { name: 'BBLP Reward', value: `+${DISCORD_INVITE_BBLP_REWARD} BBLP`, inline: true }
+            { name: 'Points Reward', value: `+${DISCORD_INVITE_BBLP_REWARD} Points`, inline: true }
           )
           .setTimestamp();
 
@@ -768,7 +768,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
     .setDescription(`Welcome <@${member.id}> to our Discord server!`)
     .addFields(
       { name: 'Getting Started', value: 'Connect your Discord account to your wallet to start earning XP and rewards!' },
-      { name: 'Features', value: '• Earn XP for messages and reactions\n• Daily BBLP token rewards\n• Level progression system\n• Community leaderboards' }
+      { name: 'Features', value: '• Earn XP for messages and reactions\n• Daily Points token rewards\n• Level progression system\n• Community leaderboards' }
     )
     .setTimestamp();
 
@@ -927,7 +927,7 @@ async function handleXPCommand(interaction) {
     .addFields(
       { name: 'Current Level', value: currentLevel.name, inline: true },
       { name: 'Total XP', value: activity.total_xp.toString(), inline: true },
-      { name: 'Daily Reward', value: `${currentLevel.reward} BBLP`, inline: true },
+      { name: 'Daily Reward', value: `${currentLevel.reward} Points`, inline: true },
       { name: 'Invites', value: (activity.invite_count || 0).toString(), inline: true }
     )
     .setTimestamp();
@@ -989,7 +989,7 @@ async function handleConnectCommand(interaction) {
     .setTitle('🔗 Connect Your Account')
     .setDescription('Connect your Discord account to your wallet to start earning XP and rewards!')
     .addFields(
-      { name: 'Benefits', value: '• Earn XP for messages and reactions\n• Daily BBLP token rewards\n• Level progression\n• Community leaderboards' },
+      { name: 'Benefits', value: '• Earn XP for messages and reactions\n• Daily Points token rewards\n• Level progression\n• Community leaderboards' },
       { name: 'How to connect', value: '1. Visit our website\n2. Connect your wallet\n3. Link your Discord account' }
     )
     .setTimestamp();
@@ -1187,7 +1187,7 @@ async function handleInviteCommand(interaction) {
       .setDescription(`Here's your personal invite link for the BBLIP Discord server!`)
       .addFields(
         { name: 'Invite Link', value: inviteLink, inline: false },
-        { name: 'Rewards', value: `• +${DISCORD_INVITE_XP_REWARD} XP per invite\n• +${DISCORD_INVITE_BBLP_REWARD} BBLP per invite`, inline: false },
+        { name: 'Rewards', value: `• +${DISCORD_INVITE_XP_REWARD} XP per invite\n• +${DISCORD_INVITE_BBLP_REWARD} Points per invite`, inline: false },
         { name: 'How it works', value: 'Share this link with friends. When they join, you\'ll automatically get rewarded!', inline: false }
       )
       .setTimestamp();
@@ -1232,8 +1232,8 @@ async function handleHelpCommand(interaction) {
       { name: '/invite', value: 'Get your personal invite link and earn rewards for inviting friends.', inline: true },
       { name: '/help', value: 'Show this help message.', inline: true },
       { name: '\u200B', value: '\u200B', inline: false },
-      { name: 'XP & Level System', value: '• Send messages to earn XP\n• Daily activity and weekly streak bonuses\n• Level up to earn more BBLP token rewards', inline: false },
-      { name: 'Invite Rewards', value: '• Share your invite link\n• Earn XP and BBLP when friends join\n• Track your invites easily', inline: false },
+      { name: 'XP & Level System', value: '• Send messages to earn XP\n• Daily activity and weekly streak bonuses\n• Level up to earn more Points token rewards', inline: false },
+      { name: 'Invite Rewards', value: '• Share your invite link\n• Earn XP and Points when friends join\n• Track your invites easily', inline: false },
       { name: 'How to Connect', value: 'Go to [bblip.io/social-connections](https://bblip.io/social-connections) to link your Discord and wallet for full rewards.', inline: false }
     )
     .setFooter({ text: 'BBLIP — Secure, rewarding, and community-driven.' })

@@ -28,11 +28,11 @@ export async function POST(request: NextRequest) {
 
     // Level thresholds
     const levels = [
-      { name: 'Bronze', maxXP: 250, xpReward: 1 },
-      { name: 'Silver', maxXP: 500, xpReward: 2 },
-      { name: 'Gold', maxXP: 1000, xpReward: 3 },
-      { name: 'Platinum', maxXP: 2000, xpReward: 4 },
-      { name: 'Diamond', maxXP: 999999, xpReward: 5 }
+      { name: 'Bronze', maxXP: 250, xpReward: 250 },
+      { name: 'Silver', maxXP: 500, xpReward: 500 },
+      { name: 'Gold', maxXP: 1000, xpReward: 1000 },
+      { name: 'Platinum', maxXP: 2000, xpReward: 2000 },
+      { name: 'Diamond', maxXP: 999999, xpReward: 999999 }
     ];
 
     const availableRewards = [];
