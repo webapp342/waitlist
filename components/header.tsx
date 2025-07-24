@@ -405,7 +405,7 @@ export default function Header() {
                 onClick={() => setIsModalOpen(true)}
                 className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-full px-4 font-medium"
               >
-                Connect
+                Connect Wallet
               </Button>
             )}
           </motion.div>
@@ -459,7 +459,7 @@ export default function Header() {
                 onClick={() => setIsModalOpen(true)}
                 className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-full px-4 font-medium"
               >
-                Connect
+                Connect Wallet
               </Button>
             )}
           </motion.div>
@@ -550,14 +550,7 @@ export default function Header() {
                 ))}
                 
                 {/* Mobile Menu Footer */}
-                <div className="px-4 py-3 border-t border-zinc-800/30 mt-2">
-                  <button
-                    onClick={closeMobileMenu}
-                    className="w-full py-2 px-4 text-sm text-zinc-400 hover:text-zinc-200 transition-colors text-center"
-                  >
-                    Close Menu
-                  </button>
-                </div>
+               
               </div>
             </motion.div>
           )}
