@@ -1413,26 +1413,39 @@ function PresalePageInner() {
                   'Purchase'
                 )}
               </Button>
+              
             )}
 
-                            {/* Minimal Price Info */}
-              {selectedTokenDetails && (
-                <div className="mt-2 flex items-center justify-center text-xs text-gray-400">
-                  {selectedTokenDetails.name === 'ETH' ? (
-                    ethPriceUSD > 0 ? (
-                      <span>1 ETH = ${ethPriceUSD.toFixed(0)} = {(ethPriceUSD / 0.10).toFixed(0)} BBLP</span>
-                    ) : (
-                      <span>Loading price...</span>
-                    )
-                  ) : bnbPriceUSD > 0 ? (
-                    <span>1 BNB = ${bnbPriceUSD.toFixed(0)} = {(1 / bblpPriceInBNB).toFixed(0)} BBLP</span>
-                  ) : (
-                    <span>Loading price...</span>
-                  )}
+
+
+<div className="flex items-center justify-between  mb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-medium text-gray-400">Estimated gas fee</span>
                 </div>
-              )}
+                
+                {selectedToken === TOKEN_IDS.eth ? (
+                  <div className="text-right">
+                    <span className="text-xs font-medium text-gray-400">{((gasPrices.eth.gasLimit * gasPrices.eth.gasPrice) / 1000000000).toFixed(6)} ETH</span>
+                    <span className="text-xs text-gray-400 ml-1">≈ ${(((gasPrices.eth.gasLimit * gasPrices.eth.gasPrice) / 1000000000) * ethPriceUSD).toFixed(2)}</span>
+                  </div>
+                ) : (
+                  <div className="text-right">
+                    <span className="text-xs font-medium text-gray-400">{((gasPrices.bnb.gasLimit * gasPrices.bnb.gasPrice) / 1000000000).toFixed(6)} BNB</span>
+                    <span className="text-xs text-gray-400 ml-1">≈ ${(((gasPrices.bnb.gasLimit * gasPrices.bnb.gasPrice) / 1000000000) * bnbPriceUSD).toFixed(2)}</span>
+                  </div>
+                )}
+              </div>
+
+                            {/* Minimal Price Info */}
+            
             </div>
+
+
             </div>
+
+          
+
+              {/* Minimal Network Status */}
 
             </div>
             
@@ -1466,7 +1479,7 @@ function PresalePageInner() {
         
       </main>
 
-      <div className='container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl'>
+      <div className='container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl -mt-10'>
         {/* FAQ Section - Professional */}
         <div className="mb-20">
           <div className="text-center mb-8">
@@ -1754,78 +1767,7 @@ function PresalePageInner() {
         </div>
       )}
 
-      {/* Estimated Gas Fee Section - User Friendly */}
-      <div className="mb-5 p-4 bg-zinc-800/30 rounded-lg border border-zinc-700/50">
-        <div className="flex items-center gap-2 mb-3">
-          <div className="p-1.5 rounded-lg bg-blue-500/10 border border-blue-500/20">
-            <Zap className="w-4 h-4 text-blue-400" />
-          </div>
-          <h3 className="text-sm font-medium text-white">Estimated Network Fee</h3>
-        </div>
-        
-        <div className="space-y-2">
-          {selectedToken === TOKEN_IDS.eth ? (
-            <>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Gas Price</span>
-                <span className="text-xs text-gray-300">{gasPrices.eth.gasPrice} Gwei</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Gas Limit</span>
-                <span className="text-xs text-gray-300">{gasPrices.eth.gasLimit.toLocaleString()}</span>
-              </div>
-              <div className="border-t border-zinc-700/50 pt-2 mt-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-white">Network Fee</span>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-white">
-                      {((gasPrices.eth.gasLimit * gasPrices.eth.gasPrice) / 1000000000).toFixed(6)} ETH
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      ≈ ${(((gasPrices.eth.gasLimit * gasPrices.eth.gasPrice) / 1000000000) * ethPriceUSD).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Gas Price</span>
-                <span className="text-xs text-gray-300">{gasPrices.bnb.gasPrice} Gwei</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-400">Gas Limit</span>
-                <span className="text-xs text-gray-300">{gasPrices.bnb.gasLimit.toLocaleString()}</span>
-              </div>
-              <div className="border-t border-zinc-700/50 pt-2 mt-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-white">Network Fee</span>
-                  <div className="text-right">
-                    <div className="text-sm font-medium text-white">
-                      {((gasPrices.bnb.gasLimit * gasPrices.bnb.gasPrice) / 1000000000).toFixed(6)} BNB
-                    </div>
-                    <div className="text-xs text-gray-400">
-                      ≈ ${(((gasPrices.bnb.gasLimit * gasPrices.bnb.gasPrice) / 1000000000) * bnbPriceUSD).toFixed(2)}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-          
-          {/* Gas Fee Info */}
-          <div className="mt-3 p-2 bg-blue-500/5 rounded border border-blue-500/10">
-            <div className="flex items-start gap-2">
-              <Info className="w-3 h-3 text-blue-400 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-blue-300">
-                Network fees are required to process your transaction on the blockchain. 
-                The "Max" button automatically deducts this fee from your balance.
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
+      
     </>
   );
 }
