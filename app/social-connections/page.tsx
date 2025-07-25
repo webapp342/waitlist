@@ -48,6 +48,7 @@ interface ConnectionStatus {
     level?: string;
     dailyReward?: number;
     lastClaimedAt?: string; // Added for Discord
+    isGrokTaskWinner?: boolean; // Added for Grok Task Winners
   };
 }
 
@@ -546,19 +547,24 @@ export default function SocialConnectionsPage() {
   }, [connections, extraRewards, airdropXP]);
 
   const getEstimatedReward = useMemo(() => {
-    let xpContribution, pointsContribution;
+    let xpContribution, pointsContribution, grokBonus = 0;
     
     if (rewardType === 'usdt') {
       xpContribution = getTotalXP * 0.00001; // XP'nin %0.001'i
       pointsContribution = totalSocialPoints * 0.00005; // Points'in %0.005'i
+      
+      // Grok Task Winner bonus - sadece USDT için
+      if (connections.x?.stats?.isGrokTaskWinner) {
+        grokBonus = 10;
+      }
     } else { // bblp
       xpContribution = getTotalXP * 0.01; // XP'nin %1'i
       pointsContribution = totalSocialPoints * 0.025; // Points'in %2.5'i
     }
     
-    const total = xpContribution + pointsContribution;
+    const total = xpContribution + pointsContribution + grokBonus;
     return total.toFixed(rewardType === 'usdt' ? 2 : 0);
-  }, [getTotalXP, totalSocialPoints, rewardType]);
+  }, [getTotalXP, totalSocialPoints, rewardType, connections.x?.stats?.isGrokTaskWinner]);
 
   const getLevelTasks = (platform: 'telegram' | 'discord') => {
     const levels = [

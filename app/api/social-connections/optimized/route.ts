@@ -128,12 +128,36 @@ export async function GET(request: NextRequest) {
         messages: xUserResult.data.x_tweet_count,
         xp: 0, // X doesn't have XP system yet
         level: 0,
-        dailyReward: 0
+        dailyReward: 0,
+        isGrokTaskWinner: false // Will be set below
       }
     } : {
       connected: false,
-      stats: { xp: 0, level: 0, dailyReward: 0 }
+      stats: { xp: 0, level: 0, dailyReward: 0, isGrokTaskWinner: false }
     };
+
+    // Check if user is a grok task winner
+    if (xUserResult.data?.x_username) {
+      console.log('🔍 Checking grok winner for x_username:', xUserResult.data.x_username);
+      console.log('🔍 Lowercase x_username:', xUserResult.data.x_username.toLowerCase());
+      
+             const { data: grokWinner, error: grokError } = await supabaseAdmin
+         .from('grok_task_winners')
+         .select('id')
+         .eq('x_username', xUserResult.data.x_username)
+         .eq('is_active', true)
+         .single();
+      
+      console.log('🔍 Grok winner result:', grokWinner);
+      console.log('🔍 Grok winner error:', grokError);
+      
+      if (grokWinner) {
+        xData.stats.isGrokTaskWinner = true;
+        console.log('✅ User is a grok task winner!');
+      } else {
+        console.log('❌ User is NOT a grok task winner');
+      }
+    }
 
     // 4. Process Telegram data
     let telegramData: any = { connected: false, stats: { xp: 0, level: 0, dailyReward: 0 } };

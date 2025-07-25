@@ -69,8 +69,8 @@ CREATE TABLE public.discord_daily_claims (
   claimed_at timestamp with time zone DEFAULT now(),
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT discord_daily_claims_pkey PRIMARY KEY (id),
-  CONSTRAINT discord_daily_claims_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.discord_users(discord_id),
-  CONSTRAINT discord_daily_claims_wallet_address_fkey FOREIGN KEY (wallet_address) REFERENCES public.users(wallet_address)
+  CONSTRAINT discord_daily_claims_wallet_address_fkey FOREIGN KEY (wallet_address) REFERENCES public.users(wallet_address),
+  CONSTRAINT discord_daily_claims_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.discord_users(discord_id)
 );
 CREATE TABLE public.discord_invited_users (
   id bigint NOT NULL DEFAULT nextval('discord_invited_users_id_seq'::regclass),
@@ -131,6 +131,15 @@ CREATE TABLE public.extra_rewards (
   created_at timestamp without time zone DEFAULT now(),
   CONSTRAINT extra_rewards_pkey PRIMARY KEY (id),
   CONSTRAINT extra_rewards_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id)
+);
+CREATE TABLE public.grok_task_winners (
+  id uuid NOT NULL DEFAULT uuid_generate_v4(),
+  x_username character varying NOT NULL UNIQUE,
+  reward_amount numeric DEFAULT 10,
+  is_active boolean DEFAULT true,
+  created_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  updated_at timestamp with time zone NOT NULL DEFAULT timezone('utc'::text, now()),
+  CONSTRAINT grok_task_winners_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.invite_rewards (
   id integer NOT NULL DEFAULT nextval('invite_rewards_id_seq'::regclass),

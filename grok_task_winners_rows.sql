@@ -1,0 +1,1 @@
+INSERT INTO "public"."grok_task_winners" ("id", "x_username", "reward_amount", "is_active", "created_at", "updated_at") VALUES ('9a545f07-1f1a-4eb1-a29b-abe57e2eece7', 'BblipProtocol', '10', 'true', '2025-07-25 07:07:23.950507+00', '2025-07-25 07:09:00.814762+00');

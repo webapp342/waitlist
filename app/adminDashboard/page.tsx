@@ -22,6 +22,13 @@ export default function AdminDashboard() {
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [showCsvModal, setShowCsvModal] = useState(false);
   const [csvCurrentPage, setCsvCurrentPage] = useState(1);
+  
+  // Grok Task Winners states
+  const [grokCsvData, setGrokCsvData] = useState<any[]>([]);
+  const [grokCsvHeaders, setGrokCsvHeaders] = useState<string[]>([]);
+  const [showGrokCsvModal, setShowGrokCsvModal] = useState(false);
+  const [grokCsvCurrentPage, setGrokCsvCurrentPage] = useState(1);
+  
   const csvPageSize = 100;
   const pageSize = 20;
   const router = useRouter();
@@ -319,6 +326,110 @@ export default function AdminDashboard() {
     }
   };
 
+  // Grok Task Winners CSV Upload Handler
+  const handleGrokCsvUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target?.result as string;
+      const lines = text.split('\n');
+      const headers = lines[0].split(',').map(h => h.trim().replace(/"/g, ''));
+      const data = lines.slice(1).filter(line => line.trim()).map(line => {
+        const values = line.split(',').map(v => v.trim().replace(/"/g, ''));
+        const row: any = {};
+        headers.forEach((header, index) => {
+          row[header] = values[index] || '';
+        });
+        return row;
+      });
+
+      // x_username kolonunu bul ve temizle
+      const processedData = data.filter(row => {
+        const username = row['x_username'] || row['username'] || row['X Username'] || row['twitter_username'] || '';
+        return username && username.trim() !== '';
+      }).map(row => {
+        const username = row['x_username'] || row['username'] || row['X Username'] || row['twitter_username'] || '';
+        return {
+          x_username: username.trim().toLowerCase()
+        };
+      });
+
+      console.log('Grok Task Winners:', processedData.slice(0, 5));
+
+      setGrokCsvHeaders(['x_username']);
+      setGrokCsvData(processedData);
+      setGrokCsvCurrentPage(1);
+      setShowGrokCsvModal(true);
+    };
+    reader.readAsText(file);
+  };
+
+  // Add Grok Task Winners to Database
+  const handleAddGrokWinnersToDatabase = async () => {
+    if (grokCsvData.length === 0) {
+      toast.error('Önce CSV dosyası yükleyin');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const grokWinners = grokCsvData
+        .filter(row => row.x_username && row.x_username.trim() !== '')
+        .map(row => ({
+          x_username: row.x_username.trim().toLowerCase()
+        }));
+
+      if (grokWinners.length === 0) {
+        toast.error('Geçerli x_username verisi bulunamadı');
+        return;
+      }
+
+      console.log(`Processing ${grokWinners.length} grok task winners...`);
+
+      const response = await fetch('/api/admin/grok-task-winners', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ grokWinners }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        const { successCount, errorCount, newCount, updatedCount } = result;
+        
+        if (successCount > 0) {
+          let message = '';
+          if (newCount > 0 && updatedCount > 0) {
+            message = `${newCount} yeni grok task winner eklendi, ${updatedCount} kayıt güncellendi!`;
+          } else if (newCount > 0) {
+            message = `${newCount} yeni grok task winner eklendi!`;
+          } else if (updatedCount > 0) {
+            message = `${updatedCount} grok task winner kaydı güncellendi!`;
+          }
+          toast.success(message);
+          
+          if (errorCount > 0) {
+            toast.error(`${errorCount} kayıt işlenirken hata oluştu`);
+          }
+        } else {
+          toast.error('Hiçbir kayıt işlenemedi');
+        }
+      } else {
+        toast.error(result.error || 'Grok task winners eklenirken hata oluştu');
+      }
+    } catch (error) {
+      console.error('Error in handleAddGrokWinnersToDatabase:', error);
+      toast.error('Veritabanına ekleme sırasında hata oluştu');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Loading durumu
   if (isLoading) {
     return (
@@ -382,6 +493,17 @@ export default function AdminDashboard() {
               />
               <Button variant="outline" size="sm" className="border-gray-600 text-gray-300 hover:bg-gray-700">
                 CSV Yükle
+              </Button>
+            </div>
+            <div className="relative">
+              <input
+                type="file"
+                accept=".csv"
+                onChange={handleGrokCsvUpload}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              />
+              <Button variant="outline" size="sm" className="border-gray-600 text-gray-300 hover:bg-gray-700">
+                Grok Task Winners
               </Button>
             </div>
           </div>
@@ -509,6 +631,76 @@ export default function AdminDashboard() {
                 className="bg-blue-600 text-white hover:bg-blue-700"
               >
                 {isLoading ? "Ekleniyor..." : "Veritabanına Ekle"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Grok CSV Modal */}
+      <Dialog open={showGrokCsvModal} onOpenChange={setShowGrokCsvModal}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden bg-gray-800 border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Grok Task Winners CSV Önizleme</DialogTitle>
+          </DialogHeader>
+          
+          <div className="overflow-auto max-h-[60vh]">
+            {grokCsvData.length > 0 && (
+              <table className="w-full text-sm border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-600">
+                    {grokCsvHeaders.map((header, index) => (
+                      <th key={index} className="text-left py-2 px-2 border-r border-gray-600 text-gray-300">{header}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {grokCsvData
+                    .slice((grokCsvCurrentPage - 1) * csvPageSize, grokCsvCurrentPage * csvPageSize)
+                    .map((row, rowIndex) => (
+                    <tr key={rowIndex} className="border-b border-gray-700">
+                      {grokCsvHeaders.map((header, colIndex) => (
+                        <td key={colIndex} className="py-1 px-2 border-r border-gray-700 text-xs max-w-xs truncate text-gray-300">
+                          {row[header] || ''}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+          
+          <div className="flex justify-between items-center pt-4 border-t border-gray-600">
+            <div className="text-sm text-gray-400">
+              Sayfa {grokCsvCurrentPage} / {Math.ceil(grokCsvData.length / csvPageSize)} | {grokCsvData.length} satır
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setGrokCsvCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={grokCsvCurrentPage === 1}
+                size="sm"
+                variant="outline"
+                className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              >
+                Önceki
+              </Button>
+              <Button
+                onClick={() => setGrokCsvCurrentPage(prev => Math.min(Math.ceil(grokCsvData.length / csvPageSize), prev + 1))}
+                disabled={grokCsvCurrentPage >= Math.ceil(grokCsvData.length / csvPageSize)}
+                size="sm"
+                variant="outline"
+                className="border-gray-600 text-gray-300 hover:bg-gray-700"
+              >
+                Sonraki
+              </Button>
+              <Button
+                onClick={handleAddGrokWinnersToDatabase}
+                disabled={isLoading || grokCsvData.length === 0}
+                size="sm"
+                className="bg-green-600 text-white hover:bg-green-700"
+              >
+                {isLoading ? "Ekleniyor..." : "Grok Winners Ekle"}
               </Button>
             </div>
           </div>
