@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useAccount } from 'wagmi';
 import { toast } from 'sonner';
 import { Button } from "@/components/ui/button";
@@ -22,11 +22,12 @@ import {
   Clock10Icon,
   Clock,
   Repeat,
-  Check
+  Check,
+  Calendar
 } from 'lucide-react';
 import Image from 'next/image';
-import { useMemo } from 'react';
 import { referralService, userService, cardService } from '@/lib/supabase';
+
 import type { Card as CardType } from '@/lib/supabase';
 import { useWallet } from '@/hooks/useWallet';
 import Header from '@/components/header';
@@ -73,13 +74,13 @@ export default function SocialConnectionsPage() {
   const { userData: bscUserData } = useWallet(56); // BSC Mainnet
   const { userData: ethUserData } = useWallet(1); // Ethereum Mainnet
   
-  // Combine data from both networks
-  const combinedUserData = {
+  // Combine data from both networks - memoized to prevent recalculation
+  const combinedUserData = useMemo(() => ({
     ...bscUserData,
     stakedAmount: (parseFloat(bscUserData?.stakedAmount || '0') + parseFloat(ethUserData?.stakedAmount || '0')).toString(),
     pendingRewards: (parseFloat(bscUserData?.pendingRewards || '0') + parseFloat(ethUserData?.pendingRewards || '0')).toString(),
     stakes: [...(bscUserData?.stakes || []), ...(ethUserData?.stakes || [])]
-  };
+  }), [bscUserData, ethUserData]);
   
   const [connections, setConnections] = useState<SocialConnections>({
     x: { isConnected: false, platform: 'x' },
@@ -91,9 +92,13 @@ export default function SocialConnectionsPage() {
   const [extraRewards, setExtraRewards] = useState<{[key: string]: any[]}>({
     telegram: [],
     discord: []
-  });
-  const [showInfo, setShowInfo] = useState(false);
-  // Use DailyTask[] for dailyTasks state
+      });
+    const [showInfo, setShowInfo] = useState(false);
+    const [showXPInfo, setShowXPInfo] = useState(false);
+    const [showPointsInfo, setShowPointsInfo] = useState(false);
+    const [showUSDTInfo, setShowUSDTInfo] = useState(false);
+ 
+    // Use DailyTask[] for dailyTasks state
   const [dailyTasks, setDailyTasks] = useState<DailyTask[]>([]);
 
   // Add timer/claim state for daily tasks
@@ -130,7 +135,7 @@ export default function SocialConnectionsPage() {
     return () => clearTimeout(timeout);
   }, [isConnected, address]);
 
-  // Toplam ödül bilgisini çek
+  // Toplam ödül bilgisini çek - optimized to reduce API calls
   useEffect(() => {
     const fetchTotalSocialPoints = async () => {
       if (!address) return;
@@ -152,8 +157,8 @@ export default function SocialConnectionsPage() {
     }
   }, [isConnected, address]);
 
-  // Check all social connections
-  const checkAllConnections = async () => {
+  // Check all social connections - memoized callback
+  const checkAllConnections = useCallback(async () => {
     if (!isConnected || !address) return;
 
     setIsLoading(true);
@@ -251,7 +256,7 @@ export default function SocialConnectionsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isConnected, address]);
 
   const checkExtraRewards = async (platform: 'telegram' | 'discord', currentXP: number) => {
     try {
@@ -324,27 +329,61 @@ export default function SocialConnectionsPage() {
     }
   };
 
-  // Start timer for a task
-  const startTaskTimer = (taskId: number) => {
+  // Start timer for a task - memoized callback
+  const startTaskTimer = useCallback((taskId: number) => {
     if (taskTimers[taskId]) return; // already running
     setTaskTimers(prev => ({ ...prev, [taskId]: 60 }));
-  };
+  }, [taskTimers]);
 
   // Replace all separate connection fetches with a single fast fetch
   useEffect(() => {
     if (!isConnected || !address) return;
     checkAllConnections();
-  }, [isConnected, address]);
+  }, [isConnected, address, checkAllConnections]);
 
+  // Batch additional API calls with main connection check for better performance
   useEffect(() => {
     if (!address) return;
-    fetch(`/api/admin/dailytasks?user_id=${address}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setDailyTasks(data.tasks || []);
-      });
-    // No return value
-  }, [address]);
+    
+    // Batch multiple API calls together to reduce total requests
+    const batchAPIcalls = async () => {
+      setStakingTasksLoading(true);
+      try {
+        const [dailyTasksRes, milestonesRes, stakeTasksRes] = await Promise.all([
+          fetch(`/api/admin/dailytasks?user_id=${address}`),
+          fetch(`/api/invite-rewards/status?walletAddress=${address}`),
+          fetch(`/api/staking-tasks/status?walletAddress=${address}`)
+        ]);
+
+        // Process daily tasks
+        const dailyTasksData = await dailyTasksRes.json();
+        if (dailyTasksData.success) setDailyTasks(dailyTasksData.tasks || []);
+
+        // Process milestones  
+        const milestonesData = await milestonesRes.json();
+        if (milestonesData.claimed) setClaimedMilestones(milestonesData.claimed);
+        else setClaimedMilestones([]);
+
+        // Process stake tasks
+        const stakeTasksData = await stakeTasksRes.json();
+        if (stakeTasksData.success) setClaimedStakeTasks(stakeTasksData.claimedTasks);
+        else setClaimedStakeTasks({});
+
+      } catch (error) {
+        console.error('Error in batch API calls:', error);
+        // Set fallback states
+        setDailyTasks([]);
+        setClaimedMilestones([]);
+        setClaimedStakeTasks({});
+      } finally {
+        setStakingTasksLoading(false);
+      }
+    };
+
+    if (isConnected && address) {
+      batchAPIcalls();
+    }
+  }, [isConnected, address]);
 
   // Start timer for a task
   useEffect(() => {
@@ -360,8 +399,8 @@ export default function SocialConnectionsPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Claim handler
-  const handleClaimTask = async (task: DailyTask) => {
+  // Claim handler - memoized callback
+  const handleClaimTask = useCallback(async (task: DailyTask) => {
     // Use wallet address as user_id (or change as needed)
     const user_id = address;
     const res = await fetch('/api/admin/dailytasks/claim', {
@@ -375,7 +414,7 @@ export default function SocialConnectionsPage() {
     } else {
       toast.error(data.error || 'Failed to claim task');
     }
-  };
+  }, [address]);
 
   const getPlatformInfo = (platform: 'x' | 'telegram' | 'discord') => {
     switch (platform) {
@@ -412,11 +451,12 @@ export default function SocialConnectionsPage() {
     }
   };
 
-  const getConnectedCount = () => {
+  // Memoized helper functions to prevent unnecessary recalculations
+  const getConnectedCount = useMemo(() => {
     return Object.values(connections).filter(conn => conn.isConnected).length;
-  };
+  }, [connections]);
 
-  const getTotalRewards = () => {
+  const getTotalRewards = useMemo(() => {
     let total = 0;
     if (connections.telegram.isConnected && connections.telegram.canClaimReward) {
       total += connections.telegram.stats?.dailyReward || 0;
@@ -425,9 +465,9 @@ export default function SocialConnectionsPage() {
       total += connections.discord.stats?.dailyReward || 0;
     }
     return total;
-  };
+  }, [connections]);
 
-  const getTotalXP = () => {
+  const getTotalXP = useMemo(() => {
     let totalXP = 0;
     
     // Base XP from platforms
@@ -468,7 +508,14 @@ export default function SocialConnectionsPage() {
     });
     
     return totalXP;
-  };
+  }, [connections, extraRewards]);
+
+  const getEstimatedUSDT = useMemo(() => {
+    const xpContribution = getTotalXP * 0.00001; // XP'nin %0.001'i
+    const pointsContribution = totalSocialPoints * 0.00005; // Points'in %0.005'i
+    const total = xpContribution + pointsContribution;
+    return total.toFixed(2);
+  }, [getTotalXP, totalSocialPoints]);
 
   const getLevelTasks = (platform: 'telegram' | 'discord') => {
     const levels = [
@@ -530,7 +577,7 @@ export default function SocialConnectionsPage() {
     });
   };
 
-  const hasClaimableRewards = () => {
+  const hasClaimableRewards = useMemo(() => {
     const telegramClaimable = connections.telegram.isConnected && connections.telegram.canClaimReward;
     const discordClaimable = connections.discord.isConnected && connections.discord.canClaimReward;
     
@@ -551,10 +598,10 @@ export default function SocialConnectionsPage() {
     });
     
     return hasClaimable;
-  };
+  }, [connections]);
 
-  const claimAllRewards = async () => {
-    if (!address || !hasClaimableRewards()) return;
+  const claimAllRewards = useCallback(async () => {
+    if (!address || !hasClaimableRewards) return;
 
     setIsClaiming(true);
     
@@ -685,7 +732,7 @@ export default function SocialConnectionsPage() {
     } finally {
       setIsClaiming(false);
     }
-  };
+  }, [address, hasClaimableRewards, connections]);
 
   function isValidImageUrl(url?: string) {
     if (!url || typeof url !== 'string') return false;
@@ -713,8 +760,8 @@ export default function SocialConnectionsPage() {
     Diamond:  { desc: 'Discord legend, lead the way!' }
   };
 
-  // Helper to get user's total daily reward (not just claimable)
-  const getUserTotalDailyReward = () => {
+  // Helper to get user's total daily reward (not just claimable) - memoized
+  const getUserTotalDailyReward = useMemo(() => {
     let total = 0;
     if (connections.telegram.isConnected) {
       total += connections.telegram.stats?.dailyReward || 0;
@@ -723,7 +770,7 @@ export default function SocialConnectionsPage() {
       total += connections.discord.stats?.dailyReward || 0;
     }
     return total;
-  };
+  }, [connections]);
 
   // --- Geri sayım için yardımcı fonksiyonlar ---
   // Discord için son claim zamanı ve kalan süre
@@ -772,23 +819,7 @@ export default function SocialConnectionsPage() {
   const [claimedMilestones, setClaimedMilestones] = useState<number[]>([]);
   const [claimingMilestone, setClaimingMilestone] = useState<number | null>(null);
 
-  // Fetch claimed invite milestones
-  useEffect(() => {
-    const fetchClaimedMilestones = async () => {
-      if (!address) return;
-      try {
-        const res = await fetch(`/api/invite-rewards/status?walletAddress=${address}`);
-        const data = await res.json();
-        if (data.claimed) setClaimedMilestones(data.claimed);
-        else setClaimedMilestones([]);
-      } catch {
-        setClaimedMilestones([]);
-      }
-    };
-    if (isConnected && address) {
-      fetchClaimedMilestones();
-    }
-  }, [isConnected, address]);
+  // Fetch claimed invite milestones - moved to batched API calls above for better performance
 
   // Claim invite milestone
   const handleClaimInviteMilestone = async (milestoneCount: number, points: number) => {
@@ -814,10 +845,10 @@ export default function SocialConnectionsPage() {
     }
   };
 
-  // Helper: check if all platforms are disconnected
-  const allDisconnected = !connections.x.isConnected && !connections.telegram.isConnected && !connections.discord.isConnected;
-  // Helper: check if all platforms are connected
-  const allConnected = connections.x.isConnected && connections.telegram.isConnected && connections.discord.isConnected;
+  // Helper: check if all platforms are disconnected - memoized
+  const allDisconnected = useMemo(() => !connections.x.isConnected && !connections.telegram.isConnected && !connections.discord.isConnected, [connections]);
+  // Helper: check if all platforms are connected - memoized
+  const allConnected = useMemo(() => connections.x.isConnected && connections.telegram.isConnected && connections.discord.isConnected, [connections]);
 
   // Overlay/blur for main content if all disconnected
   const blurOverlay = allDisconnected ? (
@@ -861,57 +892,16 @@ export default function SocialConnectionsPage() {
     }
   };
 
-  // Fetch claimed staking tasks
-  useEffect(() => {
-    const fetchClaimedStakeTasks = async () => {
-      if (!address) return;
-      setStakingTasksLoading(true);
-      try {
-        const res = await fetch(`/api/staking-tasks/status?walletAddress=${address}`);
-        const data = await res.json();
-        if (data.success) {
-          setClaimedStakeTasks(data.claimedTasks);
-        }
-      } catch (error) {
-        console.error('Error fetching staking tasks:', error);
-        setClaimedStakeTasks({});
-      } finally {
-        setStakingTasksLoading(false);
-      }
-    };
-    if (isConnected && address) {
-      fetchClaimedStakeTasks();
-    }
-  }, [isConnected, address]);
+  // Fetch claimed staking tasks - moved to batched API calls above for better performance
 
-  // Invite your first friend tamam mı?
-  const hasInvitedFirstFriend = claimedMilestones.includes(1);
+  // Invite your first friend tamam mı? - memoized
+  const hasInvitedFirstFriend = useMemo(() => claimedMilestones.includes(1), [claimedMilestones]);
 
-  // Günlük ödül claim butonu aktif mi?
-  const canClaimDailyReward = hasClaimableRewards() && hasInvitedFirstFriend;
-  const shouldShowInviteWarning = hasClaimableRewards() && !hasInvitedFirstFriend;
+  // Günlük ödül claim butonu aktif mi? - memoized
+  const canClaimDailyReward = useMemo(() => hasClaimableRewards && hasInvitedFirstFriend, [hasClaimableRewards, hasInvitedFirstFriend]);
+  const shouldShowInviteWarning = useMemo(() => hasClaimableRewards && !hasInvitedFirstFriend, [hasClaimableRewards, hasInvitedFirstFriend]);
 
-  // --- MOBİLDE SADECE BUTONLAR ---
-  // CSS'i head'e ekle
-  if (typeof window !== 'undefined') {
-    const styleId = 'social-connections-mobile-hide-style';
-    if (!document.getElementById(styleId)) {
-      const style = document.createElement('style');
-      style.id = styleId;
-      style.innerHTML = `
-        @media (max-width: 640px) {
-          .hide-on-mobile-inner { display: none !important; }
-          .only-mobile-flex { display: flex !important; flex-direction: column; align-items: center; gap: 8px; }
-          .only-mobile-w-full { width: 100% !important; }
-          .mobile-card-compact { padding: 12px !important; border-radius: 12px !important; margin-bottom: 10px !important; }
-          .mobile-btn-compact { padding-top: 10px !important; padding-bottom: 10px !important; font-size: 1rem !important; border-radius: 8px !important; }
-          .mobile-hero-compact { font-size: 1.1rem !important; margin-bottom: 0.5rem !important; margin-top: 1.5rem !important; text-align: center !important; font-weight: 700 !important; }
-          .mobile-hero-desc { font-size: 0.95rem !important; color: #A1A1AA !important; margin-bottom: 1.2rem !important; text-align: center !important; font-weight: 400 !important; }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-  }
+  // Responsive design handled by Tailwind classes - no dynamic CSS injection needed
 
   // Yeni: Sosyal bağlantıların yüklenip yüklenmediğini kontrol et
   const isConnectionsLoading = isLoading; // isLoading zaten bağlantı fetch edilirken true
@@ -986,26 +976,132 @@ export default function SocialConnectionsPage() {
     return (
       <>
         <Header />
-        <div className="min-h-screen bg-black text-white flex items-center justify-center">
-          <div className="w-full max-w-xs sm:max-w-md bg-[#181C23] border border-[#232A36] rounded-2xl shadow-2xl px-4 py-6 flex flex-col items-center justify-center">
-            <div className="w-full flex flex-col items-center mb-2">
-              <div className="text-center text-lg sm:text-xl font-bold text-white mb-1">Connect Wallet </div>
-              <div className="text-center text-sm text-[#A1A1AA] mb-0">
-                Please connect your wallet 
+        <div className="min-h-screen px-4 py-8" style={{ background: 'linear-gradient(135deg, #000000 0%, #111111 50%, #000000 100%)' }}>
+          {/* Hero Section */}
+          <div className="max-w-6xl mx-auto text-center mb-12 pt-16">
+            <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-6">
+              BBLP Social Quests
+            </h1>
+            <p className="text-xl md:text-2xl text-[#A1A1AA] mb-8 max-w-3xl mx-auto">
+              Connect your wallet to start earning rewards through social engagement
+            </p>
+            
+            {/* Connect Wallet CTA */}
+            <div className="bg-gradient-to-br from-yellow-200/10 to-yellow-100/5 border border-yellow-200/20 rounded-2xl p-8 max-w-md mx-auto mb-12">
+              <div className="text-center mb-6">
+                
+                <h3 className="text-2xl font-bold text-white mb-2">Ready to Start?</h3>
+                <p className="text-[#A1A1AA] text-sm mb-6">Connect your wallet to unlock all quest features and start earning rewards</p>
               </div>
-            </div>
-            <div className="w-full flex flex-col items-center mt-2">
               <Button
                 size="lg"
-                variant="default"
                 onClick={handleConnectWallet}
-                className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-xl px-6 font-medium shadow-md w-full max-w-[180px] mt-2"
+                className="bg-gradient-to-r from-yellow-200 to-yellow-300 text-black hover:from-yellow-300 hover:to-yellow-400 transition-all duration-300 rounded-xl px-8 py-3 font-bold shadow-lg w-full text-lg"
               >
                 Connect Wallet
               </Button>
-              <WalletModal open={showWalletModal} onClose={() => setShowWalletModal(false)} />
             </div>
           </div>
+
+          {/* Features Preview */}
+          <div className="max-w-6xl mx-auto">
+            <h2 className="text-3xl font-bold text-white text-center mb-8">What You Can Earn</h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+              {/* XP Preview */}
+              <div className="bg-[#23232A] border border-[#2A2A2E] rounded-2xl p-6 text-center">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Star className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Experience Points</h3>
+                <p className="text-[#A1A1AA] text-sm mb-4">Earn XP by completing social tasks and level up your profile</p>
+                <div className="text-2xl font-bold text-[#F3F3F3]">0 XP</div>
+              </div>
+
+              {/* Points Preview */}
+                             <div className="bg-[#23232A] border border-[#2A2A2E] rounded-2xl p-6 text-center">
+                 <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                   <Trophy className="w-6 h-6 text-white" />
+                 </div>
+                 <h3 className="text-xl font-bold text-white mb-2">Social Points</h3>
+                 <p className="text-[#A1A1AA] text-sm mb-4">Collect points from daily tasks and social engagement</p>
+                 <div className="text-2xl font-bold text-[#F3F3F3]">0 Points</div>
+               </div>
+
+               {/* USDT Preview */}
+               <div className="bg-gradient-to-br from-yellow-200/10 to-yellow-100/5 border border-yellow-200/20 rounded-2xl p-6 text-center">
+                 <div className="w-12 h-12 bg-gradient-to-br from-yellow-200 to-yellow-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                   <Gift className="w-6 h-6 text-black" />
+                 </div>
+                 <h3 className="text-xl font-bold text-white mb-2">USDT Rewards</h3>
+                 <p className="text-[#A1A1AA] text-sm mb-4">Convert your activity into real USDT rewards</p>
+                 <div className="text-2xl font-bold text-yellow-200">$0.00</div>
+               </div>
+            </div>
+
+            {/* Quest Types Preview */}
+            <div className="bg-[#23232A] border border-[#2A2A2E] rounded-2xl p-8">
+              <h2 className="text-2xl font-bold text-white text-center mb-8">Available Quest Types</h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* X/Twitter Quests */}
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">X (Twitter) Tasks</h3>
+                  <p className="text-[#A1A1AA] text-sm">Follow, like, retweet and engage with BBLP content</p>
+                </div>
+
+                {/* Telegram Quests */}
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <MessageSquare className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">Telegram Tasks</h3>
+                  <p className="text-[#A1A1AA] text-sm">Join channels, participate in discussions, and stay engaged</p>
+                </div>
+
+                {/* Discord Quests */}
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-8 h-8 text-white" />
+                  </div>
+                  <h3 className="text-lg font-bold text-white mb-2">Discord Tasks</h3>
+                  <p className="text-[#A1A1AA] text-sm">Join server, chat with community, and complete challenges</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Benefits Section */}
+            <div className="mt-12 text-center">
+              <h2 className="text-2xl font-bold text-white mb-6">Why Connect Your Wallet?</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                 <div className="bg-[#1A1A1A] border border-[#35353B] rounded-xl p-4">
+                   <CheckCircle className="w-6 h-6 text-green-500 mx-auto mb-2" />
+                   <p className="text-white text-sm font-medium">Secure & Safe</p>
+                   <p className="text-[#A1A1AA] text-xs">Your wallet, your control</p>
+                 </div>
+                 <div className="bg-[#1A1A1A] border border-[#35353B] rounded-xl p-4">
+                   <Zap className="w-6 h-6 text-yellow-500 mx-auto mb-2" />
+                   <p className="text-white text-sm font-medium">Instant Rewards</p>
+                   <p className="text-[#A1A1AA] text-xs">Real-time point tracking</p>
+                 </div>
+                 <div className="bg-[#1A1A1A] border border-[#35353B] rounded-xl p-4">
+                   <Star className="w-6 h-6 text-blue-500 mx-auto mb-2" />
+                   <p className="text-white text-sm font-medium">Level Up</p>
+                   <p className="text-[#A1A1AA] text-xs">Unlock higher rewards</p>
+                 </div>
+                <div className="bg-[#1A1A1A] border border-[#35353B] rounded-xl p-4">
+                  <Gift className="w-6 h-6 text-purple-500 mx-auto mb-2" />
+                  <p className="text-white text-sm font-medium">Exclusive Access</p>
+                  <p className="text-[#A1A1AA] text-xs">Special community perks</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <WalletModal open={showWalletModal} onClose={() => setShowWalletModal(false)} />
         </div>
       </>
     );
@@ -1041,17 +1137,18 @@ export default function SocialConnectionsPage() {
     return (
       <>
         <Header />
-        <div className="min-h-screen w-full flex flex-col items-center justify-center relative" style={{ background: '#18181B' }}>
+        <div className="min-h-screen w-full flex flex-col items-center justify-center relative px-4" style={{ background: '#18181B' }}>
         {/* Overlay */}
         <div className="fixed top-16 left-0 right-0 bottom-0 z-30 backdrop-blur-md" />
-        {/* Motivational Explanation */}
-        <div className="relative z-40 flex flex-col items-center justify-center w-full mb-8">
-          <div className="text-2xl font-bold text-white text-center mb-2 px-4 mobile-hero-compact">Start Your Quest!</div>
-          <div className="text-base text-[#A1A1AA] text-center px-4 mb-2 mobile-hero-desc">Connect all three platforms to unlock your full earning potential and access exclusive quest rewards.</div>
+        
+        {/* Minimal Header */}
+        <div className="relative z-40 text-center mb-8">
+          <h1 className="text-2xl font-bold text-white mb-2">Connect Platforms</h1>
+          <p className="text-sm text-[#A1A1AA] max-w-md">Connect your social accounts to start earning rewards</p>
         </div>
-        {/* Connect Cards */}
-        <div className="relative z-40 flex flex-col items-center justify-center w-full">
-          <div className="w-full max-w-5xl grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-8 px-4 only-mobile-flex">
+        
+        {/* Compact Connect Cards */}
+        <div className="relative z-40 w-full max-w-md space-y-3">
             {[
               {
                 platform: 'x',
@@ -1081,58 +1178,47 @@ export default function SocialConnectionsPage() {
                 isConnected: connections.discord.isConnected
               }
             ].map(({ platform, name, icon, color, connectUrl, desc, isConnected }) => {
-              // Yeni: Küçük ikon ve kısa açıklama
-              let compactIcon, compactTitle, compactDesc;
-              if (platform === 'x') {
-                compactIcon = <svg viewBox="0 0 32 32" className="w-6 h-6 mr-2" fill="#1DA1F2"><path d="M32 6.076a13.14 13.14 0 0 1-3.769 1.031A6.601 6.601 0 0 0 31.115 4.1a13.195 13.195 0 0 1-4.169 1.594A6.563 6.563 0 0 0 22.155 2c-3.626 0-6.563 2.938-6.563 6.563 0 .514.058 1.016.17 1.496C10.303 9.87 5.47 7.38 2.228 3.671a6.544 6.544 0 0 0-.888 3.3c0 2.277 1.159 4.287 2.924 5.464a6.533 6.533 0 0 1-2.975-.822v.083c0 3.18 2.263 5.833 5.267 6.437a6.575 6.575 0 0 1-2.968.112c.837 2.614 3.263 4.516 6.142 4.567A13.18 13.18 0 0 1 0 27.026 18.616 18.616 0 0 0 10.063 30c12.072 0 18.681-10.002 18.681-18.682 0-.285-.007-.568-.02-.85A13.354 13.354 0 0 0 32 6.076z"/></svg>;
-                compactTitle = 'X (Twitter)';
-                compactDesc = 'Connect your X account.';
-              } else if (platform === 'telegram') {
-                compactIcon = <svg viewBox="0 0 32 32" className="w-6 h-6 mr-2" fill="#229ED9"><path d="M16 32c8.837 0 16-7.163 16-16S24.837 0 16 0 0 7.163 0 16s7.163 16 16 16zm6.406-21.406l-2.75 12.969c-.207.93-.75 1.156-1.519.72l-4.188-3.094-2.022 1.947c-.223.223-.41.41-.84.41l.299-4.23 7.688-6.938c.334-.299-.073-.465-.517-.166l-9.5 5.98-4.094-1.281c-.889-.277-.906-.889.186-1.316l16.031-6.188c.748-.277 1.406.166 1.166 1.314z"/></svg>;
-                compactTitle = 'Telegram';
-                compactDesc = 'Connect your Telegram account.';
-              } else {
-                compactIcon = <svg viewBox="0 0 32 32" className="w-6 h-6 mr-2" fill="#5865F2"><path d="M27.2 6.8A26.9 26.9 0 0 0 20.5 4a1 1 0 0 0-.5.1c-.2.1-.3.3-.3.5l-.3 1.2a24.2 24.2 0 0 0-7.8 0l-.3-1.2a.7.7 0 0 0-.3-.5A1 1 0 0 0 11.5 4a26.9 26.9 0 0 0-6.7 2.8c-.2.1-.3.3-.3.5C2.1 13.1 1.2 19.2 2.1 25.2c0 .2.2.4.4.5A27.2 27.2 0 0 0 11.5 28a1 1 0 0 0 .5-.1c.2-.1.3-.3.3-.5l.3-1.2a24.2 24.2 0 0 0 7.8 0l.3 1.2c.1.2.2.4.3.5a1 1 0 0 0 .5.1 27.2 27.2 0 0 0 8.9-2.3c.2-.1.4-.3.4-.5.9-6 .1-12.1-1.7-17.9a.7.7 0 0 0-.3-.5zM11.1 20.2c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm9.8 0c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/></svg>;
-                compactTitle = 'Discord';
-                compactDesc = 'Connect your Discord account.';
-              }
+              // Platform information for this card
               return (
                 <div
                   key={platform}
-                  className="bg-[#23232A] border border-[#35353B] rounded-2xl shadow-xl p-8 flex flex-col items-center transition-transform duration-200 hover:scale-105 hover:shadow-2xl only-mobile-w-full mobile-card-compact"
+                  className="bg-[#23232A]/80 border border-[#35353B] rounded-xl p-4 flex items-center justify-between transition-all duration-200 hover:bg-[#2A2A2E]"
                 >
-                  {/* Başlık ve ikon satırı */}
-                  <div className="w-full flex items-center justify-center mb-1">
-                    {compactIcon}
-                    <span className="text-lg font-bold text-white">{compactTitle}</span>
+                  {/* Left: Icon + Name */}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 flex items-center justify-center">
+                      {icon}
+                    </div>
+                    <span className="text-base font-medium text-white">{name}</span>
                   </div>
-                  {/* Açıklama */}
-                  <div className="w-full text-center text-xs text-[#A1A1AA] mb-3">{compactDesc}</div>
-                  {/* Buton */}
+                  
+                  {/* Right: Status/Button */}
                   {isConnected ? (
-                    <div className="w-full flex items-center justify-center gap-2 py-2 rounded-lg font-semibold bg-green-900/30 text-green-400 border border-green-700 mobile-btn-compact">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
-                      Connected
+                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-green-900/30 text-green-400 border border-green-700/50">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="text-sm font-medium">Connected</span>
                     </div>
                   ) : (
                     <Button
                       onClick={() => window.location.href = connectUrl}
-                      className="w-full py-2 rounded-lg font-semibold transition  flex items-center justify-center gap-2 mobile-btn-compact"
+                      size="sm"
+                      className="bg-[#F3F3F3] text-black hover:bg-white transition-colors px-4 py-2 text-sm font-medium rounded-lg"
                     >
-                      Connect {compactTitle}
+                      Connect
                     </Button>
                   )}
                 </div>
               );
             })}
           </div>
-          <div className="flex flex-col items-center mt-8 hide-on-mobile-inner">
-            <div className="flex items-center gap-2 text-[#A1A1AA] text-xs">
-              <svg className="w-4 h-4" fill="none" stroke="#A1A1AA" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 11c0-1.105.895-2 2-2s2 .895 2 2-.895 2-2 2-2-.895-2-2zm0 0V7m0 4v4m0 0c-4.418 0-8-1.79-8-4V7a2 2 0 012-2h2.586a1 1 0 01.707.293l1.414 1.414a1 1 0 00.707.293h2.172a1 1 0 00.707-.293l1.414-1.414A1 1 0 0117.414 5H20a2 2 0 012 2v4c0 2.21-3.582 4-8 4z"/></svg>
-              <span>Your data is safe</span>
-            </div>
+          
+          {/* Simple footer */}
+          <div className="relative z-40 mt-8 text-center">
+            <p className="text-xs text-[#6B7280] flex items-center justify-center gap-1">
+              <CheckCircle className="w-3 h-3" />
+              Your data is secure
+            </p>
           </div>
-        </div>
         </div>
       </>
     );
@@ -1143,9 +1229,13 @@ export default function SocialConnectionsPage() {
       <Header />
       <div className="min-h-screen px-2 sm:px-4 md:px-0" style={{ color: '#F3F3F3', position: 'relative' }}>
         {/* Overview Başlık ve Açıklama */}
-        <div className="w-full max-w-6xl mx-auto mt-40 mb-2">
-          <h1 className="text-3xl font-bold text-white mb-2">BBLP Social Quest</h1>
-          <p className="text-base text-[#A1A1AA]">Connect, engage, and earn! Complete quests across X, Telegram, and Discord to unlock exclusive rewards and level up your journey.</p>
+        <div className="w-full max-w-6xl mx-auto mt-20 mb-2">
+          <div className="text-center mb-8">
+            <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-4">BBLP Social Quests</h1>
+            <p className="text-lg text-[#A1A1AA] mb-6 max-w-3xl mx-auto">
+              Connect, engage, and earn exclusive rewards!
+            </p>
+          </div>
         </div>
         {blurOverlay}
         <div className={allDisconnected ? 'pointer-events-none select-none filter blur-sm opacity-60' : ''}>
@@ -1153,23 +1243,90 @@ export default function SocialConnectionsPage() {
          
          
 
-          {/* Connection Overview - Responsive Grid: Estimated üstte tam genişlikte, altta iki kart yan yana */}
-          <div className="w-full max-w-6xl mx-auto mb-10 grid mt-2 grid-cols-2 gap-2 md:px-0">
-            {/* Estimated BBLP Reward Kartı */}
-           
-            <div className="text-center p-8 bg-[#23232A] rounded-2xl border border-[#2A2A2E] flex flex-col items-center justify-center shadow-lg">
-              <div className="text-4xl font-bold text-[#F3F3F3] mb-2">{getTotalXP()} </div>
-              <p className="text-[#A1A1AA] text-base">Your XP</p>
-            </div>
-            <div className="text-center p-8 bg-[#23232A] rounded-2xl border border-[#2A2A2E] flex flex-col items-center justify-center shadow-lg">
-              <div className="text-4xl font-bold text-[#F3F3F3] mb-2">{totalSocialPointsLoading ? '...' : totalSocialPoints}</div>
-              <p className="text-[#A1A1AA] text-base">Your Social Points</p>
+          {/* Connection Overview - Responsive Grid: Mobilde USDT üstte, XP+Points altta */}
+          <div className="w-full max-w-6xl mx-auto -mb-5 mt-2 md:px-0">
+            {/* Mobilde USDT üstte, Desktop'ta 3'ü yan yana */}
+            <div className="flex flex-col lg:grid lg:grid-cols-3 gap-2">
+              
+              {/* USDT Card - Mobilde üstte, desktop'ta sonuncu */}
+              <div className="order-1 lg:order-3 text-center p-4 bg-gradient-to-br from-yellow-200/10 to-yellow-100/5 rounded-2xl border border-yellow-200/20 flex flex-col items-center justify-center shadow-lg relative">
+                {/* Subtle glow effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-yellow-200/5 to-transparent"></div>
+                
+                <div className="relative z-10">
+                  <div className="text-3xl lg:text-4xl font-bold mb-2 flex items-center justify-center gap-2">
+                    <span className="text-yellow-200 text-2xl lg:text-3xl">$</span>
+                    <span className="text-[#F3F3F3]">{getEstimatedUSDT}</span>
+                  </div>
+                  <div className="flex items-center justify-center gap-2">
+                    <p className="text-[#A1A1AA] text-sm lg:text-base font-medium">Estimated USDT reward allocation</p>
+                    <span
+                      className="ml-1 cursor-pointer relative"
+                      onClick={() => setShowUSDTInfo((v) => !v)}
+                      tabIndex={0}
+                      onBlur={() => setShowUSDTInfo(false)}
+                    >
+                      <Info className="w-4 h-4 text-[#6B7280] hover:text-yellow-200 transition-colors" />
+                      {showUSDTInfo && (
+                        <div className="absolute top-full mt-2 z-50 w-[80vw] sm:w-[200px] max-w-sm p-4 rounded bg-[#23232A] border border-[#35353B] text-xs text-[#A1A1AA] shadow-lg break-words whitespace-normal right-0">
+                          Estimated reward allocation based on your activity: XP (0.001%) + Points (0.005%). Actual rewards may vary and are subject to platform terms.
+                        </div>
+                      )}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* XP ve Points container - Mobilde altta yan yana */}
+              <div className="order-2 lg:order-1 lg:contents">
+                <div className="grid grid-cols-2 lg:contents gap-2">
+              {/* XP Card */}
+              <div className="text-center p-2 bg-[#23232A] rounded-2xl border border-[#2A2A2E] flex flex-col items-center justify-center shadow-lg">
+                <div className="text-2xl font-bold text-[#F3F3F3] mb-2">{getTotalXP} </div>
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-[#A1A1AA] text-base">Your XP</p>
+                  <span
+                    className="ml-1 cursor-pointer relative"
+                    onClick={() => setShowXPInfo((v) => !v)}
+                    tabIndex={0}
+                    onBlur={() => setShowXPInfo(false)}
+                  >
+                    <Info className="w-4 h-4 text-[#6B7280] hover:text-[#F3F3F3] transition-colors" />
+                    {showXPInfo && (
+                      <div className="absolute top-full mt-2 z-50 w-[80vw] sm:w-[200px] max-w-sm p-4 rounded bg-[#23232A] border border-[#35353B] text-xs text-[#A1A1AA] shadow-lg break-words whitespace-normal -left-20 ">
+                        Experience Points unlock exclusive rewards, leaderboard rankings, mystery boxes with ETH/USDT/BNB, premium features, governance voting power, and future staking multipliers. Higher XP = Better rewards!
+                      </div>
+                    )}
+                  </span>
+                </div>
+              </div>
+              
+                  {/* Points Card */}
+                  <div className="text-center p-2 bg-[#23232A] rounded-2xl border border-[#2A2A2E] flex flex-col items-center justify-center shadow-lg">
+                    <div className="text-2xl font-bold text-[#F3F3F3] mb-2">{totalSocialPointsLoading ? '...' : totalSocialPoints}</div>
+                    <div className="flex items-center justify-center gap-2">
+                      <p className="text-[#A1A1AA] text-base">Your Points</p>
+                      <span
+                        className="ml-1 cursor-pointer relative"
+                        onClick={() => setShowPointsInfo((v) => !v)}
+                        tabIndex={0}
+                        onBlur={() => setShowPointsInfo(false)}
+                      >
+                        <Info className="w-4 h-4 text-[#6B7280] hover:text-[#F3F3F3] transition-colors" />
+                        {showPointsInfo && (
+                          <div className="absolute top-full mt-2 z-50 w-[80vw] sm:w-[200px] max-w-sm p-4 rounded bg-[#23232A] border border-[#35353B] text-xs text-[#A1A1AA] shadow-lg break-words whitespace-normal right-0 ">
+                            Social Points are earned from completing daily quests and social tasks. 
+                          </div>
+                        )}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
-          
 
-        
 
           {/* Level Tasks Section */}
           <div className="max-w-6xl mx-auto mt-12 ">
@@ -1234,14 +1391,14 @@ export default function SocialConnectionsPage() {
                         <Info className="w-3 h-3 text-[#F59E42]" />
                       </span>
                       {showInfo && (
-                        <div className="absolute  top-full mt-2 z-50 w-[85vw] min-w-[200px] max-w-sm  p-4 rounded bg-[#23232A] border border-[#35353B] text-xs text-[#A1A1AA] shadow-lg break-words whitespace-normal">
+                        <div className="absolute top-full mt-2 z-50 w-[85vw] min-w-[200px] max-w-sm p-4 rounded bg-[#23232A] border border-[#35353B] text-xs text-[#A1A1AA] shadow-lg break-words whitespace-normal">
                           Your daily earning is determined by your levels on connected social platforms.<br />The sum of your daily rewards from Telegram and Discord is shown here.
                         </div>
                       )}
                     </span>
                     <span className="text-xs mt-1">
                       <span className="px-2 py-0.5 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent">
-                        {getUserTotalDailyReward()} Points
+                        {getUserTotalDailyReward} Points
                       </span>
                     </span>
                   </div>
@@ -1258,7 +1415,7 @@ export default function SocialConnectionsPage() {
                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#F3F3F3]"></div>
                           Claiming...
                         </div>
-                      ) : (hasClaimableRewards() ? (
+                      ) : (hasClaimableRewards ? (
                         <>
                           <Gift className="w-3 h-3 mr-1 text-[#F3F3F3]" />
                           Claim Daily Rewards
@@ -1287,10 +1444,15 @@ export default function SocialConnectionsPage() {
               <div className="max-w-6xl mx-auto mt-12">
                 {/* Section Header */}
                 <div className="flex items-center gap-2 mb-1">
-                  <div className="w-1.5 h-6 rounded bg-[#1DA1F2] mr-2" />
-                  <h3 className="text-2xl font-extrabold tracking-tight text-[#F3F3F3]">Daily Tasks</h3>
+                  <div className="w-1.5 h-6 rounded bg-gradient-to-r from-[#1DA1F2] to-[#0EA5E9] mr-2" />
+                  <h3 className="text-2xl font-extrabold tracking-tight text-[#F3F3F3] flex items-center gap-2">
+                    Daily Tasks
+                   
+                  </h3>
                 </div>
-                <div className="text-xs text-[#1DA1F2] font-semibold mb-4 pl-6">Complete daily tasks and claim your rewards!</div>
+                <div className="text-sm text-[#A1A1AA] font-medium mb-4 pl-6 flex items-center gap-2">
+                 Complete tasks to unlock bonus rewards and level up faster.
+                </div>
                 <div className="space-y-2">
                   {/* Daily Tasks List */}
                   {dailyTasks.length > 0 && dailyTasks.map(task => (

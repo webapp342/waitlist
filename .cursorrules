@@ -1,0 +1,167 @@
+# Bblip Crypto Fintech DApp - Cursor IDE Rules
+# Optimized for Next.js 15, TypeScript, Web3, Supabase, and crypto integrations
+
+## PROJECT CONTEXT
+You are working on "Bblip" - a crypto payment card platform with:
+- Virtual/physical crypto cards for spending anywhere
+- Token presales, staking, cross-chain bridging
+- Referral system with Discord/Telegram/X integrations
+- Admin dashboard with comprehensive analytics
+- Multi-language support (i18next)
+
+## CORE TECHNOLOGIES & VERSIONS
+- Next.js 15.1 (App Router) + React 18 + TypeScript 5
+- Tailwind CSS + shadcn/ui + Framer Motion
+- Supabase (PostgreSQL + Auth) + TanStack React Query
+- Web3: wagmi 2.x + viem 2.x + ethers 6.x
+- Smart Contracts: Hardhat + Solidity 0.8.20 + OpenZeppelin
+- Integrations: Discord.js, Telegram Bot API, PDF generation
+
+## STRICT DEVELOPMENT RULES
+
+### 1. TYPE SAFETY & ERROR HANDLING
+- **ALWAYS** use strict TypeScript with explicit return types
+- **NEVER** use `any` - prefer `unknown` for uncertain types
+- **ALWAYS** handle Web3 errors with specific error types (viem/wagmi)
+- **ALWAYS** use proper error boundaries for async operations
+- **ALWAYS** type Supabase database operations with generated types
+- **REQUIRE** explicit null checks for all database queries
+- **REQUIRE** proper error handling for all API routes with typed responses
+
+### 2. WEB3 & BLOCKCHAIN SPECIFICS
+- **ALWAYS** use wagmi hooks instead of direct ethers calls
+- **ALWAYS** implement proper wallet connection states (connecting, connected, error)
+- **ALWAYS** validate chain IDs before contract interactions
+- **ALWAYS** use proper gas estimation and transaction receipts
+- **NEVER** assume wallet is connected - always check wallet state
+- **ALWAYS** implement transaction pending states with user feedback
+- **ALWAYS** use proper decimal handling for token amounts (avoid floating point)
+- **REQUIRE** proper contract address validation and checksumming
+- **REQUIRE** explicit slippage tolerance for swap operations
+
+### 3. NEXT.JS 15 APP ROUTER PATTERNS
+- **ALWAYS** use Server Components by default, Client Components only when needed
+- **ALWAYS** use proper loading.tsx and error.tsx in route segments  
+- **ALWAYS** implement proper metadata for each page (SEO critical)
+- **NEVER** use pages directory patterns - stick to app directory
+- **ALWAYS** use route handlers (app/api) instead of API pages
+- **REQUIRE** proper parallel routes for complex layouts
+- **REQUIRE** streaming and Suspense for data-heavy components
+
+### 4. DATABASE & API PATTERNS
+- **ALWAYS** use Supabase Row Level Security (RLS) policies
+- **ALWAYS** validate user authentication before database operations
+- **ALWAYS** use Supabase real-time subscriptions for live data
+- **NEVER** expose sensitive data in client-side queries
+- **ALWAYS** implement proper pagination for large datasets
+- **REQUIRE** input validation with Zod or similar for all API routes
+- **REQUIRE** rate limiting for public API endpoints
+
+### 5. UI/UX CONSISTENCY
+- **ALWAYS** use shadcn/ui components as base, customize with Tailwind
+- **ALWAYS** implement proper loading states for all async operations
+- **ALWAYS** use Framer Motion for consistent animations
+- **ALWAYS** implement proper toast notifications (Sonner)
+- **ALWAYS** ensure mobile-first responsive design
+- **REQUIRE** proper accessibility (ARIA labels, keyboard navigation)
+- **REQUIRE** dark mode support throughout the application
+
+### 6. PERFORMANCE OPTIMIZATION
+- **ALWAYS** use Next.js Image component for all images
+- **ALWAYS** implement proper caching strategies for API responses
+- **ALWAYS** use React Query for all async state management
+- **ALWAYS** implement code splitting for heavy components
+- **NEVER** bundle large libraries client-side unless necessary
+- **REQUIRE** optimization for Web3 provider connections
+- **REQUIRE** proper cleanup of subscriptions and intervals
+
+### 7. SECURITY REQUIREMENTS
+- **ALWAYS** sanitize user inputs for SQL injection prevention
+- **ALWAYS** validate wallet signatures for sensitive operations
+- **ALWAYS** implement proper CORS for API routes
+- **NEVER** expose private keys or sensitive environment variables
+- **ALWAYS** use proper JWT validation for protected routes
+- **REQUIRE** rate limiting for wallet connection attempts
+- **REQUIRE** proper smart contract interaction validation
+
+### 8. CODE ORGANIZATION
+- **ALWAYS** use absolute imports with @ path mapping
+- **ALWAYS** separate business logic into custom hooks
+- **ALWAYS** create reusable components in components/ directory
+- **ALWAYS** use proper barrel exports for cleaner imports
+- **NEVER** create circular dependencies between modules
+- **REQUIRE** consistent file naming conventions (kebab-case)
+- **REQUIRE** proper component composition over inheritance
+
+### 9. TESTING & DOCUMENTATION
+- **ALWAYS** write JSDoc comments for complex functions
+- **ALWAYS** add unit tests for new business logic
+- **ALWAYS** test Web3 integrations with mock providers
+- **REQUIRE** integration tests for critical user flows
+- **REQUIRE** documentation updates for new features
+- **REQUIRE** README updates for new environment variables
+
+### 10. DEPLOYMENT & MONITORING
+- **ALWAYS** use environment-specific configurations
+- **ALWAYS** implement proper error tracking (Vercel Analytics)
+- **ALWAYS** monitor Web3 transaction success rates
+- **REQUIRE** performance monitoring for critical paths
+- **REQUIRE** proper environment variable validation
+
+## AUTOMATIC BEHAVIORS
+
+### When adding new features:
+1. Check if existing shadcn/ui components can be used
+2. Implement proper TypeScript interfaces in types/
+3. Add proper error handling and loading states
+4. Update related documentation files
+5. Consider mobile responsive design
+6. Test wallet integration edge cases
+
+### When modifying smart contracts:
+1. Update TypeScript interfaces in types/
+2. Regenerate contract types if using TypeChain
+3. Update deployment scripts and configurations
+4. Test on testnet before mainnet deployment
+5. Update security documentation
+
+### When working with APIs:
+1. Always implement proper input validation
+2. Use consistent error response formats
+3. Implement proper rate limiting
+4. Add comprehensive logging
+5. Update API documentation
+
+### For database changes:
+1. Always create Supabase migrations
+2. Update TypeScript types accordingly
+3. Consider RLS policy implications
+4. Test with different user roles
+5. Update backup strategies
+
+## ERROR PREVENTION
+
+### Common Issues to Avoid:
+- Hydration mismatches (client/server state differences)
+- Wallet connection race conditions
+- Decimal precision errors in token calculations
+- Missing error boundaries for async components
+- Inconsistent loading states across components
+- Security vulnerabilities in smart contract interactions
+- Poor handling of network switching in wallets
+
+### Required Checks Before Code Completion:
+1. TypeScript compilation without warnings
+2. Proper error handling implementation
+3. Mobile responsive design verification
+4. Wallet connection edge case handling
+5. Proper cleanup of side effects
+6. Security vulnerability assessment
+
+## STYLE PREFERENCES
+- Use functional components with hooks exclusively
+- Prefer composition over inheritance
+- Use explicit typing over inference for public APIs
+- Maintain consistent code formatting (Prettier)
+- Follow conventional commit message format
+- Use semantic variable and function names 

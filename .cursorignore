@@ -1,0 +1,93 @@
+# Dependencies and packages
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Next.js build outputs
+.next/
+out/
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.example
+
+# Database and cache
+.cache/
+.parcel-cache/
+.turbo/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git files
+.git/
+.gitignore
+
+# Logs
+logs/
+*.log
+
+# Testing
+coverage/
+.nyc_output/
+.jest/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Blockchain artifacts (large ABI files)
+artifacts/
+cache/
+typechain-types/
+deployments/
+
+# Large data files
+*.csv
+*.xlsx
+*.pdf
+airdrop-data/
+
+# Bot dependencies (separate projects)
+discord-bot/node_modules/
+telegram-bot/node_modules/
+discord-bot/package-lock.json
+telegram-bot/package-lock.json
+
+# Generated files
+*.tsbuildinfo
+.eslintcache
+
+# Vercel
+.vercel
+
+# Documentation that shouldn't be indexed for AI
+*.md
+!README.md
+
+# Lock files (large and not useful for AI)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml 

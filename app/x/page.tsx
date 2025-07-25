@@ -6,7 +6,6 @@ import { toast } from 'sonner';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { 
-  Twitter, 
   CheckCircle, 
   XCircle, 
   Activity, 
@@ -211,9 +210,8 @@ export default function XPage() {
   if (isConnected === false || !address) {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
-        <Twitter className="w-20 h-20 text-blue-400 mb-6" />
         <h1 className="text-3xl font-bold text-white mb-4">Connect X</h1>
-        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your X (Twitter) account to start earning XP and BBLP rewards for your social activity.</p>
+        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your X (Twitter) account to start earning XP and Points rewards for your social activity.</p>
         <Button 
           onClick={() => window.location.href = '/'}
           className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg rounded-lg"
@@ -227,9 +225,8 @@ export default function XPage() {
   if (connectionStatus !== 'connected') {
     return (
       <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
-        <Twitter className="w-20 h-20 text-blue-400 mb-6" />
         <h1 className="text-3xl font-bold text-white mb-4">Connect X</h1>
-        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your X (Twitter) account to start earning XP and BBLP rewards for your social activity.</p>
+        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your X (Twitter) account to start earning XP and Points rewards for your social activity.</p>
         <Button
           onClick={initiateXAuth}
           disabled={isConnecting}
@@ -260,7 +257,6 @@ export default function XPage() {
           <Card className="bg-gray-900 border-gray-800 mb-8">
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
-                <Twitter className="w-6 h-6 text-blue-400" />
                 X Account Status
               </CardTitle>
               <CardDescription>
@@ -292,7 +288,6 @@ export default function XPage() {
                       disabled={!isConnected || isConnecting}
                       className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                     >
-                      <Twitter className="w-4 h-4 mr-2" />
                       {isConnecting ? 'Connecting...' : 'Connect X Account'}
                     </Button>
                     
@@ -385,8 +380,8 @@ export default function XPage() {
                   <div className="flex items-start gap-3">
                     <Trophy className="w-5 h-5 text-yellow-400 mt-1" />
                     <div>
-                      <h4 className="font-semibold">BBLP Token Rewards</h4>
-                      <p className="text-gray-400 text-sm">Get daily BBLP tokens based on your social influence</p>
+                      <h4 className="font-semibold">Points Token Rewards</h4>
+                      <p className="text-gray-400 text-sm">Get daily Points tokens based on your social influence</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">

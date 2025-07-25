@@ -301,9 +301,8 @@ export default function DiscordPage() {
   if (isConnected === false || !address) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
-        <MessageSquare className="w-20 h-20 text-purple-400 mb-6" />
         <h1 className="text-3xl font-bold text-white mb-4">Connect Discord</h1>
-        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your Discord account to start earning XP and BBLP rewards for your community activity.</p>
+        <p className="text-gray-300 text-sm mb-8 text-center max-w-md">Connect your Discord account to start earning XP and Usdt rewards for your community activity.</p>
         <Button 
           onClick={() => window.location.href = '/'}
           className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg rounded-lg"
@@ -317,9 +316,8 @@ export default function DiscordPage() {
   if (!discordStats.isConnected) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 flex flex-col items-center justify-center">
-        <MessageSquare className="w-20 h-20 text-purple-400 mb-6" />
         <h1 className="text-3xl font-bold text-white mb-4">Connect Discord</h1>
-        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your Discord account to start earning XP and BBLP rewards for your community activity.</p>
+        <p className="text-gray-300 text-sm mb-8 text-center max-w-md">Connect your Discord account to start earning XP and Usdt rewards for your community activity.</p>
         <Button
           onClick={() => { setIsConnecting(true); connectDiscord(); }}
           disabled={isConnecting}
@@ -337,9 +335,8 @@ export default function DiscordPage() {
         <div className="max-w-4xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <MessageSquare className="w-16 h-16 mx-auto text-purple-400 mb-4" />
             <h1 className="text-4xl font-bold text-white mb-4">Discord Integration</h1>
-            <p className="text-gray-300 text-lg">
+            <p className="text-gray-300 text-sm">
               Connect your Discord account and earn rewards for your community activity!
             </p>
           </div>
@@ -412,7 +409,7 @@ export default function DiscordPage() {
               ) : (
                 <div className="text-center">
                   <p className="text-gray-300 mb-4">
-                    Connect your Discord account to start earning XP and BBLP rewards!
+                    Connect your Discord account to start earning XP and Usdt rewards! 
                   </p>
                   <Button
                     onClick={connectDiscord}
@@ -509,7 +506,7 @@ export default function DiscordPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="text-center">
-                    <p className="text-3xl font-bold text-white">{discordStats.dailyReward} BBLP</p>
+                    <p className="text-3xl font-bold text-white">{discordStats.dailyReward} Points</p>
                     <p className="text-gray-300">Daily Reward</p>
                   </div>
                   
@@ -557,7 +554,7 @@ export default function DiscordPage() {
                             {level.name}
                           </span>
                         </div>
-                        <span className="text-sm text-gray-400">{level.reward} BBLP/day</span>
+                        <span className="text-sm text-gray-400">{level.reward} Points/day</span>
                       </div>
                     ))}
                   </div>
@@ -586,7 +583,7 @@ export default function DiscordPage() {
                   <div className="space-y-3">
                     <h3 className="text-lg font-semibold text-white">💎 Reward System</h3>
                     <ul className="text-gray-300 space-y-1 text-sm">
-                      <li>• Daily BBLP token rewards</li>
+                      <li>• Daily Points rewards</li>
                       <li>• Level-based reward scaling</li>
                       <li>• Automatic level progression</li>
                       <li>• Community leaderboards</li>

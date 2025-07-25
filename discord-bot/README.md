@@ -158,7 +158,7 @@ const processedReactions = new Set(); // reactionId -> true
 - Slash komutları ile kolay kullanım
 - Cache'lenmiş XP istatistikleri
 - Optimize edilmiş liderlik tablosu
-- Kişisel davet linki oluşturma
+- Kişisel davet linki oluşturma sfcsadfsdaf
 - Yardım komutları
 
 ## Database Entegrasyonu

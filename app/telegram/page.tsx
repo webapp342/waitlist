@@ -372,32 +372,66 @@ export default function TelegramPage() {
 
   if ((isConnected === false || !address)) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
-        <MessageSquare className="w-20 h-20 text-blue-400 mb-6" />
-        <h1 className="text-3xl font-bold text-white mb-4">Connect Telegram</h1>
-        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your Telegram account to start earning XP and BBLP rewards for your community activity.</p>
-        <Button 
-          onClick={() => window.location.href = '/'}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg rounded-lg"
-        >
-          Connect Wallet
-        </Button>
+      <div className="min-h-screen px-4 py-8" style={{ background: 'linear-gradient(135deg, #000000 0%, #111111 50%, #000000 100%)' }}>
+        <div className="max-w-2xl mx-auto text-center pt-20">
+         
+          
+          <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-4">
+            Connect Telegram
+          </h1>
+          <p className="text-[#A1A1AA] mb-8 max-w-md mx-auto">
+            Connect your wallet first to link your Telegram account
+          </p>
+          
+          <Button 
+            onClick={() => window.location.href = '/'}
+            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-300 rounded-xl px-8 py-3 font-bold shadow-lg"
+          >
+            Connect Wallet
+          </Button>
+        </div>
       </div>
     );
   }
 
   if (!telegramStats.isConnected) {
     return (
-      <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center">
-        <MessageSquare className="w-20 h-20 text-blue-400 mb-6" />
-        <h1 className="text-3xl font-bold text-white mb-4">Connect Telegram</h1>
-        <p className="text-gray-300 text-lg mb-8 text-center max-w-md">Connect your Telegram account to start earning XP and BBLP rewards for your community activity.</p>
-        <Button
-          onClick={() => setShowTelegramWidget(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 text-lg rounded-lg"
-        >
-          Connect Telegram
-        </Button>
+      <div className="min-h-screen px-4 py-8" style={{ background: 'linear-gradient(135deg, #000000 0%, #111111 50%, #000000 100%)' }}>
+        <div className="max-w-2xl mx-auto text-center pt-20">
+     
+          
+          <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-4">
+            Connect Telegram
+          </h1>
+          <p className="text-[#A1A1AA] mb-8 max-w-md mx-auto">
+            Link your Telegram account to start earning XP and rewards
+          </p>
+          
+          <Button
+            onClick={() => setShowTelegramWidget(true)}
+            disabled={isLoading}
+            className="bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700 transition-all duration-300 rounded-xl px-8 py-3 font-bold shadow-lg disabled:opacity-50"
+          >
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Activity className="w-5 h-5 animate-spin" />
+                Connecting...
+              </div>
+            ) : (
+              <div className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                Connect Telegram
+              </div>
+            )}
+          </Button>
+          
+          {typeof window !== 'undefined' && /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) && (
+            <p className="text-xs text-[#6B7280] text-center mt-4">
+              📱 Telegram app will open automatically
+            </p>
+          )}
+        </div>
+
         {/* Telegram Login Widget Modal */}
         {showTelegramWidget && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -445,321 +479,54 @@ export default function TelegramPage() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Header */}
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3">
-              <MessageSquare className="text-blue-500" />
-              Telegram Integration
-            </h1>
-            <p className="text-gray-400 mt-2">
-              Connect your Telegram account and earn XP through group activities
-            </p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            <span className="text-sm text-gray-400">Connected: {address?.slice(0, 6)}...{address?.slice(-4)}</span>
-          </div>
+    <div className="min-h-screen px-4 py-8" style={{ background: 'linear-gradient(135deg, #000000 0%, #111111 50%, #000000 100%)' }}>
+      <div className="max-w-2xl mx-auto text-center pt-20">
+        <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+          <CheckCircle className="w-8 h-8 text-white" />
         </div>
-
-        {/* Main Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Column - Telegram Status */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Telegram Connection Card */}
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <MessageSquare className="text-blue-500" />
-                  Telegram Status
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {telegramStats.isConnected ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle className="text-green-500" size={24} />
-                      <div>
-                        <p className="font-semibold">Connected</p>
-                        <p className="text-sm text-gray-400">
-                          @{telegramStats.username} (ID: {telegramStats.telegramId})
-                        </p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="bg-gray-800 p-3 rounded-lg">
-                        <p className="text-sm text-gray-400">Messages</p>
-                        <p className="text-xl font-bold">{telegramStats.messageCount}</p>
-                      </div>
-                      <div className="bg-gray-800 p-3 rounded-lg">
-                        <p className="text-sm text-gray-400">Reactions</p>
-                        <p className="text-xl font-bold">{telegramStats.reactionsReceived}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <XCircle className="text-red-500" size={24} />
-                      <div>
-                        <p className="font-semibold">Not Connected</p>
-                        <p className="text-sm text-gray-400">
-                          Connect your Telegram account to start earning XP
-                        </p>
-                      </div>
-                    </div>
-                    <Button 
-                      onClick={() => setShowTelegramWidget(true)}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
-                    >
-                      <MessageSquare className="mr-2" size={16} />
-                      Connect Telegram
-                    </Button>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Level Progress Card */}
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="text-yellow-500" />
-                  Level Progress
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${getCurrentLevel().color}`}>
-                        <Crown className="text-white" size={16} />
-                      </div>
-                      <div>
-                        <p className="font-semibold">{getCurrentLevel().name}</p>
-                        <p className="text-sm text-gray-400">
-                          {telegramStats.totalXP} / {getCurrentLevel().maxXP} XP
-                        </p>
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="bg-blue-600">
-                      Level {telegramStats.currentLevel}
-                    </Badge>
-                  </div>
-                  
-                  <Progress value={getProgressToNextLevel()} className="h-2" />
-                  
-                  {getNextLevel() && (
-                    <p className="text-sm text-gray-400">
-                      {getNextLevel().maxXP - telegramStats.totalXP} XP needed for {getNextLevel().name}
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Activity Stats Card */}
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="text-green-500" />
-                  Activity Statistics
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-800 p-4 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Zap className="text-yellow-500" size={16} />
-                      <span className="text-sm text-gray-400">Total XP</span>
-                    </div>
-                    <p className="text-2xl font-bold">{telegramStats.totalXP}</p>
-                  </div>
-                  <div className="bg-gray-800 p-4 rounded-lg">
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="text-green-500" size={16} />
-                      <span className="text-sm text-gray-400">Daily Streak</span>
-                    </div>
-                    <p className="text-2xl font-bold">{telegramStats.dailyStreak} days</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+        
+        <h1 className="text-3xl md:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-4">
+          Telegram Connected
+        </h1>
+        <p className="text-[#A1A1AA] mb-8 max-w-md mx-auto">
+          @{telegramStats.username} • {telegramStats.totalXP} XP • Level {telegramStats.currentLevel}
+        </p>
+        
+        <div className="bg-[#23232A] border border-[#2A2A2E] rounded-2xl p-6 mb-6">
+          <div className="text-2xl font-bold text-purple-400 mb-2">
+            {telegramStats.dailyReward} Points
           </div>
-
-          {/* Right Column - Rewards & Info */}
-          <div className="space-y-6">
-            {/* Daily Reward Card */}
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Gift className="text-purple-500" />
-                  Daily Reward
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="bg-gray-800 p-4 rounded-lg text-center">
-                    <p className="text-sm text-gray-400 mb-1">Available Reward</p>
-                    <p className="text-3xl font-bold text-purple-500">
-                      {telegramStats.dailyReward} BBLP
-                    </p>
-                  </div>
-                  
-                  <Button 
-                    onClick={claimDailyReward}
-                    disabled={!telegramStats.isConnected || !telegramStats.canClaimReward || isLoading}
-                    className="w-full bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600"
-                  >
-                    {isLoading ? (
-                      <div className="flex items-center gap-2">
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        Claiming...
-                      </div>
-                    ) : (
-                      <>
-                        <Gift className="mr-2" size={16} />
-                        Claim Daily Reward
-                      </>
-                    )}
-                  </Button>
-                  
-                  {!telegramStats.canClaimReward && telegramStats.isConnected && (
-                    <p className="text-sm text-gray-400 text-center">
-                      Come back tomorrow for your next reward!
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Level Benefits Card */}
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Star className="text-yellow-500" />
-                  Level Benefits
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {LEVELS.map((level, index) => (
-                    <div 
-                      key={level.name}
-                      className={`flex items-center justify-between p-3 rounded-lg ${
-                        getCurrentLevel().name === level.name 
-                          ? 'bg-blue-600/20 border border-blue-500' 
-                          : 'bg-gray-800'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center ${level.color}`}>
-                          <Crown className="text-white" size={12} />
-                        </div>
-                        <div>
-                          <p className="font-medium">{level.name}</p>
-                          <p className="text-xs text-gray-400">
-                            {level.minXP}-{level.maxXP} XP
-                          </p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-semibold">{level.reward} BBLP</p>
-                        <p className="text-xs text-gray-400">per day</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* How It Works Card */}
-            <Card className="bg-gray-900 border-gray-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="text-blue-500" />
-                  How It Works
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 text-sm">
-                  <div className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <p>Connect your Telegram account</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <p>Be active in our Telegram group</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <p>Earn XP for messages and reactions</p>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
-                    <p>Level up and claim daily BBLP rewards</p>
-                  </div>
-                </div>
-                
-                <Button 
-                  variant="outline" 
-                  className="w-full mt-4 border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white"
-                  onClick={() => window.open('https://t.me/yourgroup', '_blank')}
-                >
-                  <ExternalLink className="mr-2" size={16} />
-                  Join Our Telegram Group
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+          <p className="text-[#A1A1AA] text-sm mb-4">Daily Reward Available</p>
+          
+          <Button 
+            onClick={claimDailyReward}
+            disabled={!telegramStats.canClaimReward || isLoading}
+            className="bg-gradient-to-r from-purple-500 to-purple-600 text-white hover:from-purple-600 hover:to-purple-700 transition-all duration-300 rounded-xl px-8 py-3 font-bold shadow-lg disabled:opacity-50 w-full"
+          >
+            {isLoading ? (
+              <div className="flex items-center gap-2">
+                <Activity className="w-5 h-5 animate-spin" />
+                Claiming...
+              </div>
+            ) : telegramStats.canClaimReward ? (
+              <div className="flex items-center gap-2">
+                <Gift className="w-5 h-5" />
+                Claim Reward
+              </div>
+            ) : (
+              "Claimed Today"
+            )}
+          </Button>
         </div>
+        
+        <Button 
+          onClick={() => router.push('/social-connections')}
+          variant="outline" 
+          className="border-[#35353B] text-[#A1A1AA] hover:bg-[#23232A] transition-all duration-300 rounded-xl px-6 py-2"
+        >
+          Back to Social Connections
+        </Button>
       </div>
-
-      {/* Telegram Login Widget Modal */}
-      {showTelegramWidget && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-900 p-6 rounded-lg max-w-md w-full mx-4">
-            <h3 className="text-xl font-bold mb-4">Connect Telegram</h3>
-            <p className="text-gray-400 mb-4">
-              Click the button below to connect your Telegram account and start earning XP!
-            </p>
-            <div id="telegram-login-widget" className="flex justify-center mb-4 min-h-[80px] items-center"></div>
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                onClick={() => setShowTelegramWidget(false)}
-                className="flex-1"
-              >
-                Cancel
-              </Button>
-              <Button 
-                onClick={() => {
-                  const widgetContainer = document.getElementById('telegram-login-widget');
-                  if (widgetContainer) {
-                    widgetContainer.innerHTML = '';
-                    const widgetScript = document.createElement('script');
-                    widgetScript.setAttribute('data-telegram-login', 'denemebot45bot');
-                    widgetScript.setAttribute('data-size', 'large');
-                    widgetScript.setAttribute('data-auth-url', 'https://bblip.io/telegram?auth=1');
-                    widgetScript.setAttribute('data-request-access', 'write');
-                    widgetScript.setAttribute('data-radius', '8');
-                    widgetScript.setAttribute('data-lang', 'en');
-                    widgetScript.src = 'https://telegram.org/js/telegram-widget.js?22';
-                    widgetScript.async = true;
-                    
-                    widgetContainer.appendChild(widgetScript);
-                  }
-                }}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-              >
-                Reload Widget
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 } 

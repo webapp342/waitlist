@@ -415,7 +415,7 @@ export default function Header() {
                 size="sm"
                 variant="default"
                 onClick={() => setIsModalOpen(true)}
-                className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-full px-4 font-medium"
+                className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-lg px-4 font-medium"
               >
                 Connect Wallet
               </Button>
@@ -469,7 +469,7 @@ export default function Header() {
                 size="sm"
                 variant="default"
                 onClick={() => setIsModalOpen(true)}
-                className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-full px-4 font-medium"
+                className="bg-yellow-200 text-black hover:bg-yellow-300 transition-all duration-200 rounded-lg px-4 font-medium"
               >
                 Connect Wallet
               </Button>

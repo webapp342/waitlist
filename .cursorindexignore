@@ -1,0 +1,73 @@
+# Large configuration files that rarely change
+hardhat.config.js
+next.config.mjs
+tailwind.config.ts
+postcss.config.mjs
+
+# Package management
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build artifacts and generated files
+.next/
+out/
+dist/
+build/
+artifacts/
+cache/
+typechain-types/
+
+# Environment and sensitive files
+.env*
+!.env.example
+
+# Large data files
+airdrop-data/
+*.csv
+*.xlsx
+*.pdf
+
+# Documentation (keep README for context)
+*.md
+!README.md
+
+# Configuration files that don't need AI assistance
+.eslintrc*
+.prettierrc*
+.gitignore
+tsconfig.json
+components.json
+
+# Bot projects (separate codebases)
+discord-bot/
+telegram-bot/
+
+# Testing and coverage
+coverage/
+.nyc_output/
+.jest/
+
+# OS and editor files
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs and temporary files
+logs/
+*.log
+tmp/
+temp/
+*.tmp
+
+# Deployment artifacts
+deployments/
+.vercel/
+
+# Large ABI and contract files (use specific ones when needed)
+*.json
+!package.json
+!tsconfig.json
+!components.json 
