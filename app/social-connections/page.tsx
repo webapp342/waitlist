@@ -241,7 +241,8 @@ export default function SocialConnectionsPage() {
             messages: xData?.xUser?.tweet_count,
             xp: xData?.xp || 0,
             level: xData?.level || 0,
-            dailyReward: xData?.dailyReward || 0
+            dailyReward: xData?.dailyReward || 0,
+            isGrokTaskWinner: xData?.xUser?.isGrokTaskWinner || false
           }
         },
         telegram: {
