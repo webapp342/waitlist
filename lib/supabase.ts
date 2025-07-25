@@ -1344,17 +1344,34 @@ export const airdropService = {
       return null
     }
 
-    const { data, error } = await supabase
+    console.log('🔍 Querying airdrop for address:', ethereumAddress);
+
+    // Try exact lowercase match first
+    let { data, error } = await supabase
       .from('airdrop')
       .select('*')
       .eq('ethereum_address', ethereumAddress.toLowerCase())
       .single()
 
+    // If not found, try case-insensitive search
+    if (error && error.code === 'PGRST116') {
+      console.log('📝 Exact match not found, trying case-insensitive search...');
+      const { data: caseInsensitiveData, error: caseInsensitiveError } = await supabase
+        .from('airdrop')
+        .select('*')
+        .ilike('ethereum_address', ethereumAddress)
+        .single()
+      
+      data = caseInsensitiveData;
+      error = caseInsensitiveError;
+    }
+
     if (error && error.code !== 'PGRST116') {
-      console.error('Error fetching airdrop:', error)
+      console.error('❌ Error fetching airdrop:', error)
       throw error
     }
 
+    console.log('✅ Airdrop query result:', data);
     return data || null
   },
 

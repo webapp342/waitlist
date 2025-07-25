@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "./ui/button";
+import { Badge } from "./ui/badge";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { Menu, LogOut, ChevronDown } from "lucide-react";
@@ -133,9 +134,14 @@ export default function Header() {
 
   // Organized menu structure with dropdowns
   const menuItems: MenuItem[] = [
+  
     { 
-      label: "Dashboard", 
-      href: "/dashboard"
+      label: "Presale", 
+      href: "/presale"
+    },
+    { 
+      label: "Bblip Quests", 
+      href: "/social-connections"
     },
     { 
       label: "Earn",
@@ -149,7 +155,6 @@ export default function Header() {
       children: [
         { href: "/swap", label: "Swap" },
         { href: "/bridge", label: "Bridge" },
-        { href: "/presale", label: "Presale" },
       ]
     },
     { 
@@ -232,7 +237,14 @@ export default function Header() {
                           : "text-zinc-400 hover:text-yellow-200"
                       )}
                     >
-                      {item.label}
+                      <span className="flex items-center gap-2">
+                        {item.label}
+                        {item.label === "Bblip Quests" && (
+                          <Badge variant="outline" className="border-yellow-200 text-yellow-200 text-xs px-1.5 py-0 h-4 rounded-lg bg-transparent">
+                           New
+                          </Badge>
+                        )}
+                      </span>
                     </Link>
                   ) : (
                     <button
@@ -407,7 +419,7 @@ export default function Header() {
                     />
                   ) : (
                     <Image 
-                      src="/eth.png" 
+                      src="/eth.png"  
                       alt="ETH" 
                       width={16}
                       height={16}
@@ -454,7 +466,14 @@ export default function Header() {
                         }`}
                         onClick={() => setIsMenuOpen(false)}
                       >
-                        {category.label}
+                        <span className="flex items-center gap-2">
+                          {category.label}
+                          {category.label === "Bblip Quests" && (
+                            <Badge variant="outline" className="border-yellow-200 text-yellow-200 text-xs px-1.5 py-0 h-4 rounded-lg bg-transparent">
+                              NEW
+                            </Badge>
+                          )}
+                        </span>
                       </Link>
                     ) : (
                       <>

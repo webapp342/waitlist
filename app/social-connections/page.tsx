@@ -26,7 +26,7 @@ import {
   Calendar
 } from 'lucide-react';
 import Image from 'next/image';
-import { referralService, userService, cardService } from '@/lib/supabase';
+import { referralService, userService, cardService, airdropService } from '@/lib/supabase';
 
 import type { Card as CardType } from '@/lib/supabase';
 import { useWallet } from '@/hooks/useWallet';
@@ -117,6 +117,13 @@ export default function SocialConnectionsPage() {
   const [totalSocialPoints, setTotalSocialPoints] = useState<number>(0);
   const [totalSocialPointsLoading, setTotalSocialPointsLoading] = useState(false);
 
+  // Airdrop XP state
+  const [airdropXP, setAirdropXP] = useState<number>(0);
+  const [airdropLoading, setAirdropLoading] = useState(false);
+
+  // Reward type state for dynamic USDT/BBLP calculation
+  const [rewardType, setRewardType] = useState<'usdt' | 'bblp'>('usdt');
+
   // Sonsuz loading önleyici: kısa süre loading, sonra fallback
   const [showLoading, setShowLoading] = useState(true);
   const [showWalletModal, setShowWalletModal] = useState(false);
@@ -133,6 +140,30 @@ export default function SocialConnectionsPage() {
       setShowLoading(false);
     }, 1500);
     return () => clearTimeout(timeout);
+  }, [isConnected, address]);
+
+  // Fetch airdrop XP for the user's wallet address
+  useEffect(() => {
+    const fetchAirdropXP = async () => {
+      if (!address) return;
+      setAirdropLoading(true);
+      try {
+        console.log('🔍 Fetching airdrop XP for address:', address);
+        console.log('🔍 Address toLowerCase:', address.toLowerCase());
+        const airdropData = await airdropService.getAirdropByAddress(address);
+        console.log('✅ Airdrop data received:', airdropData);
+        setAirdropXP(airdropData ? airdropData.xp_amount : 0);
+      } catch (error) {
+        console.error('❌ Error fetching airdrop XP:', error);
+        setAirdropXP(0);
+      } finally {
+        setAirdropLoading(false);
+      }
+    };
+    
+    if (isConnected && address) {
+      fetchAirdropXP();
+    }
   }, [isConnected, address]);
 
   // Toplam ödül bilgisini çek - optimized to reduce API calls
@@ -494,6 +525,9 @@ export default function SocialConnectionsPage() {
       }
     });
     
+    // Add airdrop XP
+    totalXP += airdropXP;
+    
     console.log('📊 Total XP Calculation:', {
       baseXP: {
         x: connections.x.isConnected ? connections.x.stats?.xp || 0 : 0,
@@ -504,18 +538,27 @@ export default function SocialConnectionsPage() {
         telegram: extraRewards.telegram.filter(r => r.claimed).map(r => ({ level: r.level, xp: r.xpReward })),
         discord: extraRewards.discord.filter(r => r.claimed).map(r => ({ level: r.level, xp: r.xpReward }))
       },
+      airdropXP,
       totalXP
     });
     
     return totalXP;
-  }, [connections, extraRewards]);
+  }, [connections, extraRewards, airdropXP]);
 
-  const getEstimatedUSDT = useMemo(() => {
-    const xpContribution = getTotalXP * 0.00001; // XP'nin %0.001'i
-    const pointsContribution = totalSocialPoints * 0.00005; // Points'in %0.005'i
+  const getEstimatedReward = useMemo(() => {
+    let xpContribution, pointsContribution;
+    
+    if (rewardType === 'usdt') {
+      xpContribution = getTotalXP * 0.00001; // XP'nin %0.001'i
+      pointsContribution = totalSocialPoints * 0.00005; // Points'in %0.005'i
+    } else { // bblp
+      xpContribution = getTotalXP * 0.01; // XP'nin %1'i
+      pointsContribution = totalSocialPoints * 0.025; // Points'in %2.5'i
+    }
+    
     const total = xpContribution + pointsContribution;
-    return total.toFixed(2);
-  }, [getTotalXP, totalSocialPoints]);
+    return total.toFixed(rewardType === 'usdt' ? 2 : 0);
+  }, [getTotalXP, totalSocialPoints, rewardType]);
 
   const getLevelTasks = (platform: 'telegram' | 'discord') => {
     const levels = [
@@ -1254,25 +1297,54 @@ export default function SocialConnectionsPage() {
                 <div className="absolute inset-0 bg-gradient-to-br from-yellow-200/5 to-transparent"></div>
                 
                 <div className="relative z-10">
-                  <div className="text-3xl lg:text-4xl font-bold mb-2 flex items-center justify-center gap-2">
-                    <span className="text-yellow-200 text-2xl lg:text-3xl">$</span>
-                    <span className="text-[#F3F3F3]">{getEstimatedUSDT}</span>
-                  </div>
-                  <div className="flex items-center justify-center gap-2">
-                    <p className="text-[#A1A1AA] text-sm lg:text-base font-medium">Estimated USDT reward allocation</p>
-                    <span
-                      className="ml-1 cursor-pointer relative"
-                      onClick={() => setShowUSDTInfo((v) => !v)}
-                      tabIndex={0}
-                      onBlur={() => setShowUSDTInfo(false)}
-                    >
-                      <Info className="w-4 h-4 text-[#6B7280] hover:text-yellow-200 transition-colors" />
-                      {showUSDTInfo && (
-                        <div className="absolute top-full mt-2 z-50 w-[80vw] sm:w-[200px] max-w-sm p-4 rounded bg-[#23232A] border border-[#35353B] text-xs text-[#A1A1AA] shadow-lg break-words whitespace-normal right-0">
-                          Estimated reward allocation based on your activity: XP (0.001%) + Points (0.005%). Actual rewards may vary and are subject to platform terms.
-                        </div>
-                      )}
-                    </span>
+                                  <div className="text-3xl lg:text-4xl font-bold mb-2 flex items-center justify-center gap-2">
+                  <span className="text-yellow-200 text-2xl lg:text-3xl">{rewardType === 'usdt' ? '$' : ''}</span>
+                  <span className="text-[#F3F3F3]">{getEstimatedReward}</span>
+                  <span className="text-yellow-200 text-lg lg:text-xl ml-1">{rewardType === 'bblp' ? 'BBLP' : ''}</span>
+                </div>
+                  <div className="flex flex-col items-center justify-center gap-2">
+                    <div className="flex items-center justify-center gap-2">
+                      <p className="text-[#A1A1AA] text-sm lg:text-base font-medium">
+                        Estimated {rewardType === 'usdt' ? 'USDT' : 'BBLP'} reward allocation
+                      </p>
+                      <span
+                        className="ml-1 cursor-pointer relative"
+                        onClick={() => setShowUSDTInfo((v) => !v)}
+                        tabIndex={0}
+                        onBlur={() => setShowUSDTInfo(false)}
+                      >
+                        <Info className="w-4 h-4 text-[#6B7280] hover:text-yellow-200 transition-colors" />
+                        {showUSDTInfo && (
+                          <div className="absolute top-full mt-2 z-50 w-[80vw] sm:w-[200px] max-w-sm p-4 rounded bg-[#23232A] border border-[#35353B] text-xs text-[#A1A1AA] shadow-lg break-words whitespace-normal right-0">
+                            Estimated {rewardType === 'usdt' ? 'USDT' : 'BBLP'} allocation based on your activity: XP ({rewardType === 'usdt' ? '0.001' : '1'}%) + Points ({rewardType === 'usdt' ? '0.005' : '2.5'}%). Actual rewards may vary and are subject to platform terms.
+                          </div>
+                        )}
+                      </span>
+                    </div>
+                    
+                    {/* Toggle Buttons */}
+                    <div className="flex gap-1 mt-2">
+                      <button
+                        onClick={() => setRewardType('usdt')}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                          rewardType === 'usdt'
+                            ? 'bg-yellow-200 text-black'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                      >
+                        USDT
+                      </button>
+                      <button
+                        onClick={() => setRewardType('bblp')}
+                        className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
+                          rewardType === 'bblp'
+                            ? 'bg-yellow-200 text-black'
+                            : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                        }`}
+                      >
+                        BBLP
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1282,8 +1354,8 @@ export default function SocialConnectionsPage() {
                 <div className="grid grid-cols-2 lg:contents gap-2">
               {/* XP Card */}
               <div className="text-center p-2 bg-[#23232A] rounded-2xl border border-[#2A2A2E] flex flex-col items-center justify-center shadow-lg">
-                <div className="text-2xl font-bold text-[#F3F3F3] mb-2">{getTotalXP} </div>
-                <div className="flex items-center justify-center gap-2">
+                <div className="text-2xl font-bold text-[#F3F3F3] mb-2">{getTotalXP}</div>
+                <div className="flex items-center justify-center gap-2 mb-1">
                   <p className="text-[#A1A1AA] text-base">Your XP</p>
                   <span
                     className="ml-1 cursor-pointer relative"
@@ -1299,6 +1371,12 @@ export default function SocialConnectionsPage() {
                     )}
                   </span>
                 </div>
+                {/* Show airdrop XP if available */}
+                {airdropXP > 0 && (
+                  <div className="text-xs text-yellow-400 border border-yellow-400/30 rounded px-2 py-1 bg-yellow-400/10">
+                    +{airdropXP} Zealy.io XP
+                  </div>
+                )}
               </div>
               
                   {/* Points Card */}

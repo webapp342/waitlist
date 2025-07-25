@@ -61,12 +61,12 @@ export default function CTA() {
 
   return (
     <section className="mx-auto flex flex-col items-center gap-2 py-0 lg:py-0">
-      <div className="space-y-1 mt-10 -mb-10">
+      <div className="space-y-1  -mb-10">
         <TextBlur
-          className="text-center text-5xl font-medium tracking-tighter sm:text-6xl"
+          className="text-center text-4xl font-medium tracking-tighter sm:text-6xl"
           text="Spend Any Crypto."
         />
-        <div className="flex items-center justify-center text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-600 text-5xl font-medium tracking-tighter sm:text-6xl">
+        <div className="flex items-center justify-center text-transparent bg-clip-text bg-gradient-to-r from-yellow-200 to-yellow-600 text-6xl font-medium tracking-tighter sm:text-6xl">
          Anywhere.
         </div>
       </div>
@@ -149,13 +149,13 @@ export default function CTA() {
        
 
         {/* Connect Wallet Button */}
-        <div className="mt-12 flex flex-col items-center gap-4">
+        <div className="mt-20 mb-10 flex flex-col items-center gap-4">
           <button
             onClick={handleWalletAction}
             className="group relative px-8 py-3 bg-yellow-200  text-black font-medium rounded-xl transition-all duration-200 min-w-[280px]"
           >
             <div className="flex items-center justify-center gap-2">
-              <span>{isConnected ? 'Disconnect Wallet' : 'Create your cards'}</span>
+              <span>{isConnected ? 'Disconnect Wallet' : 'Get your cards'}</span>
               {!isConnected && <FaArrowRightLong className="w-4 h-4" />}
             </div>
           </button>
@@ -163,7 +163,7 @@ export default function CTA() {
           {/* Microcopy under button */}
           {!isWalletModalOpen && (
             <div className="text-center">
-              <p className="text-xs text-yellow-400 -mt-2">⚡ Limited time offer - No KYC required</p>
+              <p className="text-xs text-yellow-400 -mt-2">⚡ Limited time offer </p>
             </div>
           )}
         </div>
