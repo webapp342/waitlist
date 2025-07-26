@@ -1030,7 +1030,7 @@ export default function SocialConnectionsPage() {
           {/* Hero Section */}
           <div className="max-w-6xl mx-auto text-center mb-12 pt-16">
             <h1 className="text-4xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-6">
-              BBLP Social Quests
+              BBLIP Social Quests
             </h1>
             <p className="text-xl md:text-2xl text-[#A1A1AA] mb-8 max-w-3xl mx-auto">
               Connect your wallet to start earning rewards through social engagement
@@ -1064,7 +1064,6 @@ export default function SocialConnectionsPage() {
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">Experience Points</h3>
                 <p className="text-[#A1A1AA] text-sm mb-4">Earn XP by completing social tasks and level up your profile</p>
-                <div className="text-2xl font-bold text-[#F3F3F3]">0 XP</div>
               </div>
 
               {/* Points Preview */}
@@ -1074,7 +1073,6 @@ export default function SocialConnectionsPage() {
                  </div>
                  <h3 className="text-xl font-bold text-white mb-2">Social Points</h3>
                  <p className="text-[#A1A1AA] text-sm mb-4">Collect points from daily tasks and social engagement</p>
-                 <div className="text-2xl font-bold text-[#F3F3F3]">0 Points</div>
                </div>
 
                {/* USDT Preview */}
@@ -1084,44 +1082,10 @@ export default function SocialConnectionsPage() {
                  </div>
                  <h3 className="text-xl font-bold text-white mb-2">USDT Rewards</h3>
                  <p className="text-[#A1A1AA] text-sm mb-4">Convert your activity into real USDT rewards</p>
-                 <div className="text-2xl font-bold text-yellow-200">$0.00</div>
                </div>
             </div>
 
-            {/* Quest Types Preview */}
-            <div className="bg-[#23232A] border border-[#2A2A2E] rounded-2xl p-8">
-              <h2 className="text-2xl font-bold text-white text-center mb-8">Available Quest Types</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* X/Twitter Quests */}
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-                    </svg>
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2">X (Twitter) Tasks</h3>
-                  <p className="text-[#A1A1AA] text-sm">Follow, like, retweet and engage with BBLP content</p>
-                </div>
-
-                {/* Telegram Quests */}
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <MessageSquare className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2">Telegram Tasks</h3>
-                  <p className="text-[#A1A1AA] text-sm">Join channels, participate in discussions, and stay engaged</p>
-                </div>
-
-                {/* Discord Quests */}
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-8 h-8 text-white" />
-                  </div>
-                  <h3 className="text-lg font-bold text-white mb-2">Discord Tasks</h3>
-                  <p className="text-[#A1A1AA] text-sm">Join server, chat with community, and complete challenges</p>
-                </div>
-              </div>
-            </div>
+        
 
             {/* Benefits Section */}
             <div className="mt-12 text-center">
@@ -1330,7 +1294,7 @@ export default function SocialConnectionsPage() {
                     </div>
                     
                     {/* Toggle Buttons */}
-                    <div className="flex gap-1 mt-2">
+                    <div className="flex gap-1 mt-2"> 
                       <button
                         onClick={() => setRewardType('usdt')}
                         className={`px-3 py-1 rounded-lg text-xs font-medium transition-all ${
