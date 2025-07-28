@@ -32,7 +32,7 @@ const RATE_LIMIT_RETRY_DELAY = 2000; // 2 seconds when rate limited
 
 // Anti-bot protection configuration (Rose bot style)
 const ANTI_BOT_CONFIG = {
-  MIN_MESSAGE_INTERVAL: 1000, // 1 second minimum between messages
+  MIN_MESSAGE_INTERVAL: 1000, // 1 second minimum between messagess
   MAX_MESSAGES_PER_MINUTE: 10, // Max 10 messages per minute per user
   MAX_MESSAGES_PER_HOUR: 100, // Max 100 messages per hour per user
   SPAM_DETECTION_WINDOW: 60000, // 1 minute window for spam detection

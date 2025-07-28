@@ -356,10 +356,31 @@ export default function AdminDashboard() {
         };
       });
 
-      console.log('Grok Task Winners:', processedData.slice(0, 5));
+      // Duplicate kontrolü yap
+      const usernameMap = new Map();
+      const uniqueData: any[] = [];
+      let duplicateCount = 0;
+
+      processedData.forEach(row => {
+        const username = row.x_username;
+        if (usernameMap.has(username)) {
+          duplicateCount++;
+        } else {
+          usernameMap.set(username, true);
+          uniqueData.push(row);
+        }
+      });
+
+      // Duplicate bilgisi göster
+      if (duplicateCount > 0) {
+        toast.warning(`${duplicateCount} duplicate kayıt tespit edildi ve otomatik olarak kaldırıldı.`);
+      }
+
+      console.log('Grok Task Winners:', uniqueData.slice(0, 5));
+      console.log(`Total: ${processedData.length}, Unique: ${uniqueData.length}, Duplicates removed: ${duplicateCount}`);
 
       setGrokCsvHeaders(['x_username']);
-      setGrokCsvData(processedData);
+      setGrokCsvData(uniqueData);
       setGrokCsvCurrentPage(1);
       setShowGrokCsvModal(true);
     };

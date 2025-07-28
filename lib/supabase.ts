@@ -111,43 +111,31 @@ export interface Airdrop {
 
 // User service functions
 export const userService = {
-  // Add user wallet to database (simplified)
+  // Add user wallet to database (via API with rate limiting)
   async addUser(walletAddress: string) {
-    // Check if Supabase is properly configured
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.warn('Supabase not configured, skipping user save')
-      return null
-    }
-
     try {
-      // First check if user already exists
-      const exists = await this.checkUserExists(walletAddress)
-      if (exists) {
-        console.log('User already exists, skipping insert')
-        return exists
+      const response = await fetch('/api/users/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ walletAddress }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (result.code === 'RATE_LIMIT_EXCEEDED') {
+          throw new Error('Too many registration attempts. Please wait a moment and try again.');
+        }
+        throw new Error(result.error || 'Registration failed');
       }
 
-      const { data: result, error } = await supabase
-        .from('users')
-        .insert([{ wallet_address: walletAddress }])
-        .select()
-        .single()
-
-      if (error) {
-        console.error('Error adding user:', error)
-        throw error
-      }
-
-      console.log('User added successfully:', result)
-      // Cards will be automatically created by the database trigger
-      return result
+      console.log('User registration successful:', result.user);
+      return result.user;
     } catch (error: any) {
-      if (error.code === '23505') { // Unique constraint violation
-        console.log('User already exists (duplicate key)')
-        // Try to fetch the existing user
-        return await this.getUserByWallet(walletAddress)
-      }
-      throw error
+      console.error('Error adding user:', error);
+      throw error;
     }
   },
 
