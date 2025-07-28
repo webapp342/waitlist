@@ -29,7 +29,7 @@ export function CaptchaWidget({ onVerify, onError }: CaptchaWidgetProps) {
   return (
     <div className="flex flex-col items-center space-y-2">
       <Turnstile
-        sitekey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
+        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
         onVerify={handleVerify}
         onError={handleError}
         onExpire={handleExpire}
