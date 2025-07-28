@@ -57,13 +57,44 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { walletAddress } = body;
+    const { walletAddress, captchaToken } = body;
 
     if (!walletAddress) {
       return NextResponse.json(
         { error: 'Wallet address is required' },
         { status: 400 }
       );
+    }
+
+    // Verify CAPTCHA token if provided (Cloudflare Turnstile)
+    if (captchaToken) {
+      try {
+        const captchaVerification = await fetch(
+          'https://challenges.cloudflare.com/turnstile/v0/siteverify',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: `secret=${process.env.TURNSTILE_SECRET_KEY}&response=${captchaToken}`,
+          }
+        );
+
+        const captchaResult = await captchaVerification.json();
+        
+        if (!captchaResult.success) {
+          return NextResponse.json(
+            { error: 'CAPTCHA verification failed. Please try again.' },
+            { status: 400 }
+          );
+        }
+      } catch (error) {
+        console.error('CAPTCHA verification error:', error);
+        return NextResponse.json(
+          { error: 'CAPTCHA verification failed. Please try again.' },
+          { status: 400 }
+        );
+      }
     }
 
     // Validate wallet address format

@@ -112,14 +112,17 @@ export interface Airdrop {
 // User service functions
 export const userService = {
   // Add user wallet to database (via API with rate limiting)
-  async addUser(walletAddress: string) {
+  async addUser(walletAddress: string, captchaToken?: string) {
     try {
       const response = await fetch('/api/users/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ walletAddress }),
+        body: JSON.stringify({ 
+          walletAddress,
+          captchaToken 
+        }),
       });
 
       const result = await response.json();
