@@ -11,13 +11,19 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [adminWallet, setAdminWallet] = useState("");
-  const [userStats, setUserStats] = useState({ totalUsers: 0 });
-  const [allUsers, setAllUsers] = useState<any[]>([]);
-  const [loadingUsers, setLoadingUsers] = useState(false);
+  const [whitelistStats, setWhitelistStats] = useState({ 
+    totalUsers: 0,
+    totalRegistrations: 0, 
+    newUsersLastHour: 0,
+    networkStats: { eth: 0, bnb: 0 },
+    averageBalance: "0"
+  });
+  const [allRegistrations, setAllRegistrations] = useState<any[]>([]);
+  const [loadingRegistrations, setLoadingRegistrations] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [sortedUsers, setSortedUsers] = useState<any[]>([]);
+  const [sortedRegistrations, setSortedRegistrations] = useState<any[]>([]);
   const [csvData, setCsvData] = useState<any[]>([]);
   const [csvHeaders, setCsvHeaders] = useState<string[]>([]);
   const [showCsvModal, setShowCsvModal] = useState(false);
@@ -61,74 +67,73 @@ export default function AdminDashboard() {
     checkAdminSession();
   }, [router]);
 
-  // Kullanıcıları sayfalı olarak al
-  const fetchUsers = async (page: number = 1, append: boolean = false) => {
+  // Whitelist registrations'ları sayfalı olarak al
+  const fetchRegistrations = async (page: number = 1, append: boolean = false) => {
     try {
       if (page === 1) {
-        setLoadingUsers(true);
+        setLoadingRegistrations(true);
       } else {
         setLoadingMore(true);
       }
       
-      // Sayfalı kullanıcıları çek
-      const response = await fetch(`/api/admin/users?page=${page}&limit=${pageSize}`);
+      // Sayfalı whitelist registrations'ları çek
+      const response = await fetch(`/api/admin/whitelist-registrations?page=${page}&limit=${pageSize}`);
       
       if (!response.ok) {
-        console.error("Error fetching users:", response.statusText);
+        console.error("Error fetching registrations:", response.statusText);
         return;
       }
       
-      const { data: users, total, hasMore: moreAvailable } = await response.json();
+      const { data: registrations, total, hasMore: moreAvailable } = await response.json();
       
       if (append) {
-        setAllUsers(prev => [...prev, ...(users || [])]);
+        setAllRegistrations(prev => [...prev, ...(registrations || [])]);
       } else {
-        setAllUsers(users || []);
+        setAllRegistrations(registrations || []);
       }
       
       // API'den gelen verileri direkt kullan (zaten sıralanmış)
-      const newUsers = users || [];
-      const usersWithReferrals = newUsers.map((user: any) => ({
-        ...user,
-        referralCount: user.referral_count || 0
-      }));
+      const newRegistrations = registrations || [];
       
       if (append) {
-        setSortedUsers(prev => [...prev, ...usersWithReferrals]);
+        setSortedRegistrations(prev => [...prev, ...newRegistrations]);
       } else {
-        setSortedUsers(usersWithReferrals);
+        setSortedRegistrations(newRegistrations);
       }
       
       setHasMore(moreAvailable);
       setCurrentPage(page);
     } catch (error) {
-      console.error("Error fetching users:", error);
+      console.error("Error fetching registrations:", error);
     } finally {
-      setLoadingUsers(false);
+      setLoadingRegistrations(false);
       setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    // Kullanıcı istatistiklerini al
-    const fetchUserStats = async () => {
+    // Whitelist istatistiklerini al
+    const fetchWhitelistStats = async () => {
       try {
-        const stats = await userService.getUserStats();
-        setUserStats(stats);
+        const response = await fetch('/api/admin/whitelist-stats');
+        if (response.ok) {
+          const stats = await response.json();
+          setWhitelistStats(stats);
+        }
       } catch (error) {
-        console.error("Error fetching user stats:", error);
+        console.error("Error fetching whitelist stats:", error);
       }
     };
 
     if (isAuthenticated) {
-      fetchUserStats();
-      fetchUsers(1, false);
+      fetchWhitelistStats();
+      fetchRegistrations(1, false);
     }
   }, [isAuthenticated]);
 
-  const loadMoreUsers = () => {
+  const loadMoreRegistrations = () => {
     if (!loadingMore && hasMore) {
-      fetchUsers(currentPage + 1, true);
+      fetchRegistrations(currentPage + 1, true);
     }
   };
 
@@ -486,10 +491,36 @@ export default function AdminDashboard() {
       {/* Main Content */}
       <main className="max-w-6xl mx-auto p-4 space-y-6">
         {/* Stats */}
-        <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-white">{userStats.totalUsers}</div>
-            <div className="text-sm text-gray-400">Toplam Kullanıcı</div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{whitelistStats.totalUsers}</div>
+              <div className="text-sm text-gray-400">Toplam Kullanıcı</div>
+            </div>
+          </div>
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{whitelistStats.totalRegistrations}</div>
+              <div className="text-sm text-gray-400">Toplam Kayıt</div>
+            </div>
+          </div>
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{whitelistStats.newUsersLastHour}</div>
+              <div className="text-sm text-gray-400">Son Saatte Yeni Kayıt</div>
+            </div>
+          </div>
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{whitelistStats.networkStats.eth}</div>
+              <div className="text-sm text-gray-400">ETH Tercih</div>
+            </div>
+          </div>
+          <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">{whitelistStats.networkStats.bnb}</div>
+              <div className="text-sm text-gray-400">BNB Tercih</div>
+            </div>
           </div>
         </div>
 
@@ -530,14 +561,14 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* Users Table */}
+        {/* Whitelist Registrations Table */}
         <div className="bg-gray-800 rounded-lg border border-gray-700 p-4">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-white">Kullanıcılar</h3>
-            <span className="text-sm text-gray-400">{allUsers.length} kullanıcı</span>
+            <h3 className="font-semibold text-white">Whitelist Kayıtları</h3>
+            <span className="text-sm text-gray-400">{allRegistrations.length} kayıt</span>
           </div>
 
-          {loadingUsers ? (
+          {loadingRegistrations ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400 mx-auto mb-2"></div>
               <p className="text-gray-400">Yükleniyor...</p>
@@ -548,33 +579,59 @@ export default function AdminDashboard() {
                 <thead>
                   <tr className="border-b border-gray-600">
                     <th className="text-left py-2 text-gray-400">#</th>
-                    <th className="text-left py-2 text-gray-400">Cüzdan</th>
-                    <th className="text-left py-2 text-gray-400">Referral</th>
+                    <th className="text-left py-2 text-gray-400">Cüzdan Adresi</th>
+                    <th className="text-left py-2 text-gray-400">Email</th>
+                    <th className="text-left py-2 text-gray-400">Network</th>
+                    <th className="text-left py-2 text-gray-400">Bakiye</th>
+                    <th className="text-left py-2 text-gray-400">Durum</th>
+                    <th className="text-left py-2 text-gray-400">Kayıt Tarihi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedUsers.map((user, index) => (
-                    <tr key={user.id} className="border-b border-gray-700">
+                  {sortedRegistrations.map((registration, index) => (
+                    <tr key={registration.id} className="border-b border-gray-700">
                       <td className="py-2 text-white">{index + 1}</td>
                       <td className="py-2 font-mono text-white">
-                        {user.wallet_address.slice(0, 8)}...{user.wallet_address.slice(-6)}
+                        {registration.wallet_address.slice(0, 8)}...{registration.wallet_address.slice(-6)}
                       </td>
-                      <td className="py-2 text-white">{user.referralCount || 0}</td>
+                      <td className="py-2 text-white">{registration.email}</td>
+                      <td className="py-2 text-white">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          registration.network_preference === 'ETH' 
+                            ? 'bg-blue-600 text-white' 
+                            : 'bg-yellow-600 text-white'
+                        }`}>
+                          {registration.network_preference}
+                        </span>
+                      </td>
+                      <td className="py-2 text-white">{parseFloat(registration.wallet_balance).toFixed(2)}</td>
+                      <td className="py-2 text-white">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          registration.status === 'active' 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-red-600 text-white'
+                        }`}>
+                          {registration.status}
+                        </span>
+                      </td>
+                      <td className="py-2 text-white">
+                        {new Date(registration.registration_date).toLocaleDateString('tr-TR')}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
               
-              {sortedUsers.length === 0 && (
+              {sortedRegistrations.length === 0 && (
                 <div className="text-center py-8">
-                  <p className="text-gray-400">Kullanıcı bulunamadı</p>
+                  <p className="text-gray-400">Kayıt bulunamadı</p>
                 </div>
               )}
 
-              {hasMore && sortedUsers.length > 0 && (
+              {hasMore && sortedRegistrations.length > 0 && (
                 <div className="text-center mt-4">
                   <Button
-                    onClick={loadMoreUsers}
+                    onClick={loadMoreRegistrations}
                     disabled={loadingMore}
                     size="sm"
                     className="bg-gray-700 text-white hover:bg-gray-600 border-gray-600"

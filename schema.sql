@@ -313,6 +313,18 @@ CREATE TABLE public.users (
   CONSTRAINT users_pkey PRIMARY KEY (id),
   CONSTRAINT users_referred_by_fkey FOREIGN KEY (referred_by) REFERENCES public.users(id)
 );
+CREATE TABLE public.whitelist_registrations (
+  id integer NOT NULL DEFAULT nextval('whitelist_registrations_id_seq'::regclass),
+  wallet_address text NOT NULL,
+  email text NOT NULL,
+  network_preference text NOT NULL CHECK (network_preference = ANY (ARRAY['ETH'::text, 'BNB'::text])),
+  wallet_balance numeric NOT NULL DEFAULT 0,
+  registration_date timestamp with time zone DEFAULT now(),
+  status text DEFAULT 'active'::text CHECK (status = ANY (ARRAY['active'::text, 'inactive'::text])),
+  created_at timestamp with time zone DEFAULT now(),
+  updated_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT whitelist_registrations_pkey PRIMARY KEY (id)
+);
 CREATE TABLE public.x_oauth_sessions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   session_id character varying NOT NULL UNIQUE,
