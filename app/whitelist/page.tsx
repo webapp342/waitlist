@@ -64,7 +64,7 @@ export default function WhitelistPage() {
     if (currentBalance < minBalanceRequired) {
       return {
         sufficient: false,
-        message: `Insufficient ${tokenSymbol} balance. You need at least $100 worth of ${tokenSymbol} (${minBalanceRequired.toFixed(6)} ${tokenSymbol}) on ${networkName} for registration verification.`
+        message: `To verify that you are a genuine user, your wallet must hold at least $100 worth of ${tokenSymbol} (${minBalanceRequired.toFixed(6)} ${tokenSymbol}) on ${networkName}.  This is a balance check only — no tokens will be charged or withdrawn.`
       };
     }
     
@@ -362,7 +362,7 @@ export default function WhitelistPage() {
                          <span className="text-green-400 font-medium">
                            {address?.slice(0, 6)}...{address?.slice(-4)}
                          </span>
-                       </div>
+                       </div> 
                        {userRegistrations.length > 0 && (
                          <>
                            {userRegistrations.map((registration, index) => (
