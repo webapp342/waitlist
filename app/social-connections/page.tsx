@@ -1517,7 +1517,7 @@ export default function SocialConnectionsPage() {
                           <div className="text-center">
                             <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
                             <h3 className="text-lg font-bold text-white mb-2">All Daily Tasks Completed!</h3>
-                            <p className="text-[#A1A1AA] text-sm">You've completed all available tasks for today. New tasks will be available soon!</p>
+                            <p className="text-[#A1A1AA] text-sm">You have completed all available tasks for today. New tasks will be available soon!</p>
                           </div>
                         </div>
                       );
