@@ -311,7 +311,7 @@ export default function WhitelistPage() {
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-1 h-1 bg-gray-400 rounded-full mt-2"></div>
-                  <span>A user's wallet must hold at least <span className="text-green-400">$100 </span> worth of <span className="text-green-400">ETH or BNB</span> to join the whitelist</span>
+                  <span>A user wallet must hold at least <span className="text-green-400">$100 </span> worth of <span className="text-green-400">ETH or BNB</span> to join the whitelist</span>
                 </div>
                 <div className="flex items-start gap-2">
                   <div className="w-1 h-1 bg-gray-400 rounded-full mt-2"></div>
@@ -351,7 +351,7 @@ export default function WhitelistPage() {
                     <div>
                       <h3 className="text-2xl font-bold text-white mb-2">Registration Successful!</h3>
                       <p className="text-gray-400 text-sm">
-                        You're now registered for Phase 3 whitelist access
+                        You now registered for Phase 3 whitelist access
                       </p>
                     </div>
 
@@ -394,9 +394,9 @@ export default function WhitelistPage() {
                     <div className="bg-yellow-400/10 border border-yellow-400/20 rounded-xl p-4">
                       <h4 className="text-yellow-400 font-medium mb-2">What happens next?</h4>
                       <div className="text-gray-400 text-sm text-left space-y-1">
-                        <div>• You'll receive an email notification before Phase 3 launch</div>
+                        <div>• You will receive an email notification before Phase 3 launch</div>
                         <div>• Phase 3 starts August 10th at 12:00 UTC</div>
-                        <div>• You'll have guaranteed access to purchase $100 worth of BBLP</div>
+                        <div>• You will have guaranteed access to purchase $100 worth of BBLP</div>
                         <div>• Purchase will be available on your selected network</div>
                       </div>
                     </div>
