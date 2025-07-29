@@ -1504,49 +1504,65 @@ export default function SocialConnectionsPage() {
                 </div>
                 <div className="space-y-2">
                   {/* Daily Tasks List */}
-                  {dailyTasks.length > 0 && dailyTasks.map(task => (
-                    <div
-                      key={task.id}
-                      className="flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A] cursor-pointer hover:bg-[#23232A]"
-                      onClick={() => window.open(task.link, '_blank', 'noopener,noreferrer')}
-                    >
-                      {/* Left: Title and Reward */}
-                      <div className="flex flex-col min-w-[120px]">
-                        <span className="text-xs text-[#1DA1F2] mb-1 font-semibold">{task.title}</span>
-                        <span className="px-2 py-0.5 -mb-1 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent text-xs w-fit">
-                          {task.reward} Points
-                        </span>
-                      </div>
-                      {/* Right: Claimed Status or Timer/Claim */}
-                      <div className="flex flex-col items-end gap-1 min-w-[120px]">
-                        {taskClaimed[task.id] || task.claimed ? (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium  flex items-center gap-1">
-                            <CheckCircle className="w-4 h-4" /> 
+                  {(() => {
+                    // Filter out completed tasks
+                    const incompleteTasks = dailyTasks.filter(task => !taskClaimed[task.id] && !task.claimed);
+                    
+                    // Check if all tasks are completed
+                    const allTasksCompleted = dailyTasks.length > 0 && incompleteTasks.length === 0;
+                    
+                    if (allTasksCompleted) {
+                      return (
+                        <div className="flex items-center justify-center px-4 py-8 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A]">
+                          <div className="text-center">
+                            <CheckCircle className="w-12 h-12 text-green-500 mx-auto mb-4" />
+                            <h3 className="text-lg font-bold text-white mb-2">All Daily Tasks Completed!</h3>
+                            <p className="text-[#A1A1AA] text-sm">You've completed all available tasks for today. New tasks will be available soon!</p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    return incompleteTasks.map(task => (
+                      <div
+                        key={task.id}
+                        className="flex items-center justify-between px-4 py-3 rounded-xl border transition-all duration-200 bg-[#18181B] border-[#23232A] cursor-pointer hover:bg-[#23232A]"
+                        onClick={() => window.open(task.link, '_blank', 'noopener,noreferrer')}
+                      >
+                        {/* Left: Title and Reward */}
+                        <div className="flex flex-col min-w-[120px]">
+                          <span className="text-xs text-[#1DA1F2] mb-1 font-semibold">{task.title}</span>
+                          <span className="px-2 py-0.5 -mb-1 border border-[#35353B] rounded-md text-[#A1A1AA] font-medium bg-transparent text-xs w-fit">
+                            {task.reward} Points
                           </span>
-                        ) : taskTimers[task.id] > 0 ? (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-800 text-zinc-400">
-                            {taskTimers[task.id]}s
-                          </span>
-                        ) : taskTimers[task.id] === 0 && !taskClaimed[task.id] && !task.claimed ? (
-                          <button
-                            className="mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-600 text-white hover:bg-orange-700"
-                            onClick={e => { e.stopPropagation(); handleClaimTask(task); }}
-                          >
-                            Claim
-                          </button>
-                        ) : (
-                          <button
-                            className="px-2 py-0.5 text-xs font-medium text-zinc-400 flex items-center gap-1"
-                            onClick={e => { e.stopPropagation(); startTaskTimer(task.id); window.open(task.link, '_blank', 'noopener,noreferrer'); }}
-                            disabled={!!taskTimers[task.id]}
-                            title="Start 60s timer"
-                          >
-                            <Repeat className="w-4 h-4" />
-                          </button>
-                        )}
+                        </div>
+                        {/* Right: Timer/Claim */}
+                        <div className="flex flex-col items-end gap-1 min-w-[120px]">
+                          {taskTimers[task.id] > 0 ? (
+                            <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-zinc-800 text-zinc-400">
+                              {taskTimers[task.id]}s
+                            </span>
+                          ) : taskTimers[task.id] === 0 && !taskClaimed[task.id] && !task.claimed ? (
+                            <button
+                              className="mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-orange-600 text-white hover:bg-orange-700"
+                              onClick={e => { e.stopPropagation(); handleClaimTask(task); }}
+                            >
+                              Claim
+                            </button>
+                          ) : (
+                            <button
+                              className="px-2 py-0.5 text-xs font-medium text-zinc-400 flex items-center gap-1"
+                              onClick={e => { e.stopPropagation(); startTaskTimer(task.id); window.open(task.link, '_blank', 'noopener,noreferrer'); }}
+                              disabled={!!taskTimers[task.id]}
+                              title="Start 60s timer"
+                            >
+                              <Repeat className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ));
+                  })()}
                 </div>
               </div>
               
