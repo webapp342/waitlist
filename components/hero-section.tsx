@@ -26,7 +26,7 @@ export default function HeroSection() {
           transition={{ delay: 0.4 }}
           className="text-center"
         >
-          <Link href="/presale">
+          <Link href="/whitelist">
             <motion.div 
               className="inline-flex items-center gap-3 px-2 py-1 mb-0 bg-gradient-to-r from-yellow-400/10 via-yellow-400/15 to-yellow-400/10 border border-yellow-400/30 rounded-full cursor-pointer group transition-all duration-300 hover:bg-yellow-400/20 hover:border-yellow-400/50 hover:shadow-lg hover:shadow-yellow-400/10"
               whileHover={{ scale: 1.02 }}
@@ -40,7 +40,7 @@ export default function HeroSection() {
               </div>
               
               <span className="text-sm font-semibold text-yellow-200 tracking-wide">
-                Presale Phase 2 is Live
+                Phase 3 whitelist is live
               </span>
               
               <ArrowRight className="w-4 h-4 text-yellow-400 transition-transform duration-300 group-hover:translate-x-1" />
