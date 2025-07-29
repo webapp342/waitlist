@@ -1414,3 +1414,169 @@ export const airdropService = {
     }
   }
 } 
+
+// Whitelist service functions
+export const whitelistService = {
+  // Get user registration status
+  async getUserRegistrationStatus(walletAddress: string) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, returning default registration status')
+      return { 
+        registration_count: 0, 
+        has_eth: false, 
+        has_bnb: false, 
+        is_complete: false 
+      }
+    }
+
+    try {
+      // Get ETH registration
+      const { data: ethRegistration, error: ethError } = await supabase
+        .from('whitelist_registrations')
+        .select('*')
+        .eq('wallet_address', walletAddress.toLowerCase())
+        .eq('network_preference', 'ETH')
+        .eq('status', 'active')
+        .single()
+
+      // Get BNB registration
+      const { data: bnbRegistration, error: bnbError } = await supabase
+        .from('whitelist_registrations')
+        .select('*')
+        .eq('wallet_address', walletAddress.toLowerCase())
+        .eq('network_preference', 'BNB')
+        .eq('status', 'active')
+        .single()
+
+      const has_eth = !ethError && ethRegistration
+      const has_bnb = !bnbError && bnbRegistration
+      const registration_count = (has_eth ? 1 : 0) + (has_bnb ? 1 : 0)
+      const is_complete = has_eth && has_bnb
+
+      return {
+        registration_count,
+        has_eth,
+        has_bnb,
+        is_complete
+      }
+    } catch (error) {
+      console.error('Error getting user registration status:', error)
+      return { 
+        registration_count: 0, 
+        has_eth: false, 
+        has_bnb: false, 
+        is_complete: false 
+      }
+    }
+  },
+
+  // Get user registrations
+  async getUserRegistrations(walletAddress: string) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, returning empty registrations')
+      return []
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('whitelist_registrations')
+        .select('*')
+        .eq('wallet_address', walletAddress.toLowerCase())
+        .eq('status', 'active')
+        .order('registration_date', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching user registrations:', error)
+        return []
+      }
+
+      return data || []
+    } catch (error) {
+      console.error('Error in getUserRegistrations:', error)
+      return []
+    }
+  },
+
+  // Add whitelist registration
+  async addWhitelistRegistration(registrationData: {
+    wallet_address: string
+    email: string
+    network_preference: 'ETH' | 'BNB'
+    wallet_balance: string
+    status?: string
+  }) {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, skipping whitelist registration')
+      throw new Error('Database not configured')
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('whitelist_registrations')
+        .insert([{
+          wallet_address: registrationData.wallet_address.toLowerCase(),
+          email: registrationData.email.toLowerCase(),
+          network_preference: registrationData.network_preference,
+          wallet_balance: registrationData.wallet_balance,
+          status: registrationData.status || 'active',
+          registration_date: new Date().toISOString()
+        }])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error adding whitelist registration:', error)
+        if (error.code === '23505') { // Unique constraint violation
+          throw new Error('duplicate key')
+        }
+        throw error
+      }
+
+      console.log('Whitelist registration added successfully:', data)
+      return data
+    } catch (error) {
+      console.error('Error in addWhitelistRegistration:', error)
+      throw error
+    }
+  },
+
+  // Get whitelist statistics
+  async getWhitelistStats() {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, returning default whitelist stats')
+      return { totalRegistrations: 0, ethRegistrations: 0, bnbRegistrations: 0 }
+    }
+
+    try {
+      const { count: totalCount, error: totalError } = await supabase
+        .from('whitelist_registrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+
+      const { count: ethCount, error: ethError } = await supabase
+        .from('whitelist_registrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+        .eq('network_preference', 'ETH')
+
+      const { count: bnbCount, error: bnbError } = await supabase
+        .from('whitelist_registrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
+        .eq('network_preference', 'BNB')
+
+      if (totalError || ethError || bnbError) {
+        console.error('Error getting whitelist stats:', { totalError, ethError, bnbError })
+      }
+
+      return {
+        totalRegistrations: totalCount || 0,
+        ethRegistrations: ethCount || 0,
+        bnbRegistrations: bnbCount || 0
+      }
+    } catch (error) {
+      console.error('Error in getWhitelistStats:', error)
+      return { totalRegistrations: 0, ethRegistrations: 0, bnbRegistrations: 0 }
+    }
+  }
+} 
