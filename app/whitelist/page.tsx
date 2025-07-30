@@ -11,8 +11,7 @@ import { CheckCircle, Mail, AlertTriangle } from 'lucide-react';
 import WalletModal from '@/components/WalletModal';
 import { toast } from 'sonner';
 import { useWallet } from '@/hooks/useWallet';
-import { fetchCryptoPrices } from '@/lib/priceService';
-// Remove direct service import - we'll use API routes instead
+// Removed crypto price service import as it's no longer needed
 
 // Chain IDs
 const BSC_MAINNET_CHAIN_ID = 56;
@@ -42,50 +41,10 @@ export default function WhitelistPage() {
   const chainId = selectedNetwork === 'ETH' ? ETH_MAINNET_CHAIN_ID : BSC_MAINNET_CHAIN_ID;
   const { userData } = useWallet(chainId);
   
-  // State for crypto prices
-  const [cryptoPrices, setCryptoPrices] = useState({ bnb: 0, eth: 0 });
+  // No balance check required
+  const balanceCheck = { sufficient: true, message: '' };
 
-  // Check if user has sufficient balance for the selected network
-  const checkSufficientBalance = () => {
-    if (!selectedNetwork || !userData.bnbBalance) return { sufficient: true, message: '' };
-    
-    const currentBalance = parseFloat(userData.bnbBalance);
-    const networkName = selectedNetwork === 'ETH' ? 'Ethereum' : 'BSC';
-    const tokenSymbol = selectedNetwork === 'ETH' ? 'ETH' : 'BNB';
-    
-    // Calculate minimum balance required for $100 USD
-    let minBalanceRequired = 0;
-    if (selectedNetwork === 'ETH') {
-      minBalanceRequired = cryptoPrices.eth > 0 ? 100 / cryptoPrices.eth : 0.0001; // $100 worth of ETH
-    } else {
-      minBalanceRequired = cryptoPrices.bnb > 0 ? 100 / cryptoPrices.bnb : 0.1; // $100 worth of BNB
-    }
-    
-    if (currentBalance < minBalanceRequired) {
-      return {
-        sufficient: false,
-        message: `To verify that you are a genuine user, your wallet must hold at least $100 worth of ${tokenSymbol} (${minBalanceRequired.toFixed(6)} ${tokenSymbol}) on ${networkName}.  This is a balance check only — no tokens will be charged or withdrawn.`
-      };
-    }
-    
-    return { sufficient: true, message: '' };
-  };
 
-  const balanceCheck = checkSufficientBalance();
-
-  // Fetch crypto prices
-  useEffect(() => {
-    const fetchPrices = async () => {
-      try {
-        const prices = await fetchCryptoPrices();
-        setCryptoPrices(prices);
-      } catch (error) {
-        console.error('Error fetching crypto prices:', error);
-      }
-    };
-    
-    fetchPrices();
-  }, []);
 
   // Calculate whitelist growth rate and progress
   useEffect(() => {
@@ -186,10 +145,7 @@ export default function WhitelistPage() {
       return;
     }
 
-    if (!balanceCheck.sufficient) {
-      toast.error(balanceCheck.message);
-      return;
-    }
+
 
     setIsSubmitting(true);
 
@@ -309,14 +265,8 @@ export default function WhitelistPage() {
                   <div className="w-1 h-1 bg-gray-400 rounded-full mt-2"></div>
                   <span>Registration closes 12 hours before Phase 3 launch on August 10th</span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-1 h-1 bg-gray-400 rounded-full mt-2"></div>
-                  <span>A user wallet must hold at least <span className="text-green-400">$100 </span> worth of <span className="text-green-400">ETH or BNB</span> to join the whitelist</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-1 h-1 bg-gray-400 rounded-full mt-2"></div>
-                  <span><span className="text-orange-400">Note:</span> Balance check is for spam prevention only - <span className="text-green-400">no payment required</span></span>
-                </div>
+
+              
               </div>
             </div>
           </div>
@@ -466,10 +416,10 @@ export default function WhitelistPage() {
 
                       <Button
                         type="submit"
-                        disabled={isSubmitting || !email || !selectedNetwork || !balanceCheck.sufficient}
+                        disabled={isSubmitting || !email || !selectedNetwork}
                         className={cn(
                           "w-full h-11 font-semibold transition-all duration-200 rounded-lg mt-6",
-                          isSubmitting || !email || !selectedNetwork || !balanceCheck.sufficient
+                          isSubmitting || !email || !selectedNetwork
                             ? "bg-zinc-700 text-zinc-400 cursor-not-allowed"
                             : "bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 hover:from-yellow-300 hover:via-yellow-200 hover:to-yellow-300 text-black"
                         )}
@@ -478,26 +428,13 @@ export default function WhitelistPage() {
                           <div className="flex items-center gap-2">
                             <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                             Registering...
-                          </div>
+                          </div> 
                         ) : (
                           'Complete Registration'
                         )}
                       </Button>
 
-                      {/* Balance Warning */}
-                      {selectedNetwork && !balanceCheck.sufficient && (
-                        <div className="mt-3 p-3 bg-red-400/10 border border-red-400/20 rounded-lg">
-                          <div className="flex items-start gap-2">
-                            <AlertTriangle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
-                            <p className="text-red-400 text-sm">
-                              {balanceCheck.message}
-                            </p>
-                          </div>
-                          <p className="text-red-300 text-xs mt-2 ml-6">
-                            Current balance: {parseFloat(userData.bnbBalance || '0').toFixed(6)} {selectedNetwork} (≈ ${(parseFloat(userData.bnbBalance || '0') * (selectedNetwork === 'ETH' ? cryptoPrices.eth : cryptoPrices.bnb)).toFixed(2)})
-                          </p>
-                        </div>
-                      )}
+
                     </form>
                   </div>
               )}
