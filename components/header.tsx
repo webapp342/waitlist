@@ -170,6 +170,10 @@ export default function Header() {
       href: "/social-connections"
     },
     { 
+      label: "ETH Vault",
+      href: "/eth-yield"
+    },
+    { 
       label: "Earn",
       children: [
         { href: "/stake", label: "Stake" },
@@ -265,7 +269,7 @@ export default function Header() {
                     >
                       <span className="flex items-center gap-2">
                         {item.label}
-                        {item.label === "Bblip Quests" && (
+                        {( item.label === "ETH Vault") && (
                           <Badge variant="outline" className="border-yellow-200 text-yellow-200 text-xs px-1.5 py-0 h-4 rounded-lg bg-transparent">
                             NEW
                           </Badge>
@@ -501,7 +505,7 @@ export default function Header() {
                       >
                         <span className="flex items-center gap-2">
                           {item.label}
-                          {item.label === "Bblip Quests" && (
+                          {( item.label === "ETH Vault") && (
                             <Badge variant="outline" className="border-yellow-200 text-yellow-200 text-xs px-1.5 py-0 h-4 rounded-lg bg-transparent">
                               NEW
                             </Badge>
