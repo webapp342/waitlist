@@ -109,6 +109,22 @@ export interface Airdrop {
   updated_at?: string
 }
 
+// ETH Tokens interface
+export interface EthTokens {
+  id?: number
+  steth: number
+  weth: number
+  eth: number
+  weeth: number
+  eeth: number
+  ethx: number
+  rseth: number
+  ezeth: number
+  pufeth: number
+  wsteth: number
+  created_at?: string
+}
+
 // User service functions
 export const userService = {
   // Add user wallet to database (via API with rate limiting)
@@ -1577,6 +1593,156 @@ export const whitelistService = {
     } catch (error) {
       console.error('Error in getWhitelistStats:', error)
       return { totalRegistrations: 0, ethRegistrations: 0, bnbRegistrations: 0 }
+    }
+  }
+} 
+
+// ETH Tokens service functions
+export const ethTokensService = {
+  // Get all ETH tokens data
+  async getAllEthTokens(): Promise<EthTokens[]> {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, returning empty ETH tokens')
+      return []
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('eth_tokens')
+        .select('*')
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching ETH tokens:', error)
+        return []
+      }
+
+      return data || []
+    } catch (error) {
+      console.error('Error in getAllEthTokens:', error)
+      return []
+    }
+  },
+
+  // Get latest ETH tokens data
+  async getLatestEthTokens(): Promise<EthTokens | null> {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, returning null ETH tokens')
+      return null
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('eth_tokens')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      if (error && error.code !== 'PGRST116') {
+        console.error('Error fetching latest ETH tokens:', error)
+        return null
+      }
+
+      return data || null
+    } catch (error) {
+      console.error('Error in getLatestEthTokens:', error)
+      return null
+    }
+  },
+
+  // Add new ETH tokens data
+  async addEthTokens(tokensData: Omit<EthTokens, 'id' | 'created_at'>): Promise<EthTokens | null> {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, skipping ETH tokens save')
+      return null
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('eth_tokens')
+        .insert([tokensData])
+        .select()
+        .single()
+
+      if (error) {
+        console.error('Error adding ETH tokens:', error)
+        return null
+      }
+
+      console.log('ETH tokens added successfully:', data)
+      return data
+    } catch (error) {
+      console.error('Error in addEthTokens:', error)
+      return null
+    }
+  },
+
+  // Get ETH tokens statistics
+  async getEthTokensStats() {
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return { 
+        totalRecords: 0, 
+        totalStETH: 0, 
+        totalWETH: 0, 
+        totalETH: 0,
+        totalWeETH: 0,
+        totalEETH: 0,
+        totalETHx: 0,
+        totalRsETH: 0,
+        totalEzETH: 0,
+        totalPufETH: 0,
+        totalWstETH: 0
+      }
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('eth_tokens')
+        .select('*')
+
+      if (error) throw error
+
+      const totalRecords = data?.length || 0
+      const totalStETH = data?.reduce((sum, item) => sum + (item.steth || 0), 0) || 0
+      const totalWETH = data?.reduce((sum, item) => sum + (item.weth || 0), 0) || 0
+      const totalETH = data?.reduce((sum, item) => sum + (item.eth || 0), 0) || 0
+      const totalWeETH = data?.reduce((sum, item) => sum + (item.weeth || 0), 0) || 0
+      const totalEETH = data?.reduce((sum, item) => sum + (item.eeth || 0), 0) || 0
+      const totalETHx = data?.reduce((sum, item) => sum + (item.ethx || 0), 0) || 0
+      const totalRsETH = data?.reduce((sum, item) => sum + (item.rseth || 0), 0) || 0
+      const totalEzETH = data?.reduce((sum, item) => sum + (item.ezeth || 0), 0) || 0
+      const totalPufETH = data?.reduce((sum, item) => sum + (item.pufeth || 0), 0) || 0
+      const totalWstETH = data?.reduce((sum, item) => sum + (item.wsteth || 0), 0) || 0
+
+      return {
+        totalRecords,
+        totalStETH,
+        totalWETH,
+        totalETH,
+        totalWeETH,
+        totalEETH,
+        totalETHx,
+        totalRsETH,
+        totalEzETH,
+        totalPufETH,
+        totalWstETH
+      }
+    } catch (error) {
+      console.error('Error in getEthTokensStats:', error)
+      return { 
+        totalRecords: 0, 
+        totalStETH: 0, 
+        totalWETH: 0, 
+        totalETH: 0,
+        totalWeETH: 0,
+        totalEETH: 0,
+        totalETHx: 0,
+        totalRsETH: 0,
+        totalEzETH: 0,
+        totalPufETH: 0,
+        totalWstETH: 0
+      }
     }
   }
 } 
