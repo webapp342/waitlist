@@ -119,6 +119,7 @@ export default function EthYieldPage() {
   const [stakeAmount, setStakeAmount] = useState('1');
   const [selectedStakeIndex, setSelectedStakeIndex] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState('stake');
+  const [performanceTab, setPerformanceTab] = useState('performance');
   const [showAPYLabelInfo, setShowAPYLabelInfo] = useState(false);
   const [showAPYValueInfo, setShowAPYValueInfo] = useState(false);
   const [showTVLInfo, setShowTVLInfo] = useState(false);
@@ -1111,135 +1112,359 @@ export default function EthYieldPage() {
           </div>
         </div>
 
-        {/* APR Performance Chart */}
+        {/* APR Performance & Strategies Tabs */}
         <div className="max-w-4xl mx-auto mt-8 mb-10">
           <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-3xl border border-zinc-800 px-6 py-6 shadow-xl">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-2">APR Performance</h3>
-                <div className="flex items-center gap-4">
-                  <div>
-                    <span className="text-yellow-400 text-2xl font-bold">
-                      {(() => {
-                        const today = new Date();
-                        const yesterday = new Date(today);
-                        yesterday.setDate(today.getDate() - 1);
-                        const yesterdayStr = yesterday.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
-                        // Find yesterday's APR from chart data
-                        const yesterdayData = chartData?.find(item => item.date === yesterdayStr);
-                        const aprValue = yesterdayData ? `${yesterdayData.totalAPR}%` : '12.5%';
-                        return aprValue;
-                      })()}
-                    </span>
-                    <p className="text-gray-400 text-sm">7 days trailing APR</p>
-                  </div>
-                </div>
-              </div>
-                             <div className="flex items-center gap-4 text-xs">
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                   <span className="text-gray-400">Realized APR</span>
-                 </div>
-                 <div className="flex items-center gap-2">
-                   <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                   <span className="text-gray-400">Accruing APR</span>
-                 </div>
-               </div>
-            </div>
-            
-            {/* Chart Container */}
-            <div className="h-72 sm:h-64  rounded-xl  ">
-              <APRChart onDataGenerated={setChartData} />
-            </div>
+            <Tabs value={performanceTab} onValueChange={setPerformanceTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-zinc-800/60 border border-zinc-700 mb-6">
+                <TabsTrigger 
+                  value="performance" 
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500/20 data-[state=active]:to-yellow-600/20 data-[state=active]:text-yellow-400 data-[state=active]:border-yellow-500/30"
+                >
+                  Performance
+                </TabsTrigger>
+                <TabsTrigger 
+                  value="strategies" 
+                  className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-yellow-500/20 data-[state=active]:to-yellow-600/20 data-[state=active]:text-yellow-400 data-[state=active]:border-yellow-500/30"
+                >
+                  Strategies
+                </TabsTrigger>
+              </TabsList>
 
-            {/* Strategy Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-              <div>
-                <h4 className="text-white font-medium mb-2">Description</h4>
-                <p className="text-gray-400 text-sm">
-                  Assets are deposited in AAVE, Compound, and other strategies to earn top rewards. 
-                </p>
-                <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
-                  <span className="text-gray-400 text-xs">Contract:</span>
-                  <a 
-                    href={
-                      selectedAsset === 'ETH' ? "https://etherscan.io/address/0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC" :
-                      selectedAsset === 'WETH' ? "https://etherscan.io/address/0xe4007EB8888AB9412Ac1CBE4cb0BfCA2943A938e" :
-                      selectedAsset === 'stETH' ? "https://etherscan.io/address/0x120FA5738751b275aed7F7b46B98beB38679e093" :
-                      selectedAsset === 'ezETH' ? "https://etherscan.io/address/0xA4333C39B6E2779BF7Ae286bC4f91E0dC6e199c3" :
-                      "https://etherscan.io/address/0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC"
-                    }
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-blue-400 hover:text-blue-300 text-xs font-mono flex items-center gap-1 break-all"
-                  >
-                    <span className="hidden sm:inline">
-                      {selectedAsset === 'ETH' ? "0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC" :
-                       selectedAsset === 'WETH' ? "0xe4007EB8888AB9412Ac1CBE4cb0BfCA2943A938e" :
-                       selectedAsset === 'stETH' ? "0x120FA5738751b275aed7F7b46B98beB38679e093" :
-                       selectedAsset === 'ezETH' ? "0xA4333C39B6E2779BF7Ae286bC4f91E0dC6e199c3" :
-                       "0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC"}
-                    </span>
-                    <span className="sm:hidden">
-                      {selectedAsset === 'ETH' ? "0xebd7...42cC" :
-                       selectedAsset === 'WETH' ? "0xe400...938e" :
-                       selectedAsset === 'stETH' ? "0x120F...e093" :
-                       selectedAsset === 'ezETH' ? "0xA433...c3" :
-                       "0xebd7...42cC"}
-                    </span>
-                    <ArrowUpRight className="w-2 h-2 flex-shrink-0" />
-                  </a>
-                </div>
-              </div>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">Platform fee</span>
-                  <span className="text-white font-medium">0.73%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">Performance fee</span>
-                  <span className="text-white font-medium">1.53%</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">Lock period</span>
-                  <span className="text-white font-medium">30 days</span>
-                </div>
-                <div className="pt-2">
-                  <span className="text-gray-400 text-sm">Assets accepted</span>
-                  <div className="flex flex-wrap items-center gap-2 mt-2">
-                    <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-zinc-800 rounded-full border border-zinc-700">
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center">
-                        <img src="/eth.svg" alt="ETH" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+              {/* Performance Tab */}
+              <TabsContent value="performance" className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h3 className="text-lg font-semibold text-white mb-2">APR Performance</h3>
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <span className="text-yellow-400 text-2xl font-bold">
+                          {(() => {
+                            const today = new Date();
+                            const yesterday = new Date(today);
+                            yesterday.setDate(today.getDate() - 1);
+                            const yesterdayStr = yesterday.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
+                            // Find yesterday's APR from chart data
+                            const yesterdayData = chartData?.find(item => item.date === yesterdayStr);
+                            const aprValue = yesterdayData ? `${yesterdayData.totalAPR}%` : '12.5%';
+                            return aprValue;
+                          })()}
+                        </span>
+                        <p className="text-gray-400 text-sm">7 days trailing APR</p>
                       </div>
-                      <span className="text-xs text-gray-300 font-medium">ETH</span>
                     </div>
-                    <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-zinc-800 rounded-full border border-zinc-700">
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center">
-                        <img src="/wETH.png" alt="WETH" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                      </div>
-                      <span className="text-xs text-gray-300 font-medium">WETH</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
+                      <span className="text-gray-400">Realized APR</span>
                     </div>
-                    <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-zinc-800 rounded-full border border-zinc-700">
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center">
-                        <img src="/stETH.png" alt="stETH" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                      </div>
-                      <span className="text-xs text-gray-300 font-medium">stETH</span>
-                    </div>
-                    <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-zinc-800 rounded-full border border-zinc-700">
-                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center">
-                        <img src="/ezETH.png" alt="ezETH" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
-                      </div>
-                      <span className="text-xs text-gray-300 font-medium">ezETH</span>
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                      <span className="text-gray-400">Accruing APR</span>
                     </div>
                   </div>
                 </div>
-                <div className="pt-3 border-t border-zinc-700">
-                  <p className="text-xs text-gray-500 leading-relaxed">
-                    Note: By accessing Vault, you acknowledge and agree to the risks involved and agree to the Vault Disclaimers
-                  </p>
+                
+                {/* Chart Container */}
+                <div className="h-72 sm:h-64 rounded-xl">
+                  <APRChart onDataGenerated={setChartData} />
                 </div>
-              </div>
-            </div>
+
+                {/* Strategy Info */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                  <div>
+                    <h4 className="text-white font-medium mb-2">Description</h4>
+                    <p className="text-gray-400 text-sm">
+                      Assets are deposited in AAVE, Compound, and other strategies to earn top rewards. 
+                    </p>
+                    <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                      <span className="text-gray-400 text-xs">Contract:</span>
+                      <a 
+                        href={
+                          selectedAsset === 'ETH' ? "https://etherscan.io/address/0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC" :
+                          selectedAsset === 'WETH' ? "https://etherscan.io/address/0xe4007EB8888AB9412Ac1CBE4cb0BfCA2943A938e" :
+                          selectedAsset === 'stETH' ? "https://etherscan.io/address/0x120FA5738751b275aed7F7b46B98beB38679e093" :
+                          selectedAsset === 'ezETH' ? "https://etherscan.io/address/0xA4333C39B6E2779BF7Ae286bC4f91E0dC6e199c3" :
+                          "https://etherscan.io/address/0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC"
+                        }
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="text-blue-400 hover:text-blue-300 text-xs font-mono flex items-center gap-1 break-all"
+                      >
+                        <span className="hidden sm:inline">
+                          {selectedAsset === 'ETH' ? "0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC" :
+                           selectedAsset === 'WETH' ? "0xe4007EB8888AB9412Ac1CBE4cb0BfCA2943A938e" :
+                           selectedAsset === 'stETH' ? "0x120FA5738751b275aed7F7b46B98beB38679e093" :
+                           selectedAsset === 'ezETH' ? "0xA4333C39B6E2779BF7Ae286bC4f91E0dC6e199c3" :
+                           "0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC"}
+                        </span>
+                        <span className="sm:hidden">
+                          {selectedAsset === 'ETH' ? "0xebd7...42cC" :
+                           selectedAsset === 'WETH' ? "0xe400...938e" :
+                           selectedAsset === 'stETH' ? "0x120F...e093" :
+                           selectedAsset === 'ezETH' ? "0xA433...c3" :
+                           "0xebd7...42cC"}
+                        </span>
+                        <ArrowUpRight className="w-2 h-2 flex-shrink-0" />
+                      </a>
+                    </div>
+                  </div>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm">Platform fee</span>
+                      <span className="text-white font-medium">0.73%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm">Performance fee</span>
+                      <span className="text-white font-medium">1.53%</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-gray-400 text-sm">Lock period</span>
+                      <span className="text-white font-medium">30 days</span>
+                    </div>
+                    <div className="pt-2">
+                      <span className="text-gray-400 text-sm">Assets accepted</span>
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
+                        <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-zinc-800 rounded-full border border-zinc-700">
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center">
+                            <img src="/eth.svg" alt="ETH" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          </div>
+                          <span className="text-xs text-gray-300 font-medium">ETH</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-zinc-800 rounded-full border border-zinc-700">
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center">
+                            <img src="/wETH.png" alt="WETH" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          </div>
+                          <span className="text-xs text-gray-300 font-medium">WETH</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-zinc-800 rounded-full border border-zinc-700">
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center">
+                            <img src="/stETH.png" alt="stETH" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          </div>
+                          <span className="text-xs text-gray-300 font-medium">stETH</span>
+                        </div>
+                        <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-zinc-800 rounded-full border border-zinc-700">
+                          <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center">
+                            <img src="/ezETH.png" alt="ezETH" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
+                          </div>
+                          <span className="text-xs text-gray-300 font-medium">ezETH</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="pt-3 border-t border-zinc-700">
+                      <p className="text-xs text-gray-500 leading-relaxed">
+                        Note: By accessing Vault, you acknowledge and agree to the risks involved and agree to the Vault Disclaimers
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              {/* Strategies Tab */}
+              <TabsContent value="strategies" className="space-y-6">
+                <div>
+                  <h3 className="text-lg font-semibold text-white mb-4">Vault Allocation</h3>
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
+                    {/* Vaults List */}
+                    <div className="lg:col-span-2">
+                      <div className="bg-zinc-800/60 rounded-xl border border-zinc-700 overflow-hidden">
+                        {/* Table Header */}
+                        <div className="grid grid-cols-4 gap-2 lg:gap-4 p-3 lg:p-4 border-b border-zinc-700 bg-zinc-800/40">
+                          <div className="text-gray-400 text-xs lg:text-sm font-medium">Vault</div>
+                          <div className="text-gray-400 text-xs lg:text-sm font-medium flex items-center gap-1">
+                            %
+                            <svg className="w-2 h-2 lg:w-3 lg:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                          <div className="text-gray-400 text-xs lg:text-sm font-medium flex items-center gap-1 hidden sm:flex">
+                            $
+                            <svg className="w-2 h-2 lg:w-3 lg:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                          <div className="text-gray-400 text-xs lg:text-sm font-medium flex items-center gap-1">
+                            APY
+                            <svg className="w-2 h-2 lg:w-3 lg:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                            </svg>
+                          </div>
+                        </div>
+                        
+                                                 {/* Vault Rows */}
+                         <div className="divide-y divide-zinc-700">
+                           {/* Active Vaults */}
+                           <div className="grid grid-cols-4 gap-2 lg:gap-4 p-3 lg:p-4 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10">
+                             <div className="flex items-center gap-2 lg:gap-3">
+                               <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-yellow-400 rounded-full"></div>
+                               <div className="w-4 h-4 lg:w-6 lg:h-6 rounded-full flex items-center justify-center">
+                                 <img src="/eth.svg" alt="ETH" className="w-3 h-3 lg:w-4 lg:h-4" />
+                               </div>
+                               <span className="text-white text-xs lg:text-sm font-medium truncate">Compound V3 WETH</span>
+                             </div>
+                             <div className="text-white text-xs lg:text-sm">52.49%</div>
+                             <div className="text-white text-xs lg:text-sm hidden sm:block">$2,627,984</div>
+                             <div className="text-yellow-400 text-xs lg:text-sm font-medium">4.44%</div>
+                           </div>
+                           
+                           <div className="grid grid-cols-4 gap-2 lg:gap-4 p-3 lg:p-4 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10">
+                             <div className="flex items-center gap-2 lg:gap-3">
+                               <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-yellow-500 rounded-full"></div>
+                               <div className="w-4 h-4 lg:w-6 lg:h-6 rounded-full flex items-center justify-center">
+                                 <img src="/eth.svg" alt="ETH" className="w-3 h-3 lg:w-4 lg:h-4" />
+                               </div>
+                               <span className="text-white text-xs lg:text-sm font-medium truncate">Morpho Gauntlet</span>
+                             </div>
+                             <div className="text-white text-xs lg:text-sm">44.23%</div>
+                             <div className="text-white text-xs lg:text-sm hidden sm:block">$2,214,545</div>
+                             <div className="text-yellow-400 text-xs lg:text-sm font-medium">3.56%</div>
+                           </div>
+                           
+                           <div className="grid grid-cols-4 gap-2 lg:gap-4 p-3 lg:p-4 bg-gradient-to-r from-yellow-500/10 to-yellow-600/10">
+                             <div className="flex items-center gap-2 lg:gap-3">
+                               <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-yellow-600 rounded-full"></div>
+                               <div className="w-4 h-4 lg:w-6 lg:h-6 rounded-full flex items-center justify-center">
+                                 <img src="/eth.svg" alt="ETH" className="w-3 h-3 lg:w-4 lg:h-4" />
+                               </div>
+                               <span className="text-white text-xs lg:text-sm font-medium truncate">Aave V3 Lido</span>
+                             </div>
+                             <div className="text-white text-xs lg:text-sm">3.28%</div>
+                             <div className="text-white text-xs lg:text-sm hidden sm:block">$164,262</div>
+                             <div className="text-yellow-400 text-xs lg:text-sm font-medium">2.24%</div>
+                           </div>
+                          
+                                                     {/* Inactive Vaults */}
+                           <div className="grid grid-cols-4 gap-2 lg:gap-4 p-3 lg:p-4">
+                             <div className="flex items-center gap-2 lg:gap-3">
+                               <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-gray-500 rounded-full"></div>
+                               <div className="w-4 h-4 lg:w-6 lg:h-6 rounded-full flex items-center justify-center">
+                                 <img src="/eth.svg" alt="ETH" className="w-3 h-3 lg:w-4 lg:h-4" />
+                               </div>
+                               <span className="text-gray-500 text-xs lg:text-sm font-medium truncate">Aave V3 WETH</span>
+                             </div>
+                             <div className="text-gray-500 text-xs lg:text-sm">0%</div>
+                             <div className="text-gray-500 text-xs lg:text-sm hidden sm:block">$0.00</div>
+                             <div className="text-gray-500 text-xs lg:text-sm">2.85%</div>
+                           </div>
+                           
+                           <div className="grid grid-cols-4 gap-2 lg:gap-4 p-3 lg:p-4">
+                             <div className="flex items-center gap-2 lg:gap-3">
+                               <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-gray-500 rounded-full"></div>
+                               <div className="w-4 h-4 lg:w-6 lg:h-6 rounded-full flex items-center justify-center">
+                                 <img src="/eth.svg" alt="ETH" className="w-3 h-3 lg:w-4 lg:h-4" />
+                               </div>
+                               <span className="text-gray-500 text-xs lg:text-sm font-medium truncate">stETH accumulator</span>
+                             </div>
+                             <div className="text-gray-500 text-xs lg:text-sm">0%</div>
+                             <div className="text-gray-500 text-xs lg:text-sm hidden sm:block">$0.00</div>
+                             <div className="text-gray-500 text-xs lg:text-sm">0.00%</div>
+                           </div>
+                           
+                           <div className="grid grid-cols-4 gap-2 lg:gap-4 p-3 lg:p-4">
+                             <div className="flex items-center gap-2 lg:gap-3">
+                               <div className="w-1.5 h-1.5 lg:w-2 lg:h-2 bg-gray-500 rounded-full"></div>
+                               <div className="w-4 h-4 lg:w-6 lg:h-6 rounded-full flex items-center justify-center">
+                                 <img src="/eth.svg" alt="ETH" className="w-3 h-3 lg:w-4 lg:h-4" />
+                               </div>
+                               <span className="text-gray-500 text-xs lg:text-sm font-medium truncate">Spark WETH</span>
+                             </div>
+                             <div className="text-gray-500 text-xs lg:text-sm">0%</div>
+                             <div className="text-gray-500 text-xs lg:text-sm hidden sm:block">$0.00</div>
+                             <div className="text-gray-500 text-xs lg:text-sm">0.00%</div>
+                           </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Donut Chart */}
+                    <div className="lg:col-span-1">
+                      <div className="bg-zinc-800/60 rounded-xl border border-zinc-700 p-6 flex flex-col items-center justify-center h-full">
+                        <div className="relative w-48 h-48">
+                                                     {/* Donut Chart */}
+                           <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                             {/* Background Circle */}
+                             <circle
+                               cx="50"
+                               cy="50"
+                               r="40"
+                               fill="none"
+                               stroke="#374151"
+                               strokeWidth="8"
+                             />
+                             {/* Yellow Segment (52.49%) */}
+                             <circle
+                               cx="50"
+                               cy="50"
+                               r="40"
+                               fill="none"
+                               stroke="#F7FF9B"
+                               strokeWidth="8"
+                               strokeDasharray={`${2 * Math.PI * 40 * 0.5249} ${2 * Math.PI * 40}`}
+                               strokeDashoffset="0"
+                             />
+                             {/* Gold Segment (44.23%) */}
+                             <circle
+                               cx="50"
+                               cy="50"
+                               r="40"
+                               fill="none"
+                               stroke="#EAB308"
+                               strokeWidth="8"
+                               strokeDasharray={`${2 * Math.PI * 40 * 0.4423} ${2 * Math.PI * 40}`}
+                               strokeDashoffset={`-${2 * Math.PI * 40 * 0.5249}`}
+                             />
+                             {/* Orange Segment (3.28%) */}
+                             <circle
+                               cx="50"
+                               cy="50"
+                               r="40"
+                               fill="none"
+                               stroke="#F59E0B"
+                               strokeWidth="8"
+                               strokeDasharray={`${2 * Math.PI * 40 * 0.0328} ${2 * Math.PI * 40}`}
+                               strokeDashoffset={`-${2 * Math.PI * 40 * (0.5249 + 0.4423)}`}
+                             />
+                           </svg>
+                          
+                          {/* Center Text */}
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="text-white text-lg font-semibold">allocation %</div>
+                            </div>
+                          </div>
+                        </div>
+                        
+                                                 {/* Legend */}
+                         <div className="mt-6 space-y-2 w-full">
+                           <div className="flex items-center justify-between">
+                             <div className="flex items-center gap-2">
+                               <div className="w-3 h-3 bg-[#F7FF9B] rounded-full"></div>
+                               <span className="text-gray-300 text-xs">Compound V3</span>
+                             </div>
+                             <span className="text-white text-xs font-medium">52.49%</span>
+                           </div>
+                           <div className="flex items-center justify-between">
+                             <div className="flex items-center gap-2">
+                               <div className="w-3 h-3 bg-[#EAB308] rounded-full"></div>
+                               <span className="text-gray-300 text-xs">Morpho Gauntlet</span>
+                             </div>
+                             <span className="text-white text-xs font-medium">44.23%</span>
+                           </div>
+                           <div className="flex items-center justify-between">
+                             <div className="flex items-center gap-2">
+                               <div className="w-3 h-3 bg-[#F59E0B] rounded-full"></div>
+                               <span className="text-gray-300 text-xs">Aave V3 Lido</span>
+                             </div>
+                             <span className="text-white text-xs font-medium">3.28%</span>
+                           </div>
+                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
         </div>
       </div>
