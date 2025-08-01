@@ -161,10 +161,7 @@ export default function Header() {
       label: "Dashboard", 
       href: "/dashboard"
     },
-    { 
-      label: "Presale", 
-      href: "/presale"
-    },
+ 
     { 
       label: "Bblip Quests", 
       href: "/social-connections"
