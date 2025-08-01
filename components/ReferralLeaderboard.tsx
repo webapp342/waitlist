@@ -76,7 +76,7 @@ export default function ReferralLeaderboard() {
 
   // Countdown to July 31, 2024
   useEffect(() => {
-    const targetDate = new Date('2025-07-31T23:59:59Z');
+    const targetDate = new Date('2025-08-31T23:59:59Z');
     
     const updateCountdown = () => {
       const now = new Date();
