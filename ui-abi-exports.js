@@ -1736,6 +1736,9 @@ export const WEETH_STAKING_ABI = [
 // stETH Staking Contract ABI (same as WETH)
 export const STETH_STAKING_ABI = WETH_STAKING_ABI;
 
+// ezETH Staking Contract ABI (same as WETH)
+export const EZETH_STAKING_ABI = WETH_STAKING_ABI;
+
 // Kontrat Bilgileri
 export const CONTRACT_INFO = {
   // Ethereum Mainnet - ETH Staking
@@ -1764,6 +1767,13 @@ export const CONTRACT_INFO = {
     address: "0x8A6b5dE4716D21ACcCd5C07eA058A781e8A6E6eB",
     network: "Ethereum Mainnet",
     explorer: "https://etherscan.io/address/0x8A6b5dE4716D21ACcCd5C07eA058A781e8A6E6eB",
+    rpcUrl: "https://ethereum.publicnode.com"
+  },
+  // Ethereum Mainnet - ezETH Staking
+  EZETH_STAKING: {
+    address: "0xA4333C39B6E2779BF7Ae286bC4f91E0dC6e199c3",
+    network: "Ethereum Mainnet",
+    explorer: "https://etherscan.io/address/0xA4333C39B6E2779BF7Ae286bC4f91E0dC6e199c3",
     rpcUrl: "https://ethereum.publicnode.com"
   }
 };

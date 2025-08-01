@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt, useBalance, useBlockNumber } from 'wagmi';
 import { parseEther, formatEther, createPublicClient, http, parseAbiItem } from 'viem';
 import { holesky, mainnet } from 'viem/chains';
-import { ETH_STAKING_ABI, WETH_STAKING_ABI, WEETH_STAKING_ABI, STETH_STAKING_ABI, CONTRACT_INFO } from '@/ui-abi-exports';
+import { ETH_STAKING_ABI, WETH_STAKING_ABI, WEETH_STAKING_ABI, STETH_STAKING_ABI, EZETH_STAKING_ABI, CONTRACT_INFO } from '@/ui-abi-exports';
 
 // Types
 interface UserInfo {
@@ -64,6 +64,8 @@ export const useEthStaking = (selectedAsset: 'ETH' | 'WETH' | 'stETH' | 'ezETH' 
     ? CONTRACT_INFO.WEETH_STAKING.address as `0x${string}`
     : selectedAsset === 'stETH'
     ? CONTRACT_INFO.STETH_STAKING.address as `0x${string}`
+    : selectedAsset === 'ezETH'
+    ? CONTRACT_INFO.EZETH_STAKING.address as `0x${string}`
     : CONTRACT_INFO.WETH_STAKING.address as `0x${string}`;
   
   // Contract ABI based on selected asset
@@ -73,12 +75,14 @@ export const useEthStaking = (selectedAsset: 'ETH' | 'WETH' | 'stETH' | 'ezETH' 
     ? WEETH_STAKING_ABI
     : selectedAsset === 'stETH'
     ? STETH_STAKING_ABI
+    : selectedAsset === 'ezETH'
+    ? EZETH_STAKING_ABI
     : WETH_STAKING_ABI;
 
   // Create public client for event logs
   const publicClient = createPublicClient({
-    chain: (selectedAsset === 'ETH' || selectedAsset === 'WETH' || selectedAsset === 'stETH') ? mainnet : holesky,
-    transport: http((selectedAsset === 'ETH' || selectedAsset === 'WETH' || selectedAsset === 'stETH') ? 'https://ethereum.publicnode.com' : 'https://ethereum-holesky.publicnode.com'),
+    chain: (selectedAsset === 'ETH' || selectedAsset === 'WETH' || selectedAsset === 'stETH' || selectedAsset === 'ezETH') ? mainnet : holesky,
+    transport: http((selectedAsset === 'ETH' || selectedAsset === 'WETH' || selectedAsset === 'stETH' || selectedAsset === 'ezETH') ? 'https://ethereum.publicnode.com' : 'https://ethereum-holesky.publicnode.com'),
   });
 
   // Contract reads
@@ -302,6 +306,8 @@ export const useEthStaking = (selectedAsset: 'ETH' | 'WETH' | 'stETH' | 'ezETH' 
         ? '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' as `0x${string}`
         : selectedAsset === 'stETH'
         ? '0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84' as `0x${string}`
+        : selectedAsset === 'ezETH'
+        ? '0xbf5495Efe5DB9ce00f80364C8B423567e58d2110' as `0x${string}`
         : '0x60893d1a2Be3df2d98EEB277dE18535DbDF0aC9F' as `0x${string}`;
       
       const hash = await stakeWrite({

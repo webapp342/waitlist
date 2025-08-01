@@ -40,7 +40,7 @@ export default function EthYieldPage() {
     address,
     loading,
     error,
-    contractBalance,
+    contractBalance, 
     totalStaked,
     totalStakers,
     totalRewardsPaid,
@@ -447,13 +447,10 @@ export default function EthYieldPage() {
                               <span className="text-white">stETH</span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="ezETH" disabled>
-                          <div className="flex space-x-4 justify-between w-full">
-                          <div className="flex items-center space-x-2">
-                                <Image src="/ezETH.png" alt="ezETH" width={20} height={20} />
-                                <span className="text-gray-500">ezETH</span>
-                              </div>
-                              <span className="text-yellow-400 text-xs ">Coming Soon</span>
+                          <SelectItem value="ezETH">
+                            <div className="flex items-center space-x-2">
+                              <Image src="/ezETH.png" alt="ezETH" width={20} height={20} />
+                              <span className="text-white">ezETH</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="wstETH" disabled>
@@ -607,13 +604,10 @@ export default function EthYieldPage() {
                               <span className="text-white">stETH</span>
                             </div>
                           </SelectItem>
-                          <SelectItem value="ezETH" disabled>
-                          <div className="flex space-x-4 justify-between w-full">
-                              <div className="flex items-center space-x-2">
-                                <Image src="/ezETH.png" alt="ezETH" width={20} height={20} />
-                                <span className="text-gray-500">ezETH</span>
-                              </div>
-                              <span className="text-yellow-400 text-xs ml-auto">Coming Soon</span>
+                          <SelectItem value="ezETH">
+                            <div className="flex items-center space-x-2">
+                              <Image src="/ezETH.png" alt="ezETH" width={20} height={20} />
+                              <span className="text-white">ezETH</span>
                             </div>
                           </SelectItem>
                           <SelectItem value="wstETH" disabled>
@@ -680,22 +674,27 @@ export default function EthYieldPage() {
                     <Label className="text-gray-300 font-medium text-xs sm:text-sm md:text-base">Available Profits</Label>
                     <div className="mt-2 p-3 sm:p-4 bg-green-500/10 rounded-xl border border-green-500/20">
                       <div className="flex items-center justify-between">
-                        <span className="text-gray-400 text-xs sm:text-sm">Pending Rewards</span>
+                        <span className="text-gray-400 text-xs sm:text-sm">Pending Profits</span>
                         <span className="text-green-400 font-semibold text-sm sm:text-base md:text-lg text-right">
                           {userInfo ? ethers.formatEther(userInfo.pendingRewards) : '0'} {selectedAsset}
                         </span>
                       </div>
+                      {!hasPendingRewards && userInfo && (
+                        <div className="mt-2 text-xs text-gray-500">
+                          Deposit {selectedAsset} to vault to gain profits
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Claim Button */}
+                  {/* Claim Button */} 
                   {isOnMainnet ? (
                     <Button
                       onClick={handleClaimRewards}
                       disabled={loading || !hasPendingRewards}
-                      className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold h-10 sm:h-12 text-sm sm:text-base md:text-lg shadow-lg"
+                      className="w-full bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold h-10 sm:h-12 text-sm sm:text-base md:text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {loading ? 'Claiming...' : 'Withdraw Profits'}
+                      {loading ? 'Claiming...' : hasPendingRewards ? 'Withdraw Profits' : 'No Profits Available'}
                     </Button>
                   ) : (
                     <Button
@@ -999,6 +998,17 @@ export default function EthYieldPage() {
                     {ethTokensData ? `${((ethTokensData.steth || 0) / 1000).toFixed(2)}K` : '224.38K'}
                   </span>
                 </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center overflow-hidden">
+                      <Image src="/ezETH.png" alt="ezETH" width={32} height={32} className="w-full h-full object-cover" />
+                    </div>
+                    <span className="text-gray-400 text-sm">ezETH</span>
+                  </div>
+                  <span className="text-white font-semibold">
+                    {ethTokensData ? `${((ethTokensData.ezeth || 0) / 1000).toFixed(2)}K` : '0.00K'}
+                  </span>
+                </div>
               </div>
             </div>
 
@@ -1013,7 +1023,7 @@ export default function EthYieldPage() {
                   <span className="text-white font-semibold text-lg">
                     {ethTokensData && ethPrice ? 
                       (() => {
-                        const totalEth = (ethTokensData.eth || 0) + (ethTokensData.weth || 0) + (ethTokensData.steth || 0);
+                        const totalEth = (ethTokensData.eth || 0) + (ethTokensData.weth || 0) + (ethTokensData.steth || 0) + (ethTokensData.ezeth || 0);
                         const tvlUSD = totalEth * ethPrice;
                         
                         if (tvlUSD >= 1000000000) {
@@ -1033,7 +1043,7 @@ export default function EthYieldPage() {
                   <span className="text-gray-400 text-sm">Total Deposited ETH</span>
                   <span className="text-white font-semibold text-lg">
                     {ethTokensData ? 
-                      `${(((ethTokensData.eth || 0) + (ethTokensData.weth || 0) + (ethTokensData.steth || 0)) / 1000).toFixed(2)}K` 
+                      `${(((ethTokensData.eth || 0) + (ethTokensData.weth || 0) + (ethTokensData.steth || 0) + (ethTokensData.ezeth || 0)) / 1000).toFixed(2)}K` 
                       : '38.22K'}
                   </span>
                 </div>
@@ -1124,6 +1134,12 @@ export default function EthYieldPage() {
                         <img src="/stETH.png" alt="stETH" className="w-3 h-3" />
                       </div>
                       <span className="text-xs text-gray-300 font-medium">stETH</span>
+                    </div>
+                    <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800 rounded-full border border-zinc-700">
+                      <div className="w-5 h-5  rounded-full flex items-center justify-center">
+                        <img src="/ezETH.png" alt="ezETH" className="w-3 h-3" />
+                      </div>
+                      <span className="text-xs text-gray-300 font-medium">ezETH</span>
                     </div>
                   </div>
                 </div>
