@@ -116,7 +116,7 @@ export default function EthYieldPage() {
       setCurrentAPR(aprValue);
     }
   }, [chartData]);
-  const [stakeAmount, setStakeAmount] = useState('');
+  const [stakeAmount, setStakeAmount] = useState('1');
   const [selectedStakeIndex, setSelectedStakeIndex] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState('stake');
   const [showAPYLabelInfo, setShowAPYLabelInfo] = useState(false);
@@ -284,9 +284,26 @@ export default function EthYieldPage() {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-4xl">
           
           <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine mb-2">
-              ETH Yield Vault
-            </h1>
+                          <div className="flex items-center justify-center gap-3 mb-2">
+                <h1 className="text-4xl md:text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-[#F7FF9B] via-yellow-300 to-[#F7FF9B] animate-text-shine">
+                  ETH Yield Vault
+                </h1>
+                <a 
+                  href={
+                    selectedAsset === 'ETH' ? "https://etherscan.io/address/0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC" :
+                    selectedAsset === 'WETH' ? "https://etherscan.io/address/0xe4007EB8888AB9412Ac1CBE4cb0BfCA2943A938e" :
+                    selectedAsset === 'stETH' ? "https://etherscan.io/address/0x120FA5738751b275aed7F7b46B98beB38679e093" :
+                    selectedAsset === 'ezETH' ? "https://etherscan.io/address/0xA4333C39B6E2779BF7Ae286bC4f91E0dC6e199c3" :
+                    "https://etherscan.io/address/0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC"
+                  }
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-full hover:bg-green-500/30 hover:border-green-500/50 transition-all duration-200 cursor-pointer"
+                >
+                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  <span className="text-green-400 text-xs font-medium">Audited</span>
+                </a>
+              </div>
             <p className="text-gray-400 text-sm md:text-base">
               Earn <span className="text-yellow-200 font-semibold">{currentAPR} APY</span> by depositing your {selectedAsset} into the vault
             </p>
@@ -347,7 +364,7 @@ export default function EthYieldPage() {
                     </div>
                     {showAPYValueInfo && (
                       <div className="absolute top-full mt-2 z-50 w-[80vw] sm:w-[200px] max-w-sm p-4 rounded bg-zinc-800 border border-zinc-700 text-xs text-gray-300 shadow-lg break-words whitespace-normal right-0">
-                        Current APY rate: {apyPercentage}%. This rate is calculated based on current market conditions and may vary over time. Higher rates may be available during promotional periods.
+                        Current APY rate: {currentAPR}. This rate is calculated based on current market conditions and may vary over time. Higher rates may be available during promotional periods.
                       </div>
                     )}
                   </span>
@@ -545,6 +562,48 @@ export default function EthYieldPage() {
                     <span className="text-gray-500 text-sm">Balance: {walletBalance} {selectedAsset}</span>
                   </div>
 
+                  {/* Estimated Earnings */}
+                  {stakeAmount && parseFloat(stakeAmount) > 0 && (
+                    <div className="bg-zinc-800/40 rounded-xl border border-zinc-700 p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-gray-400 text-sm font-medium">Estimated Annual Earnings</span>
+                        <span className="text-yellow-400 text-sm font-medium">{currentAPR}</span>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500 text-xs">Daily</span>
+                          <span className="text-white text-sm">
+                            {(() => {
+                              const amount = parseFloat(stakeAmount) || 0;
+                              const dailyRate = parseFloat(currentAPR.replace('%', '')) / 365 / 100;
+                              return `+${(amount * dailyRate).toFixed(6)} ${selectedAsset}`;
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500 text-xs">Monthly</span>
+                          <span className="text-white text-sm">
+                            {(() => {
+                              const amount = parseFloat(stakeAmount) || 0;
+                              const monthlyRate = parseFloat(currentAPR.replace('%', '')) / 12 / 100;
+                              return `+${(amount * monthlyRate).toFixed(4)} ${selectedAsset}`;
+                            })()}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-500 text-xs">Yearly</span>
+                          <span className="text-white text-sm">
+                            {(() => {
+                              const amount = parseFloat(stakeAmount) || 0;
+                              const yearlyRate = parseFloat(currentAPR.replace('%', '')) / 100;
+                              return `+${(amount * yearlyRate).toFixed(4)} ${selectedAsset}`;
+                            })()}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Action Button */}
                   {isConnected ? (
                     isOnMainnet ? (
@@ -653,7 +712,7 @@ export default function EthYieldPage() {
                                 <span className="text-gray-500">ETHx</span>
                               </div>
                               <span className="text-yellow-400 text-xs ml-auto">Coming Soon</span>
-                            </div>
+                            </div> 
                           </SelectItem>
                           <SelectItem value="pufETH" disabled>
                           <div className="flex space-x-4 justify-between w-full">
@@ -1100,15 +1159,46 @@ export default function EthYieldPage() {
                 <p className="text-gray-400 text-sm">
                   Assets are deposited in AAVE, Compound, and other strategies to earn top rewards. 
                 </p>
+                <div className="mt-2 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2">
+                  <span className="text-gray-400 text-xs">Contract:</span>
+                  <a 
+                    href={
+                      selectedAsset === 'ETH' ? "https://etherscan.io/address/0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC" :
+                      selectedAsset === 'WETH' ? "https://etherscan.io/address/0xe4007EB8888AB9412Ac1CBE4cb0BfCA2943A938e" :
+                      selectedAsset === 'stETH' ? "https://etherscan.io/address/0x120FA5738751b275aed7F7b46B98beB38679e093" :
+                      selectedAsset === 'ezETH' ? "https://etherscan.io/address/0xA4333C39B6E2779BF7Ae286bC4f91E0dC6e199c3" :
+                      "https://etherscan.io/address/0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC"
+                    }
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300 text-xs font-mono flex items-center gap-1 break-all"
+                  >
+                    <span className="hidden sm:inline">
+                      {selectedAsset === 'ETH' ? "0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC" :
+                       selectedAsset === 'WETH' ? "0xe4007EB8888AB9412Ac1CBE4cb0BfCA2943A938e" :
+                       selectedAsset === 'stETH' ? "0x120FA5738751b275aed7F7b46B98beB38679e093" :
+                       selectedAsset === 'ezETH' ? "0xA4333C39B6E2779BF7Ae286bC4f91E0dC6e199c3" :
+                       "0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC"}
+                    </span>
+                    <span className="sm:hidden">
+                      {selectedAsset === 'ETH' ? "0xebd7...42cC" :
+                       selectedAsset === 'WETH' ? "0xe400...938e" :
+                       selectedAsset === 'stETH' ? "0x120F...e093" :
+                       selectedAsset === 'ezETH' ? "0xA433...c3" :
+                       "0xebd7...42cC"}
+                    </span>
+                    <ArrowUpRight className="w-2 h-2 flex-shrink-0" />
+                  </a>
+                </div>
               </div>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">Platform fee</span>
-                  <span className="text-white font-medium">1.5%</span>
+                  <span className="text-white font-medium">0.73%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">Performance fee</span>
-                  <span className="text-white font-medium">20%</span>
+                  <span className="text-white font-medium">1.53%</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-400 text-sm">Lock period</span>
@@ -1116,28 +1206,28 @@ export default function EthYieldPage() {
                 </div>
                 <div className="pt-2">
                   <span className="text-gray-400 text-sm">Assets accepted</span>
-                  <div className="flex items-center gap-2 mt-2">
-                    <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800 rounded-full border border-zinc-700">
-                      <div className="w-5 h-5  rounded-full flex items-center justify-center">
-                        <img src="/eth.svg" alt="ETH" className="w-3 h-3" />
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-zinc-800 rounded-full border border-zinc-700">
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center">
+                        <img src="/eth.svg" alt="ETH" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       </div>
                       <span className="text-xs text-gray-300 font-medium">ETH</span>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800 rounded-full border border-zinc-700">
-                      <div className="w-5 h-5  rounded-full flex items-center justify-center">
-                        <img src="/wETH.png" alt="WETH" className="w-3 h-3" />
+                    <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-zinc-800 rounded-full border border-zinc-700">
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center">
+                        <img src="/wETH.png" alt="WETH" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       </div>
                       <span className="text-xs text-gray-300 font-medium">WETH</span>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800 rounded-full border border-zinc-700">
-                      <div className="w-5 h-5  rounded-full flex items-center justify-center">
-                        <img src="/stETH.png" alt="stETH" className="w-3 h-3" />
+                    <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-zinc-800 rounded-full border border-zinc-700">
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center">
+                        <img src="/stETH.png" alt="stETH" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       </div>
                       <span className="text-xs text-gray-300 font-medium">stETH</span>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-2 bg-zinc-800 rounded-full border border-zinc-700">
-                      <div className="w-5 h-5  rounded-full flex items-center justify-center">
-                        <img src="/ezETH.png" alt="ezETH" className="w-3 h-3" />
+                    <div className="flex items-center gap-2 px-2 sm:px-3 py-1.5 sm:py-2 bg-zinc-800 rounded-full border border-zinc-700">
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full flex items-center justify-center">
+                        <img src="/ezETH.png" alt="ezETH" className="w-2.5 h-2.5 sm:w-3 sm:h-3" />
                       </div>
                       <span className="text-xs text-gray-300 font-medium">ezETH</span>
                     </div>
