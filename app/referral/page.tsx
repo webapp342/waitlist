@@ -721,7 +721,7 @@ function ClaimHistoryTable({ address }: { address: string }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table> 
         </div>
       </div>
     </div>

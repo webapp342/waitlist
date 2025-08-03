@@ -187,7 +187,7 @@ export default function EthYieldPage() {
                         errorMsg.includes('MetaMask') ? 'Transaction cancelled' :
                         errorMsg;
       toast.error(cleanError);
-    }
+    } 
   };
 
   const handleSwitchToMainnet = async () => {
@@ -291,18 +291,19 @@ export default function EthYieldPage() {
                 </h1>
                 <a 
                   href={
-                    selectedAsset === 'ETH' ? "https://etherscan.io/address/0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC" :
-                    selectedAsset === 'WETH' ? "https://etherscan.io/address/0xe4007EB8888AB9412Ac1CBE4cb0BfCA2943A938e" :
-                    selectedAsset === 'stETH' ? "https://etherscan.io/address/0x120FA5738751b275aed7F7b46B98beB38679e093" :
-                    selectedAsset === 'ezETH' ? "https://etherscan.io/address/0xA4333C39B6E2779BF7Ae286bC4f91E0dC6e199c3" :
-                    "https://etherscan.io/address/0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC"
+                    selectedAsset === 'ETH' ? "https://etherscan.io/address/0x120FA5738751b275aed7F7b46B98beB38679e093" :
+                    selectedAsset === 'WETH' ? "https://etherscan.io/address/0xf0bb20865277aBd641a307eCe5Ee04E79073416C" :
+                    selectedAsset === 'stETH' ? "https://etherscan.io/address/0xf0bb20865277aBd641a307eCe5Ee04E79073416C" :
+                    selectedAsset === 'ezETH' ? "https://etherscan.io/address/0xf0bb20865277aBd641a307eCe5Ee04E79073416C" :
+                    "https://etherscan.io/address/0xf0bb20865277aBd641a307eCe5Ee04E79073416C"
                   }
                   target="_blank" 
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-full hover:bg-green-500/30 hover:border-green-500/50 transition-all duration-200 cursor-pointer"
                 >
                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                  <span className="text-green-400 text-xs font-medium">Audited</span>
+                  <span className="text-green-400 text-xs font-medium">Audited </span>                         <ArrowUpRight className="w-4 h-4 flex-shrink-0 text-green-400" />
+
                 </a>
               </div>
             <p className="text-gray-400 text-sm md:text-base">
@@ -1182,29 +1183,29 @@ export default function EthYieldPage() {
                       <span className="text-gray-400 text-xs">Contract:</span>
                       <a 
                         href={
-                          selectedAsset === 'ETH' ? "https://etherscan.io/address/0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC" :
-                          selectedAsset === 'WETH' ? "https://etherscan.io/address/0xe4007EB8888AB9412Ac1CBE4cb0BfCA2943A938e" :
-                          selectedAsset === 'stETH' ? "https://etherscan.io/address/0x120FA5738751b275aed7F7b46B98beB38679e093" :
-                          selectedAsset === 'ezETH' ? "https://etherscan.io/address/0xA4333C39B6E2779BF7Ae286bC4f91E0dC6e199c3" :
-                          "https://etherscan.io/address/0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC"
+                          selectedAsset === 'ETH' ? "https://etherscan.io/address/0x120FA5738751b275aed7F7b46B98beB38679e093" :
+                          selectedAsset === 'WETH' ? "https://etherscan.io/address/0xf0bb20865277aBd641a307eCe5Ee04E79073416C" :
+                          selectedAsset === 'stETH' ? "https://etherscan.io/address/0xf0bb20865277aBd641a307eCe5Ee04E79073416C" :
+                          selectedAsset === 'ezETH' ? "https://etherscan.io/address/0xf0bb20865277aBd641a307eCe5Ee04E79073416C" :
+                          "https://etherscan.io/address/0xf0bb20865277aBd641a307eCe5Ee04E79073416C"
                         }
                         target="_blank" 
                         rel="noopener noreferrer"
                         className="text-blue-400 hover:text-blue-300 text-xs font-mono flex items-center gap-1 break-all"
                       >
                         <span className="hidden sm:inline">
-                          {selectedAsset === 'ETH' ? "0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC" :
-                           selectedAsset === 'WETH' ? "0xe4007EB8888AB9412Ac1CBE4cb0BfCA2943A938e" :
-                           selectedAsset === 'stETH' ? "0x120FA5738751b275aed7F7b46B98beB38679e093" :
-                           selectedAsset === 'ezETH' ? "0xA4333C39B6E2779BF7Ae286bC4f91E0dC6e199c3" :
-                           "0xebd7f78604074dFA635c10c2A0DBA1E763ff42cC"}
+                          {selectedAsset === 'ETH' ? "0x120FA5738751b275aed7F7b46B98beB38679e093" :
+                           selectedAsset === 'WETH' ? "0xf0bb20865277aBd641a307eCe5Ee04E79073416C" :
+                           selectedAsset === 'stETH' ? "0xf0bb20865277aBd641a307eCe5Ee04E79073416C" :
+                           selectedAsset === 'ezETH' ? "0xf0bb20865277aBd641a307eCe5Ee04E79073416C" :
+                           "0xf0bb20865277aBd641a307eCe5Ee04E79073416C"}
                         </span>
                         <span className="sm:hidden">
-                          {selectedAsset === 'ETH' ? "0xebd7...42cC" :
-                           selectedAsset === 'WETH' ? "0xe400...938e" :
-                           selectedAsset === 'stETH' ? "0x120F...e093" :
-                           selectedAsset === 'ezETH' ? "0xA433...c3" :
-                           "0xebd7...42cC"}
+                          {selectedAsset === 'ETH' ? "0x12...e093" :
+                           selectedAsset === 'WETH' ? "0xf0...416C" :
+                           selectedAsset === 'stETH' ? "0xf0...416C" :
+                           selectedAsset === 'ezETH' ? "0xf0...416C" :
+                           "0xf0...416C"}
                         </span>
                         <ArrowUpRight className="w-2 h-2 flex-shrink-0" />
                       </a>
