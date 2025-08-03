@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { motion } from 'framer-motion';
 import { ethers } from 'ethers';
 import { toast } from 'sonner';
-import { Coins, TrendingUp, Clock, History, ArrowUpRight, ArrowDownLeft, Wallet, RefreshCw, Info } from 'lucide-react';
+import { Coins, TrendingUp, Clock, History, ArrowUpRight, ArrowDownLeft, Wallet, RefreshCw, Info, ShieldCheck } from 'lucide-react';
 import Image from 'next/image';
 import { ethTokensService, EthTokens } from '@/lib/supabase';
 import { fetchCryptoPrices } from '@/lib/priceService';
@@ -301,7 +301,7 @@ export default function EthYieldPage() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-full hover:bg-green-500/30 hover:border-green-500/50 transition-all duration-200 cursor-pointer"
                 >
-                  <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                  <ShieldCheck   className="w-4 h-4 flex-shrink-0 text-green-400" />
                   <span className="text-green-400 text-xs font-medium">Audited </span>                         <ArrowUpRight className="w-4 h-4 flex-shrink-0 text-green-400" />
 
                 </a>
