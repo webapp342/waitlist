@@ -3,9 +3,8 @@ import { NextRequest, NextResponse } from 'next/server'
 // Paths to simulate waiting room
 const MATCHED_PATHS = [
   '/presale',
-  '/presale/',
-  '/ExpiredUpcomingPresale-87201757291-51753803532-279-52359-35932-523523',
-  '/ExpiredUpcomingPresale-87201757291-51753803532-279-52359-35932-523523/'
+  '/presale/'
+  
 ]
 
 const WAIT_SECONDS = 60
@@ -25,8 +24,7 @@ export const config = {
   matcher: [
     '/presale',
     '/presale/:path*',
-    '/ExpiredUpcomingPresale-87201757291-51753803532-279-52359-35932-523523',
-    '/ExpiredUpcomingPresale-87201757291-51753803532-279-52359-35932-523523/:path*',
+    
   ],
 }
 
