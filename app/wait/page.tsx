@@ -1,9 +1,17 @@
 'use client'
-import { useEffect, useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useState } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import Header from '@/components/header_fixed'
 
 export default function WaitPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-zinc-950 text-white"><Header /><main className="flex items-center justify-center pt-16 pb-10"><div className="text-sm text-gray-400">Loading…</div></main></div>}>
+      <WaitPageContent />
+    </Suspense>
+  )
+}
+
+function WaitPageContent() {
   const params = useSearchParams()
   const router = useRouter()
   const ret = params.get('return') || '/presale'
