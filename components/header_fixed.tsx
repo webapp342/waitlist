@@ -134,8 +134,10 @@ export default function Header() {
 
   // Organized menu structure with dropdowns
   const menuItems: MenuItem[] = [
-  
-
+    { 
+      label: "Presale",
+      href: "/presale"
+    },
     { 
       label: "ETH Vault",
       href: "/eth-yield"

@@ -158,6 +158,10 @@ export default function Header() {
   // Organized menu structure with dropdowns - Presale now independent
   const menuItems: MenuItem[] = [
     { 
+      label: "Presale", 
+      href: "/presale"
+    },
+    { 
       label: "Dashboard", 
       href: "/dashboard"
     },

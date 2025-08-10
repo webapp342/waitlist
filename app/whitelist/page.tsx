@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { useAccount } from 'wagmi';
 import Particles from "@/components/ui/particles";
 import Header from "@/components/header";
@@ -36,6 +37,12 @@ export default function WhitelistPage() {
     usersPerMinute: 0,
     minutesRemaining: 0
   });
+
+  // Registration closed flag (12 hours before launch: Aug 10, 2025 00:00 UTC)
+  const REG_CLOSE_ISO = '2025-08-10T00:00:00Z';
+  const isWhitelistClosed = useMemo(() => {
+    try { return Date.now() >= new Date(REG_CLOSE_ISO).getTime(); } catch { return true; }
+  }, []);
 
   // Get wallet data for balance checking
   const chainId = selectedNetwork === 'ETH' ? ETH_MAINNET_CHAIN_ID : BSC_MAINNET_CHAIN_ID;
@@ -100,6 +107,42 @@ export default function WhitelistPage() {
     const interval = setInterval(updateWhitelistStats, 60000); // Update every minute
     return () => clearInterval(interval);
   }, [whitelistStats.target]);
+
+  // AnimatedCounter Component (in-file minimal)
+  function AnimatedCounterScript() {
+    return null;
+  }
+
+  function AnimatedCounter({ value, label }: { value: number; label: string }) {
+    const [displayValue, setDisplayValue] = useState(0);
+    const formatted = useMemo(() => displayValue.toLocaleString(), [displayValue]);
+
+    useEffect(() => {
+      const duration = 800; // ms
+      const frameMs = 16;
+      const steps = Math.max(1, Math.floor(duration / frameMs));
+      let currentStep = 0;
+      const start = displayValue;
+      const delta = value - start;
+      if (delta === 0) return;
+      const id = setInterval(() => {
+        currentStep += 1;
+        const t = currentStep / steps;
+        const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+        setDisplayValue(Math.round(start + delta * eased));
+        if (currentStep >= steps) clearInterval(id);
+      }, frameMs);
+      return () => clearInterval(id);
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [value]);
+
+    return (
+      <div className="flex items-center justify-center gap-3">
+        <div className="text-3xl font-bold text-yellow-400 tabular-nums">{formatted}</div>
+        <div className="text-sm text-gray-400">{label}</div>
+      </div>
+    );
+  }
 
   // Check if user is already whitelisted
   useEffect(() => {
@@ -195,6 +238,7 @@ export default function WhitelistPage() {
 
   return (
     <>
+      <AnimatedCounterScript />
       <Header />
       <main className="flex min-h-screen flex-col items-center overflow-x-clip pt-20 md:pt-20">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 max-w-2xl">
@@ -206,75 +250,40 @@ export default function WhitelistPage() {
              <p className="text-gray-400 text-sm md:text-base">
                Exclusive access to the final presale round
              </p>
-             
-             {/* Whitelist Counter */}
-             <div className="mt-6 bg-gradient-to-r from-yellow-400/10 to-orange-400/10 border border-yellow-400/20 rounded-2xl p-4">
-               <div className="flex items-center justify-center gap-3">
-                 <div className="text-3xl font-bold text-yellow-400">
-                   {whitelistStats.current.toLocaleString()}
-                 </div>
-                 <div className="text-sm text-gray-400">
-                   users already whitelisted
-                 </div>
-               </div>
-             </div>
+            
            </div>
 
           {/* Whitelist Announcement */}
-          <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl rounded-3xl border border-zinc-800 px-4 py-6 md:p-8 mb-6 shadow-xl">
             
-            {/* Status */}
-            <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">
-                Final Round Registration
-              </h2>
-              <p className="text-gray-400 text-sm">
-                Phase 3 launches <span className="text-yellow-400 font-semibold">August 10th at 12:00 UTC</span>
-              </p>
-            </div>
+          
 
           
 
-            {/* Allocation Details */}
-                          <div className="grid md:grid-cols-2 gap-4 mb-6">
-                <div className="bg-zinc-800/30 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-yellow-400 mb-1">$0.14</div>
-                  <div className="text-sm text-gray-400">Token Price</div>
-                  <div className="text-xs text-gray-500 mt-1">Final presale pricing</div>
-                </div>
-                <div className="bg-zinc-800/30 rounded-xl p-4 text-center">
-                  <div className="text-2xl font-bold text-green-400 mb-1">$100</div>
-                  <div className="text-sm text-gray-400">Fixed Allocation</div>
-                  <div className="text-xs text-gray-500 mt-1">Per wallet maximum</div>
-                </div>
-              </div>
+        
 
-            {/* Key Information */}
-            <div className="bg-zinc-800/30 rounded-xl p-4">
-              <h4 className="text-sm font-semibold text-white mb-3">Important Details</h4>
-              <div className="space-y-2 text-xs text-gray-400">
-                <div className="flex items-start gap-2">
-                  <div className="w-1 h-1 bg-gray-400 rounded-full mt-2"></div>
-                  <span>Whitelist spots allocated on <span className="text-yellow-400">FCFS</span> basis</span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-1 h-1 bg-gray-400 rounded-full mt-2"></div>
-                  <span>Unsold tokens from Phase 3 will be added to the <span className="text-blue-400">staking reward pool</span></span>
-                </div>
-                <div className="flex items-start gap-2">
-                  <div className="w-1 h-1 bg-gray-400 rounded-full mt-2"></div>
-                  <span>Registration closes 12 hours before Phase 3 launch on August 10th</span>
-                </div>
-
-              
-              </div>
-            </div>
-          </div>
+          
 
           {/* Registration Form */}
           <div className="bg-gradient-to-br from-zinc-900/90 to-zinc-950/90 backdrop-blur-xl mb-20 rounded-3xl border border-zinc-800 overflow-hidden shadow-xl">
             <div className="px-4 py-8 md:p-8">
-                              {!isConnected ? (
+              {isWhitelistClosed ? (
+                <div className="text-center space-y-6">
+              
+                  <div>
+                    <h3 className="text-2xl font-bold text-white mb-2">Whitelist Closed</h3>
+                    <p className="text-gray-400 text-sm">
+                      Phase 3 registration has ended. You can join the presale directly when it goes live at
+                      <span className="text-yellow-400 font-semibold"> 12:00 UTC on August 10th</span>.
+                    </p>
+                  </div>
+                  <Link href="/presale" className="inline-flex">
+                    <Button className="h-12 px-6 bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 text-black font-semibold rounded-xl hover:from-yellow-300 hover:via-yellow-200 hover:to-yellow-300">
+                      Go to Presale
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                !isConnected ? (
                   <div className="text-center space-y-6">
                     <div>
                       <h3 className="text-2xl font-bold text-white mb-2">Connect Wallet</h3>
@@ -292,7 +301,7 @@ export default function WhitelistPage() {
                       Join Whitelist
                     </Button>
                   </div>
-                              ) : isWhitelisted ? (
+                ) : isWhitelisted ? (
                   <div className="text-center space-y-6">
                     <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto border border-green-500/30">
                       <CheckCircle className="w-10 h-10 text-green-400" />
@@ -351,7 +360,7 @@ export default function WhitelistPage() {
                       </div>
                     </div>
                   </div>
-                              ) : (
+                ) : (
                   <div className="space-y-5">
                     <div className="text-center">
                       <h3 className="text-xl font-bold text-white mb-2">Complete Registration</h3>
@@ -437,6 +446,7 @@ export default function WhitelistPage() {
 
                     </form>
                   </div>
+                )
               )}
             </div>
           </div>
