@@ -272,8 +272,8 @@ export default function WhitelistPage() {
                   <div>
                     <h3 className="text-2xl font-bold text-white mb-2">Whitelist Closed</h3>
                     <p className="text-gray-400 text-sm">
-                      Phase 3 registration has ended. You can join the presale directly when it goes live at
-                      <span className="text-yellow-400 font-semibold"> 12:00 UTC on August 10th</span>.
+                      Phase 3 registration has ended. You can join the presale from presale page.
+                      
                     </p>
                   </div>
                   <Link href="/presale" className="inline-flex">
