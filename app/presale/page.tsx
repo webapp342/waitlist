@@ -661,7 +661,7 @@ function PresalePageInner() {
   const bblpPriceInBNB = bnbPriceUSD > 0 ? presalePrice / bnbPriceUSD : 0;
 
   // Purchase USD limits
-  const MIN_PURCHASE_USD = 25;
+  const MIN_PURCHASE_USD = 0;
   const MAX_PURCHASE_USD = 100000;
 
   const getCurrentUsdValue = (): number => {
