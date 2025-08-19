@@ -138,9 +138,10 @@ export default function Header() {
       label: "Presale",
       href: "/presale"
     },
+    { href: "/swap", label: "Swap" },
+
     { href: "/airdrop", label: "Airdrop" },
  
-    { href: "/swap", label: "Swap" },
     { href: "/stake", label: "Stake" },
 
     // Show Dashboard only when wallet is connected
