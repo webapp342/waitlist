@@ -88,6 +88,9 @@ export interface ReferralCode {
   total_rewards_earned: string
   created_at?: string
   updated_at?: string
+  users?: {
+    created_at: string
+  }
 }
 
 // Referral interface
@@ -739,6 +742,36 @@ export const referralService = {
     return data || null
   },
 
+  // Get all referral codes for ranking calculation
+  async getAllReferralCodes(): Promise<ReferralCode[]> {
+    // Check if Supabase is properly configured
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.warn('Supabase not configured, returning empty referral codes')
+      return []
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('referral_codes')
+        .select(`
+          *,
+          users!inner(created_at)
+        `)
+        .eq('is_active', true)
+        .order('total_referrals', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching all referral codes:', error)
+        return []
+      }
+
+      return data || []
+    } catch (error) {
+      console.error('Error in getAllReferralCodes:', error)
+      return []
+    }
+  },
+
   // Process referral when a new user signs up
   async processReferral(referralCode: string, newUserWallet: string): Promise<boolean> {
     // Check if Supabase is properly configured
@@ -1065,77 +1098,131 @@ export const referralService = {
     }
   },
 
-  // Get referral leaderboard
+  // Get referral leaderboard - OPTIMIZED VERSION
   async getLeaderboard(walletAddress: string) {
     if (!supabaseUrl || !supabaseAnonKey) {
       return { topUsers: [], currentUserRank: null }
     }
 
     try {
-      // Tüm referral_rewards'ı çek
-      const { data: rewards, error } = await supabase
-        .from('referral_rewards')
-        .select('referrer_id, referred_id, referrer_reward_amount, referred_reward_amount')
+      // Sadece top 100 kullanıcıyı çek (display için)
+      const { data: topReferralCodes, error: topError } = await supabase
+        .from('referral_codes')
+        .select(`
+          user_id,
+          total_referrals,
+          users!inner(id, wallet_address)
+        `)
+        .eq('is_active', true)
+        .order('total_referrals', { ascending: false })
+        .limit(100);
 
-      if (error) throw error
-
-      // Her kullanıcı için toplam BBLP hesapla (hem referrer hem referred)
-      const totals: Record<number, number> = {}
-      for (const row of rewards || []) {
-        const referrerId = row.referrer_id;
-        const referredId = row.referred_id;
-        const referrerAmount = parseFloat(row.referrer_reward_amount || '0');
-        const referredAmount = parseFloat(row.referred_reward_amount || '0');
-
-        if (!totals[referrerId]) totals[referrerId] = 0;
-        if (!totals[referredId]) totals[referredId] = 0;
-
-        totals[referrerId] += referrerAmount;
-        totals[referredId] += referredAmount;
+      if (topError) {
+        console.error('Error fetching top referral codes:', topError);
+        return { topUsers: [], currentUserRank: null };
       }
 
-      // Tüm kullanıcıları çek
-      const { data: allUsers } = await supabase.from('users').select('id, wallet_address');
-
-      // Her kullanıcı için davet edilen sayısını çek
-      const { data: allReferrals } = await supabase.from('referrals').select('referrer_id');
-      const referralCounts: Record<number, number> = {};
-      for (const row of allReferrals || []) {
-        const referrerId = row.referrer_id;
-        if (!referralCounts[referrerId]) referralCounts[referrerId] = 0;
-        referralCounts[referrerId] += 1;
-      }
-
-      // Her kullanıcı için toplamı bul veya 0 olarak ata
-      const userTotals = (allUsers || []).map(user => ({
-        userId: user.id,
-        walletAddress: user.wallet_address,
-        total: totals[user.id] || 0,
-        invitedCount: referralCounts[user.id] || 0
-      }));
-
-      // Sırala
-      const sorted = userTotals.sort((a, b) => b.total - a.total);
-
-      // İlk 5 ve kendi sırası
-      const topUsers = [];
-      let currentUserRank = null;
-
-      for (let i = 0; i < sorted.length; i++) {
-        const entry = sorted[i];
-        const obj = {
-          rank: i + 1,
-          userId: entry.userId,
-          walletAddress: entry.walletAddress || '',
-          totalRewards: entry.total.toString(),
-          invitedCount: entry.invitedCount
+      // Top 100 kullanıcıyı hazırla
+      const topUsers = (topReferralCodes || []).map((entry, index) => {
+        // users field'ı array olarak geliyor, ilk elemanı al
+        const userData = Array.isArray(entry.users) ? entry.users[0] : entry.users;
+        const walletAddress = userData?.wallet_address || '';
+        
+        console.log(`Entry ${index}: user_id=${entry.user_id}, wallet_address=${walletAddress}, referrals=${entry.total_referrals}`);
+        
+        return {
+          rank: index + 1,
+          userId: entry.user_id,
+          walletAddress,
+          totalRewards: '0', // Will be added from referral_rewards table later
+          invitedCount: entry.total_referrals || 0
         };
-        if (i < 5) topUsers.push(obj);
-        if (entry.walletAddress?.toLowerCase() === walletAddress.toLowerCase()) {
-          currentUserRank = { ...obj, isCurrentUser: true };
-        }
-      }
+      });
 
+      // Mevcut kullanıcının sırasını bul
+      let currentUserRank = null;
+      console.log('Looking for current user with wallet:', walletAddress);
+      
+      if (walletAddress && walletAddress !== '0x0000000000000000000000000000000000000000') {
+        // Önce top 100'de ara
+        const currentUser = topUsers.find(
+          entry => entry.walletAddress.toLowerCase() === walletAddress.toLowerCase()
+        );
+        
+        console.log('Current user in top 100:', currentUser);
+        
+        if (currentUser) {
+          currentUserRank = { ...currentUser, isCurrentUser: true };
+          console.log('Found user in top 100, setting currentUserRank:', currentUserRank);
+        } else {
+          // Top 100'de yoksa, sadece o kullanıcının bilgilerini çek
+          const { data: userReferralCode, error: userError } = await supabase
+            .from('referral_codes')
+            .select(`
+              user_id,
+              total_referrals,
+              total_rewards_earned,
+              users!inner(id, wallet_address)
+            `)
+            .eq('is_active', true)
+            .eq('users.wallet_address', walletAddress.toLowerCase())
+            .single();
+
+          if (!userError && userReferralCode) {
+            const referralCount = userReferralCode.total_referrals || 0;
+            
+            if (referralCount > 0) {
+              // Referral > 0 ise, tüm kayıtlardan rank hesapla (sadece gerekirse)
+              const { count: totalCount, error: countError } = await supabase
+                .from('referral_codes')
+                .select('*', { count: 'exact', head: true })
+                .eq('is_active', true)
+                .gte('total_referrals', referralCount);
+
+              const rank = countError ? 1000 : (totalCount || 1000);
+              
+              // users field'ı array olarak geliyor, ilk elemanı al
+              const userData = Array.isArray(userReferralCode.users) ? userReferralCode.users[0] : userReferralCode.users;
+              const userWalletAddress = userData?.wallet_address || walletAddress;
+              
+              currentUserRank = {
+                rank,
+                userId: userReferralCode.user_id,
+                walletAddress: userWalletAddress,
+                totalRewards: userReferralCode.total_rewards_earned || '0',
+                invitedCount: referralCount,
+                isCurrentUser: true
+              };
+            } else {
+              // Referral = 0 ise, users tablosundaki ID'yi kullan
+              const { data: userData, error: userDataError } = await supabase
+                .from('users')
+                .select('id')
+                .eq('wallet_address', walletAddress.toLowerCase())
+                .single();
+
+              if (!userDataError && userData) {
+                currentUserRank = {
+                  rank: userData.id,
+                  userId: userData.id,
+                  walletAddress,
+                  totalRewards: '0',
+                  invitedCount: 0,
+                  isCurrentUser: true
+                };
+                             }
+             }
+           }
+         }
+       }
+
+      console.log('Final currentUserRank calculated:', currentUserRank);
+      console.log('Final result:', { topUsers, currentUserRank });
+      console.log('Returning data structure:', {
+        topUsersCount: topUsers.length,
+        hasCurrentUserRank: !!currentUserRank,
+        currentUserRankData: currentUserRank
+      });
       return { topUsers, currentUserRank };
     } catch (error) {
       console.error('Error in getLeaderboard:', error)

@@ -69,8 +69,8 @@ CREATE TABLE public.discord_daily_claims (
   claimed_at timestamp with time zone DEFAULT now(),
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT discord_daily_claims_pkey PRIMARY KEY (id),
-  CONSTRAINT discord_daily_claims_wallet_address_fkey FOREIGN KEY (wallet_address) REFERENCES public.users(wallet_address),
-  CONSTRAINT discord_daily_claims_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.discord_users(discord_id)
+  CONSTRAINT discord_daily_claims_discord_id_fkey FOREIGN KEY (discord_id) REFERENCES public.discord_users(discord_id),
+  CONSTRAINT discord_daily_claims_wallet_address_fkey FOREIGN KEY (wallet_address) REFERENCES public.users(wallet_address)
 );
 CREATE TABLE public.discord_invited_users (
   id bigint NOT NULL DEFAULT nextval('discord_invited_users_id_seq'::regclass),
@@ -119,6 +119,21 @@ CREATE TABLE public.discord_users (
   invite_link character varying,
   CONSTRAINT discord_users_pkey PRIMARY KEY (id),
   CONSTRAINT discord_users_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(wallet_address)
+);
+CREATE TABLE public.eth_tokens (
+  id integer NOT NULL DEFAULT nextval('eth_tokens_id_seq'::regclass),
+  steth numeric DEFAULT 0,
+  weth numeric DEFAULT 0,
+  eth numeric DEFAULT 0,
+  weeth numeric DEFAULT 0,
+  eeth numeric DEFAULT 0,
+  ethx numeric DEFAULT 0,
+  rseth numeric DEFAULT 0,
+  ezeth numeric DEFAULT 0,
+  pufeth numeric DEFAULT 0,
+  wsteth numeric DEFAULT 0,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT eth_tokens_pkey PRIMARY KEY (id)
 );
 CREATE TABLE public.extra_rewards (
   id integer NOT NULL DEFAULT nextval('extra_rewards_id_seq'::regclass),

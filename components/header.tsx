@@ -166,19 +166,25 @@ export default function Header() {
       href: "/dashboard"
     },
  
-    { 
-      label: "Bblip Quests", 
-      href: "/social-connections"
-    },
-    { 
-      label: "ETH Vault",
-      href: "/eth-yield"
-    },
+    { href: "/swap", label: "Swap" },
+
+
+  
+    { href: "/airdrop", label: "Airdrop" },
+
     { 
       label: "Earn",
       children: [
         { href: "/stake", label: "Stake" },
-        { href: "/referral", label: "Referral" },
+        { href: "/airdrop", label: "Airdrop" },
+        { 
+          label: "ETH Vault",
+          href: "/eth-yield"
+        },
+        { 
+          label: "Bblip Quests", 
+          href: "/social-connections"
+        },
       ]
     },
     { 
