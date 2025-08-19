@@ -161,10 +161,9 @@ export default function Header() {
       label: "Presale", 
       href: "/presale"
     },
-    { 
-      label: "Dashboard", 
-      href: "/dashboard"
-    },
+ 
+    // Show Dashboard only when wallet is connected
+    ...(isConnected ? [{ href: "/dashboard", label: "Dashboard" }] : []),
  
     { href: "/swap", label: "Swap" },
 

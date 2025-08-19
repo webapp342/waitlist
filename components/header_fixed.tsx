@@ -143,7 +143,8 @@ export default function Header() {
     { href: "/swap", label: "Swap" },
     { href: "/stake", label: "Stake" },
 
-
+    // Show Dashboard only when wallet is connected
+    ...(isConnected ? [{ href: "/dashboard", label: "Dashboard" }] : []),
     { 
       label: "Earn",
       children: [
