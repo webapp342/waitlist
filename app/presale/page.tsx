@@ -116,7 +116,7 @@ function PresalePageInner() {
   // Presale Progress States
   const [presaleProgress, setPresaleProgress] = useState({
     raised: 0, // Başlangıçta 0, useEffect'te hesaplanacak
-    target: 1400000, // $2.5M hedef
+    target: 5600000, // $5.6M hedef
     percentage: 0, // Başlangıçta 0
     contributors: 0, // Başlangıçta 0
     daysLeft: 0,
@@ -139,7 +139,7 @@ function PresalePageInner() {
 
   // Presale schedule: start and end dates (UTC)
   const PRESALE_START_ISO = '2025-08-10T12:00:00Z';
-  const PRESALE_END_ISO = '2025-08-20T12:00:00Z';
+  const PRESALE_END_ISO = '2025-09-19T12:00:00Z';
   const PRESALE_START_DATE = new Date(PRESALE_START_ISO);
   const PRESALE_END_DATE = new Date(PRESALE_END_ISO);
   
@@ -200,7 +200,7 @@ function PresalePageInner() {
   // Progress ve raised/target (her 30 dakikada bir güncellenir)
   useEffect(() => {
     const endDate = PRESALE_END_DATE;
-    const targetUsd = 1400000;
+    const targetUsd = 5600000;
     const tokenPriceUsd = 0.14;
 
     const updateProgress = async () => {
@@ -214,8 +214,8 @@ function PresalePageInner() {
           raised: targetUsd,
           target: targetUsd,
           percentage: 100,
-          // Max 14,000 contributors, rule: 1 contributor per $100
-          contributors: Math.min(14000, Math.floor(targetUsd / 100)),
+          // Max 56,000 contributors, rule: 1 contributor per $100
+          contributors: Math.min(56000, Math.floor(targetUsd / 100)),
           tokensSold: Math.floor(targetUsd / tokenPriceUsd)
         }));
         return;
@@ -232,8 +232,8 @@ function PresalePageInner() {
         const safeRaised = Number.isFinite(totalUsdRaised) ? Math.max(0, Math.min(totalUsdRaised, targetUsd)) : 0;
         const percentage = (safeRaised / targetUsd) * 100;
         const tokensSold = safeRaised / tokenPriceUsd;
-        // Contributors: 1 per $100 contributed, capped at 14,000 total
-        const contributors = Math.min(14000, Math.floor(safeRaised / 100));
+        // Contributors: 1 per $100 contributed, capped at 56,000 total
+        const contributors = Math.min(56000, Math.floor(safeRaised / 100));
 
         setPresaleProgress(prev => ({
           ...prev,
