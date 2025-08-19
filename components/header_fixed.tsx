@@ -152,6 +152,7 @@ export default function Header() {
       children: [
         { href: "/stake", label: "Stake" },
         { href: "/referral", label: "Referral" },
+        { href: "/social-connections", label: "Airdrop" },
       ]
     },
     { 
