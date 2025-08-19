@@ -811,7 +811,7 @@ function DashboardContent() {
                   </div>
                   
                   {/* Claim Button - Full Width */}
-                  <Link href="/referral" className="block">
+                  <Link href="/social-connections" className="block">
                     <Button className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-yellow-300 text-sm py-2 h-auto font-medium border border-zinc-700/30 transition-all duration-200">
                       Claim $1,000 USDT Bonus
                     </Button>
