@@ -40,7 +40,7 @@ export default function HeroSection() {
               </div>
               
               <span className="text-sm font-semibold text-yellow-200 tracking-wide">
-                Phase 3 sale is live
+                Presale is live
               </span>
               
               <ArrowRight className="w-4 h-4 text-yellow-400 transition-transform duration-300 group-hover:translate-x-1" />
