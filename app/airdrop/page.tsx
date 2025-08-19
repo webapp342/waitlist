@@ -529,28 +529,13 @@ export default function ReferralLeaderboardPage() {
               <>
                 {/* Wallet Not Connected Message */}
                 {!address && (
-                  <div className="bg-gradient-to-r from-zinc-800/60 to-zinc-900/60 backdrop-blur-sm rounded-xl border border-zinc-700/50 mb-6 overflow-hidden">
+                  <div className=" rounded-xl  mb-6 overflow-hidden">
                     <div className="p-8 text-center">
-                      <div className="w-16 h-16 bg-zinc-700/50 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <svg className="w-8 h-8 text-zinc-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                        </svg>
-                      </div>
-                      <h3 className="text-xl font-bold text-white mb-2">Cüzdan Bağlantısı Gerekli</h3>
+                    
                       <p className="text-zinc-400 mb-4">
-                        Referans linkinizi görmek ve arkadaşlarınızı davet etmeye başlamak için cüzdanınızı bağlayın.
+                        Connect your wallet to see your referral link and start inviting friends to earn points.
                       </p>
-                      <button
-                        onClick={() => {
-                          // Trigger wallet connection
-                          if (typeof window !== 'undefined' && window.ethereum) {
-                            window.ethereum.request({ method: 'eth_requestAccounts' });
-                          }
-                        }}
-                        className="px-6 py-3 bg-yellow-500 hover:bg-yellow-600 text-zinc-900 font-semibold rounded-lg transition-all duration-200 shadow-lg hover:shadow-yellow-500/25"
-                      >
-                        Cüzdanı Bağla
-                      </button>
+                  
                     </div>
                   </div>
                 )}
