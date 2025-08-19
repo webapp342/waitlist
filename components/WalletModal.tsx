@@ -34,9 +34,16 @@ export default function WalletModal({ open, onClose }: WalletModalProps) {
       toast.success('Wallet connected!');
       onClose();
       
+      // Debug: Log current pathname and redirect decision
+      console.log('WalletModal - Current pathname:', pathname);
+      console.log('WalletModal - Should redirect to dashboard:', shouldRedirectToDashboard(pathname));
+      
       // Only redirect to dashboard if on home page
       if (shouldRedirectToDashboard(pathname)) {
+        console.log('WalletModal - Redirecting to dashboard');
         router.push('/dashboard');
+      } else {
+        console.log('WalletModal - Staying on current page:', pathname);
       }
     }
   }, [isConnected, address, open, onClose, router, pathname]);

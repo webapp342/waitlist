@@ -121,7 +121,8 @@ export default function Header() {
     disconnect();
     
     toast.success("Wallet disconnected successfully!");
-    router.push('/');
+    // Don't redirect - stay on current page
+    // router.push('/');
   };
   
   const handleSwitchToBSC = async (e: React.MouseEvent) => {
