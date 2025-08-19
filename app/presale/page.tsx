@@ -660,10 +660,6 @@ function PresalePageInner() {
   const presalePrice = 0.14;
   const bblpPriceInBNB = bnbPriceUSD > 0 ? presalePrice / bnbPriceUSD : 0;
 
-  // Purchase USD limits
-  const MIN_PURCHASE_USD = 0;
-  const MAX_PURCHASE_USD = 100000;
-
   const getCurrentUsdValue = (): number => {
     try {
       if (inputMode === 'BBLP' && bblpAmount) {
@@ -685,9 +681,7 @@ function PresalePageInner() {
   };
 
   const currentUsdValue = getCurrentUsdValue();
-  const isBelowMinUsd = currentUsdValue > 0 && currentUsdValue < MIN_PURCHASE_USD;
-  const isAboveMaxUsd = currentUsdValue > MAX_PURCHASE_USD;
-  const meetsUsdRange = currentUsdValue > 0 && !isBelowMinUsd && !isAboveMaxUsd;
+  const meetsUsdRange = currentUsdValue > 0;
 
   // Update BBLP when BNB changes
   useEffect(() => {
@@ -1423,15 +1417,12 @@ function PresalePageInner() {
                     ? "bg-zinc-700 text-zinc-400 cursor-not-allowed"
                     : isInsufficientBalance()
                     ? "bg-red-500/10 text-red-400 border border-red-500/20"
-                    : !meetsUsdRange
-                    ? "bg-zinc-700 text-zinc-400 cursor-not-allowed"
                     : "bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white shadow-lg hover:shadow-green-500/20"
                 )}
                 disabled={
                   isInsufficientBalance() ||
                   (selectedToken === TOKEN_IDS.eth && (!ethAmount || parseFloat(ethAmount) <= 0 || isEthBuying)) ||
-                  (selectedToken === TOKEN_IDS.bnb && (!bnbAmount || parseFloat(bnbAmount) <= 0 || isBuying)) ||
-                  !meetsUsdRange
+                  (selectedToken === TOKEN_IDS.bnb && (!bnbAmount || parseFloat(bnbAmount) <= 0 || isBuying))
                 }
                 onClick={selectedToken === TOKEN_IDS.eth ? buyTokensWithETH : handleBuy}
               >
@@ -1445,10 +1436,6 @@ function PresalePageInner() {
                 ) : (selectedToken === TOKEN_IDS.eth && (!ethAmount || parseFloat(ethAmount) <= 0)) || 
                    (selectedToken === TOKEN_IDS.bnb && (!bnbAmount || parseFloat(bnbAmount) <= 0)) ? (
                   'Enter Amount'
-                ) : isBelowMinUsd ? (
-                  `Min $${MIN_PURCHASE_USD}`
-                ) : isAboveMaxUsd ? (
-                  `Max $${MAX_PURCHASE_USD}`
                 ) : (
                   'Purchase'
                 )}
