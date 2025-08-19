@@ -272,7 +272,7 @@ export default function ReferralLeaderboardPage() {
               className="mb-8 flex justify-center"
             >
               <img 
-                src="/3d.png" 
+                src="/3D.png" 
                 alt="Bblip Protocol 3D Coin" 
                 className="w-32 h-32 md:w-40 md:h-40 object-contain"
               />
