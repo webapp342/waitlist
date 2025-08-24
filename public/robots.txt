@@ -1,0 +1,33 @@
+User-agent: *
+Allow: /
+
+# Sitemap
+Sitemap: https://bblip.io/sitemap.xml
+
+# Crawl delay
+Crawl-delay: 1
+
+# Disallow admin and API routes
+Disallow: /adminDashboard/
+Disallow: /administratorLogin/
+Disallow: /api/
+Disallow: /test-wc/
+
+# Allow important pages
+Allow: /presale
+Allow: /dashboard
+Allow: /stake
+Allow: /swap
+Allow: /bridge
+Allow: /eth-yield
+Allow: /referral
+Allow: /social-connections
+Allow: /whitelist
+Allow: /tokenomics
+Allow: /whitepaper
+
+# Block sensitive files
+Disallow: /*.json$
+Disallow: /*.js$
+Disallow: /*.css$
+Disallow: /*.map$

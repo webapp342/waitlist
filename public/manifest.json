@@ -1,0 +1,35 @@
+{
+  "name": "Bblip - Spend Any Crypto, Anywhere",
+  "short_name": "Bblip",
+  "description": "Transform your crypto into spendable currency with virtual and physical cards. Accepted at 40M+ merchants worldwide.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#fbbf24",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/logo-32.svg",
+      "sizes": "32x32",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/logo-200.png",
+      "sizes": "200x200",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/bblip-logo.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["finance", "business", "productivity"],
+  "lang": "en",
+  "dir": "ltr",
+  "scope": "/",
+  "prefer_related_applications": false
+}

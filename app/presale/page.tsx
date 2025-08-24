@@ -1,19 +1,7 @@
 'use client';
 
-// Window type declarations for mobile wallets
-declare global {
-  interface Window {
-    ethereum?: any;
-    web3?: {
-      currentProvider?: any;
-    };
-    trustwallet?: any;
-    providers?: any[];
-  }
-}
-
 import React, { useState, useEffect, Suspense, useCallback } from 'react';
-import { useAccount, useSwitchChain, useBalance, useWalletClient } from 'wagmi';
+import { useAccount, useSwitchChain, useBalance, useWalletClient, useChainId } from 'wagmi';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Particles from "@/components/ui/particles";
@@ -30,10 +18,42 @@ import { formatUnits, parseEther, ethers } from 'ethers';
 import { containerVariants, itemVariants } from "@/lib/animation-variants";
 import { Info, ChevronDown, ChevronUp, TrendingUp, Shield, Clock, DollarSign, Zap, Network, ArrowUpDown } from 'lucide-react';
 import WalletModal from '@/components/WalletModal';
-import { userService, cardService } from '@/lib/supabase';
-import { useChainId } from 'wagmi';
 import { useWallet } from '@/hooks/useWallet';
 import { fetchCryptoPrices, getCachedPrices } from '@/lib/priceService';
+import { userService } from '@/lib/supabase';
+import { toast } from 'sonner';
+import Container from '@/components/container';
+import Footer from '@/components/footer';
+import CTA from '@/components/cta';
+
+export const metadata = {
+  title: 'BBLP Token Presale | Bblip - Early Access Crypto Investment',
+  description: 'Join the BBLP token presale and get early access to Bblip\'s revolutionary crypto payment platform. Limited time opportunity with exclusive bonuses.',
+  keywords: 'BBLP presale, token presale, crypto presale, bblip token, early investment, crypto launch',
+  openGraph: {
+    title: 'BBLP Token Presale | Bblip - Early Access Crypto Investment',
+    description: 'Join the BBLP token presale and get early access to Bblip\'s revolutionary crypto payment platform.',
+    images: ['/twitter-image.png'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'BBLP Token Presale | Bblip - Early Access Crypto Investment',
+    description: 'Join the BBLP token presale and get early access to Bblip\'s revolutionary crypto platform.',
+    images: ['/twitter-image.png'],
+  },
+};
+
+// Window type declarations for mobile wallets
+declare global {
+  interface Window {
+    ethereum?: any;
+    web3?: {
+      currentProvider?: any;
+    };
+    trustwallet?: any;
+    providers?: any[];
+  }
+}
 
 const PAYMENT_TOKENS = [
   { id: TOKEN_IDS.eth, name: 'ETH', icon: '/eth.png', color: 'from-blue-600 to-blue-400', chainId: 1 }, // Ethereum Mainnet

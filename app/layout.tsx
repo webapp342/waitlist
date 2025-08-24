@@ -44,7 +44,6 @@ export const metadata: Metadata = {
     "ethereum card",
     "bitcoin card",
     "bblip card",
-  
     "bblip.de",
     "bblip protocol",
     "bblip protocol card", 
@@ -64,6 +63,10 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://bblip.io'),
   alternates: {
     canonical: '/',
+    languages: {
+      'en-US': '/en-US',
+      'tr-TR': '/tr-TR',
+    },
   },
   openGraph: {
     title: "Bblip - Spend Any Crypto, Anywhere",
@@ -72,10 +75,11 @@ export const metadata: Metadata = {
     siteName: 'Bblip',
     images: [
       {
-        url: '/opengraph-image.png',
-        width: 1280,
-        height: 832,
-        alt: 'Bblip Crypto Cards - Spend Any Crypto, Anywhere',
+        url: '/twitter-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'Bblip Crypto Cards - Spend Any Crypto, Anywhere with Virtual & Physical Cards',
+        type: 'image/png',
       },
     ],
     locale: 'en_US',
@@ -87,6 +91,7 @@ export const metadata: Metadata = {
     description: 'Transform your crypto into spendable currency with virtual and physical cards. Accepted at 40M+ merchants worldwide.',
     images: ['/twitter-image.png'],
     creator: '@bblip',
+    site: '@bblip',
   },
   robots: {
     index: true,
@@ -106,6 +111,14 @@ export const metadata: Metadata = {
   },
   category: 'Finance',
   classification: 'Cryptocurrency Payment Platform',
+  other: {
+    'apple-mobile-web-app-title': 'Bblip',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'mobile-web-app-capable': 'yes',
+    'theme-color': '#fbbf24',
+    'msapplication-TileColor': '#fbbf24',
+  },
 };
 
 export default function RootLayout({
@@ -159,6 +172,40 @@ export default function RootLayout({
                 }, 100);
               }
             `,
+          }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "FinancialService",
+              "name": "Bblip",
+              "description": "Transform your crypto into spendable currency with Bblip's virtual and physical cards. Accepted at 40M+ merchants worldwide.",
+              "url": "https://bblip.io",
+              "logo": "https://bblip.io/bblip-logo.svg",
+              "image": "https://bblip.io/twitter-image.png",
+              "sameAs": [
+                "https://twitter.com/bblip",
+                "https://discord.gg/bblip",
+                "https://t.me/bblip"
+              ],
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "contactType": "customer service",
+                "availableLanguage": ["English", "Turkish"]
+              },
+              "areaServed": "Worldwide",
+              "serviceType": "Cryptocurrency Payment Cards",
+              "offers": {
+                "@type": "Offer",
+                "description": "Virtual and physical crypto cards with zero hidden fees",
+                "price": "0",
+                "priceCurrency": "USD"
+              },
+              "foundingDate": "2024",
+              "category": "Cryptocurrency Payment Platform"
+            })
           }}
         />
       </head>
