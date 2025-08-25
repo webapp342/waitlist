@@ -20,22 +20,7 @@ import Image from 'next/image';
 import {   TransactionStatus, type TransactionStatus as TxStatus } from "@/components/ui/transaction-status";
 import { TransactionModal } from "@/components/ui/transaction-modal";
 
-export const metadata = {
-  title: 'Stake BBLP Tokens | Bblip - Earn Passive Income & Rewards',
-  description: 'Stake your BBLP tokens and earn passive income through our secure staking platform. Multiple staking pools with competitive APY rates.',
-  keywords: 'BBLP staking, crypto staking, passive income, staking rewards, bblip staking, yield farming',
-  openGraph: {
-    title: 'Stake BBLP Tokens | Bblip - Earn Passive Income & Rewards',
-    description: 'Stake your BBLP tokens and earn passive income through our secure staking platform.',
-    images: ['/twitter-image.png'],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Stake BBLP Tokens | Bblip - Earn Passive Income & Rewards',
-    description: 'Stake your BBLP tokens and earn passive income through our secure staking platform.',
-    images: ['/twitter-image.png'],
-  },
-};
+
 
 // Card stake requirements
 const CARD_REQUIREMENTS = {

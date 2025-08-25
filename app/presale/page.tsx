@@ -26,22 +26,7 @@ import Container from '@/components/container';
 import Footer from '@/components/footer';
 import CTA from '@/components/cta';
 
-export const metadata = {
-  title: 'BBLP Token Presale | Bblip - Early Access Crypto Investment',
-  description: 'Join the BBLP token presale and get early access to Bblip\'s revolutionary crypto payment platform. Limited time opportunity with exclusive bonuses.',
-  keywords: 'BBLP presale, token presale, crypto presale, bblip token, early investment, crypto launch',
-  openGraph: {
-    title: 'BBLP Token Presale | Bblip - Early Access Crypto Investment',
-    description: 'Join the BBLP token presale and get early access to Bblip\'s revolutionary crypto payment platform.',
-    images: ['/twitter-image.png'],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'BBLP Token Presale | Bblip - Early Access Crypto Investment',
-    description: 'Join the BBLP token presale and get early access to Bblip\'s revolutionary crypto platform.',
-    images: ['/twitter-image.png'],
-  },
-};
+
 
 // Window type declarations for mobile wallets
 declare global {

@@ -20,22 +20,7 @@ import AuthGuard from '@/components/AuthGuard';
 import { useChainId } from 'wagmi';
 import { fetchCryptoPrices } from '@/lib/priceService';
 
-export const metadata = {
-  title: 'Dashboard | Bblip - Crypto Card Management',
-  description: 'Manage your Bblip crypto cards, track rewards, view referral stats, and access exclusive features. Your personal crypto card dashboard.',
-  keywords: 'crypto dashboard, bblip dashboard, crypto card management, referral tracking, rewards dashboard',
-  openGraph: {
-    title: 'Dashboard | Bblip - Crypto Card Management',
-    description: 'Manage your Bblip crypto cards, track rewards, view referral stats, and access exclusive features.',
-    images: ['/twitter-image.png'],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Dashboard | Bblip - Crypto Card Management',
-    description: 'Manage your Bblip crypto cards, track rewards, view referral stats, and access exclusive features.',
-    images: ['/twitter-image.png'],
-  },
-};
+
 
 // BSC Mainnet Addresses
 const USDT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
