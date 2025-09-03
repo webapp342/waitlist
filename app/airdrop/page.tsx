@@ -457,13 +457,10 @@ export default function ReferralLeaderboardPage() {
                       <div className="bg-zinc-800/50 rounded-lg p-4 mb-4 border border-zinc-700/50">
                         <p className="text-zinc-300 text-sm leading-relaxed">
                           To participate in the BBLP airdrop, you need to connect your Web3 wallet. 
-                          This ensures secure token distribution and prevents duplicate claims.
                         </p>
                       </div>
                       
-                      <div className="text-center text-zinc-400 text-sm">
-                        Use the wallet connect button in the header
-                      </div>
+                     
                     </div>
                   )}
 
@@ -490,7 +487,7 @@ export default function ReferralLeaderboardPage() {
                       <div className="text-center">
                         <button
                           onClick={() => {
-                            window.open('https://x.com/BblipProtocol/status/1949695664683663461', '_blank');
+                            window.open('https://x.com/BblipProtocol/status/1944492827678785944', '_blank');
                             localStorage.setItem('xTaskCompleted', 'true');
                             setXConnected(true);
                           }}
