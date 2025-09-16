@@ -144,7 +144,7 @@ function PresalePageInner() {
 
   // Presale schedule: start and end dates (UTC)
   const PRESALE_START_ISO = '2025-08-10T12:00:00Z';
-  const PRESALE_END_ISO = '2025-09-19T12:00:00Z';
+  const PRESALE_END_ISO = '2025-09-29T12:00:00Z';
   const PRESALE_START_DATE = new Date(PRESALE_START_ISO);
   const PRESALE_END_DATE = new Date(PRESALE_END_ISO);
   
